@@ -659,11 +659,19 @@ Delete this post.
 	}
 
 	first := run("build-first")
+	firstPageWeightReport := filepath.Join(first.ReleasePath, pageWeightReportPath)
+	pageWeightReport, err := os.ReadFile(firstPageWeightReport)
+	if err != nil {
+		t.Fatalf("read page-weight report from first release: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(svc.cfg.WorkDir, pageWeightReportPath)); err != nil {
+		t.Fatalf("find page-weight report in retained workspace: %v", err)
+	}
 	readArtifact := func(releasePath string) diagnostics.Artifact {
 		t.Helper()
-		data, err := os.ReadFile(filepath.Join(releasePath, diagnostics.DefaultArtifactPath))
-		if err != nil {
-			t.Fatalf("read diagnostics artifact from release: %v", err)
+		data, ok := readDiagnosticsArtifactBounded(filepath.Join(releasePath, diagnostics.DefaultArtifactPath), 16<<20)
+		if !ok {
+			t.Fatal("read diagnostics artifact from release")
 		}
 		artifact, err := diagnostics.ParseArtifact(data)
 		if err != nil {
@@ -672,6 +680,12 @@ Delete this post.
 		return artifact
 	}
 	firstArtifact := readArtifact(first.ReleasePath)
+	if _, err := os.Stat(filepath.Join(first.ReleasePath, diagnostics.CompressedArtifactPath)); err != nil {
+		t.Fatalf("first release did not include compressed diagnostics: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(first.ReleasePath, diagnostics.DefaultArtifactPath)); !os.IsNotExist(err) {
+		t.Fatalf("first release retained plain diagnostics: %v", err)
+	}
 	if firstArtifact.Summary.Discovered != 2 {
 		t.Fatalf("first release diagnostics summary = %+v, want two discovered files", firstArtifact.Summary)
 	}
@@ -688,7 +702,21 @@ Delete this post.
 	if err := os.Remove(filepath.Join(contentDir, "deleted.md")); err != nil {
 		t.Fatal(err)
 	}
+	svc.cfg.SkipPageWeight = true
 	second := run("build-second")
+	if _, err := os.Stat(filepath.Join(second.ReleasePath, pageWeightReportPath)); !os.IsNotExist(err) {
+		t.Fatalf("second release retained a stale page-weight report: %v", err)
+	}
+	if got, err := os.ReadFile(firstPageWeightReport); err != nil || string(got) != string(pageWeightReport) {
+		t.Fatalf("historical page-weight report changed: %v", err)
+	}
+	buildLog, err := os.ReadFile(filepath.Join(svc.logDir, second.LogPath))
+	if err != nil {
+		t.Fatalf("read second build log: %v", err)
+	}
+	if !strings.Contains(string(buildLog), "page-weight scan disabled") || strings.Contains(string(buildLog), "Page weight:") {
+		t.Fatal("second build did not skip page-weight scanning")
+	}
 	secondArtifact := readArtifact(second.ReleasePath)
 	if secondArtifact.Summary.Discovered != 1 {
 		t.Fatalf("second release diagnostics summary = %+v, want one discovered file", secondArtifact.Summary)

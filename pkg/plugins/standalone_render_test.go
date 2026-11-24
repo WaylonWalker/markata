@@ -21,7 +21,7 @@ func TestRenderStandalone_ConditionalAssets(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r, err := RenderStandalone(tt.source, StandaloneOptions{InlineAssets: true})
+			r, err := RenderStandalone(tt.source, StandaloneOptions{InlineAssets: true, MermaidMode: "client"})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -45,6 +45,20 @@ func TestRenderStandalone_ConditionalAssets(t *testing.T) {
 			}
 			assertStandaloneInlineTags(t, r.HeadHTML+r.BodyEndHTML)
 		})
+	}
+}
+
+func TestRenderStandalone_AdjacentPluginFencesAreBothRendered(t *testing.T) {
+	source := "```chartjs\n{\"type\":\"bar\",\"data\":{\"labels\":[\"A\"],\"datasets\":[{\"data\":[1]}]}}\n```\n\n```mermaid\ngraph LR\nA-->B\n```"
+	r, err := RenderStandalone(source, StandaloneOptions{MermaidMode: "client"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !r.Features["chartjs"] || !r.Features["mermaid"] {
+		t.Fatalf("both plugin fences should be detected, got features %v", r.Features)
+	}
+	if !strings.Contains(r.HTML, `class="chartjs-container"`) || !strings.Contains(r.HTML, `class="mermaid"`) {
+		t.Fatalf("both plugin fences should be rendered, got %s", r.HTML)
 	}
 }
 
@@ -85,7 +99,7 @@ func TestRenderStandalone_RawHTMLPolicy(t *testing.T) {
 }
 
 func TestRenderStandalone_MermaidEscapesMarkup(t *testing.T) {
-	r, err := RenderStandalone("```mermaid\ngraph TD\nA[\"</pre><script>alert(1)</script>\"]\n```", StandaloneOptions{})
+	r, err := RenderStandalone("```mermaid\ngraph TD\nA[\"</pre><script>alert(1)</script>\"]\n```", StandaloneOptions{MermaidMode: "client"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +109,7 @@ func TestRenderStandalone_MermaidEscapesMarkup(t *testing.T) {
 }
 
 func TestRenderStandalone_DependenciesPrecedeInitializers(t *testing.T) {
-	r, err := RenderStandalone("```mermaid\ngraph TD\nA-->B\n```", StandaloneOptions{})
+	r, err := RenderStandalone("```mermaid\ngraph TD\nA-->B\n```", StandaloneOptions{MermaidMode: "client"})
 	if err != nil {
 		t.Fatal(err)
 	}

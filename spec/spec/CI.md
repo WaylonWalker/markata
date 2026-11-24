@@ -20,8 +20,19 @@ not to site-author build or deployment workflows.
 - Path selection MUST happen at job level, not by skipping the PR workflow;
   unrelated changes must still produce the ordinary lint and test checks.
 - All three Linux race/coverage shards, their `test-linux` aggregate check, and
-  macOS/Windows tests MUST remain. One existing Linux shard MUST smoke-test its
-  already-built CLI with `version` and `--help`; no extra build job is needed.
+  macOS/Windows test jobs MUST remain. One existing Linux shard MUST smoke-test
+  its already-built CLI with `version` and `--help`; no extra build job is needed.
+- PRs MUST keep the existing required Windows check identity. Ordinary PRs
+  MUST run a Windows CLI build, version/help smoke checks, and focused portable
+  tests; PRs touching Windows-specific files, platform-sensitive filesystem
+  or process code, installer/package inputs, or platform CI workflows MUST
+  run the existing full Windows short suite. Change detection MUST fail closed.
+- macOS PRs MUST retain the short suite. Main-branch pushes, scheduled and
+  manually dispatched CI MUST run the full Windows suite; scheduled/manual
+  CI MUST continue to run the full macOS suite.
+- Tag-driven releases MUST gate publication on full Linux race tests AND full
+  native macOS and Windows test suites from the exact tagged source revision,
+  not merely the previous main-branch CI run.
 - PR CLI tests MUST retain focused Build Lab regressions but skip the expensive
   observational `TestBuildLab_LinkedAndFixtureMutationsCharacterizeProduct`.
   Main pushes and daily/manual CI MUST continue to include that observation.
@@ -74,9 +85,20 @@ explicit and preserve the existing check names and commands.
 
 See [Maintainer CI](../../docs/guides/maintainer-ci.md) for operational guidance.
 
+## Agent preflight and failure triage
+
+- Run a fail-closed local merge preflight before agent PR readiness, including Go formatting, short tests, new lint and selected generated docs/contract/editor checks.
+- Fast PR validation MUST share executable Go formatting and short-test logic with the local preflight.
+- Read-only diagnostics on completed failed workflows MUST NOT execute PR code, alter conclusions, or retry jobs.
+- Required-check migration remains separate and MUST be supported by shadow fast-gate evidence.
+
 ## Pinned lint installation
 
-CI MUST run the full pinned golangci-lint v1.64.8 check using its v1
-module path, matching `just lint`. Installation MUST use the selected Go
-toolchain. A newer action must not substitute a v2 module path for a v1
-release. All configured lint rules and the five-minute timeout remain active.
+Use Go 1.27 and golangci-lint v2.15.0. New findings are gated using `--new-from-rev` on PRs/pushes. A scheduled nonblocking full-tree lint audit tracks legacy debt (issue #1902), with configured linters retained.
+
+## Wheel packaging and editor parity
+
+- PR and release wheel builds MUST verify the generated wheel artifact before editor parity consumes it.
+- Editor browser/parity validation MUST report under a distinct job from wheel packaging, using the same verified wheel artifact without rebuilding the matrix.
+- Publishing MUST require successful wheel, supported-platform installation and editor parity checks.
+- Browser parity SHOULD preserve screenshots/traces on failure without suppressing test errors.

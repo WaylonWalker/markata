@@ -736,7 +736,7 @@ for post in core.filter("not skip"):
 
 **Stage:** `render` (with late priority, after `render_markdown`)
 
-**Purpose:** Convert markdown image syntax for video files into native video elements that load when the reader requests playback.
+**Purpose:** Convert markdown video syntax to native video elements that autoplay muted when visible unless the reader opts out.
 
 **Configuration:**
 ```toml
@@ -745,7 +745,7 @@ enabled = true
 video_extensions = [".mp4", ".webm", ".ogg", ".ogv", ".mov", ".m4v", ".avi", ".mkv"]
 video_class = "md-video"
 controls = true
-autoplay = false                   # Opt in to automatic playback
+autoplay = true                    # Muted autoplay when in viewport (opt out with false)
 loop = true                        # GIF-like behavior
 muted = true                       # Required for autoplay
 playsinline = true                 # Inline on mobile
@@ -760,7 +760,7 @@ preload = "none"
 | `video_extensions` | []string | `[".mp4", ".webm", ...]` | Extensions to treat as video |
 | `video_class` | string | `"md-video"` | CSS class for video elements |
 | `controls` | bool | `true` | Show video controls |
-| `autoplay` | bool | `false` | Auto-start playback; off by default to avoid surprise media downloads |
+| `autoplay` | bool | `true` | Authored viewport autoplay for Markdown article videos; feed previews stay manual |
 | `loop` | bool | `true` | Loop continuously |
 | `muted` | bool | `true` | Mute audio |
 | `playsinline` | bool | `true` | Play inline on iOS |
@@ -783,7 +783,7 @@ preload = "none"
 
 **Example output:**
 ```html
-<video loop muted playsinline controls preload="none" class="md-video">
+<video data-authored-autoplay="true" loop muted playsinline controls preload="none" class="md-video">
   <source src="https://example.com/video.mp4" type="video/mp4">
   kickflip down the 3 stair
 </video>

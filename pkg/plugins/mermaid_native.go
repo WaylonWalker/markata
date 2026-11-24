@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/WaylonWalker/markata/pkg/models"
@@ -93,6 +94,9 @@ func (r *nativeMermaidRenderer) render(source string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("native Mermaid: %w", err)
 	}
+	if r.palette != nil && r.config.UseCSSVariables {
+		svg = nativeMermaidPaletteCSS(svg, r.palette)
+	}
 	if err := validateNativeMermaidSVG(svg); err != nil {
 		return "", fmt.Errorf("reject unsafe native Mermaid output: %w", err)
 	}
@@ -100,3 +104,39 @@ func (r *nativeMermaidRenderer) render(source string) (string, error) {
 }
 
 func (r *nativeMermaidRenderer) close() error { return nil }
+
+// Only rewrite SVG paint attributes, never author-supplied node labels or URLs.
+// The fallback preserves the server-rendered appearance until the CSS palette
+// loads; CSS variables let the same SVG respond to live light/dark changes.
+var nativeMermaidPaintAttr = regexp.MustCompile(`(?i)\b(?:fill|stroke|color|style|stop-color)="[^"]*"`)
+
+func nativeMermaidPaletteCSS(svg []byte, palette *mermaidPaletteColors) []byte {
+	if palette == nil {
+		return svg
+	}
+	type paint struct {
+		color    string
+		variable string
+	}
+	colors := []paint{
+		{palette.Background, "--color-background"},
+		{palette.Surface, "--color-surface"},
+		{palette.TextColor, "--color-text"},
+		{palette.Accent, "--color-primary"},
+	}
+	seen := make(map[string]bool, len(colors))
+	replacements := make([]string, 0, len(colors)*2)
+	for _, entry := range colors {
+		if entry.color == "" || seen[entry.color] {
+			continue
+		}
+		seen[entry.color] = true
+		replacements = append(replacements, entry.color,
+			"var("+entry.variable+", "+entry.color+")")
+	}
+	if len(replacements) == 0 {
+		return svg
+	}
+	replacer := strings.NewReplacer(replacements...)
+	return []byte(nativeMermaidPaintAttr.ReplaceAllStringFunc(string(svg), replacer.Replace))
+}

@@ -27,10 +27,13 @@ func TestCanonicalSpecimenContract(t *testing.T) {
 			t.Errorf("canonical specimen root is missing %q", marker)
 		}
 	}
+	if !strings.Contains(string(base), `canonical_rendering_fixture`) || !strings.Contains(string(base), `css/canonical-specimen.css`) {
+		t.Fatal("canonical specimen stylesheet must load only for its fixture page")
+	}
 }
 
 func TestCanonicalSpecimenCaptureGeometry(t *testing.T) {
-	base, err := os.ReadFile(filepath.Join("..", "..", "templates", "base.html"))
+	base, err := os.ReadFile(filepath.Join("..", "..", "pkg", "themes", "default", "static", "css", "canonical-specimen.css"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,33 +56,28 @@ func TestCanonicalSpecimenCaptureGeometry(t *testing.T) {
 }
 
 func TestCanonicalTemplateTreesHaveEquivalentHeadingProfile(t *testing.T) {
-	paths := []string{filepath.Join("..", "..", "templates", "base.html"), filepath.Join("..", "..", "pkg", "themes", "default", "templates", "base.html")}
-	signatures := make([]string, 0, len(paths))
-	for _, path := range paths {
-		data, err := os.ReadFile(path)
+	cssPath := filepath.Join("..", "..", "pkg", "themes", "default", "static", "css", "canonical-specimen.css")
+	data, err := os.ReadFile(cssPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile := string(data)
+	if strings.Contains(profile, "first-of-type") || strings.Contains(profile, "font-size: 56px") {
+		t.Fatalf("stale H1 workaround remains in %s", cssPath)
+	}
+	for _, selector := range []string{".post-content h1", ".post-content h2"} {
+		if !strings.Contains(profile, `[data-rendering-specimen="canonical-headings"] `+selector+" {") {
+			t.Errorf("%s missing %s rule", cssPath, selector)
+		}
+	}
+	for _, templatePath := range []string{filepath.Join("..", "..", "templates", "base.html"), filepath.Join("..", "..", "pkg", "themes", "default", "templates", "base.html")} {
+		template, err := os.ReadFile(templatePath)
 		if err != nil {
 			t.Fatal(err)
 		}
-		text := string(data)
-		if strings.Contains(text, "first-of-type") || strings.Contains(text, "font-size: 56px") {
-			t.Fatalf("stale H1 workaround remains in %s", path)
+		if !strings.Contains(string(template), `{% if canonical_rendering_fixture %}`) || !strings.Contains(string(template), `css/canonical-specimen.css`) {
+			t.Errorf("%s must load the shared specimen stylesheet conditionally", templatePath)
 		}
-		signature := []string{}
-		for _, selector := range []string{".post-content h1", ".post-content h2"} {
-			start := strings.Index(text, `[data-rendering-specimen="canonical-headings"] `+selector+" {")
-			if start < 0 {
-				t.Fatalf("%s missing %s rule", path, selector)
-			}
-			end := strings.Index(text[start:], "}")
-			if end < 0 {
-				t.Fatalf("%s has unterminated %s rule", path, selector)
-			}
-			signature = append(signature, strings.Join(strings.Fields(text[start:start+end]), " "))
-		}
-		signatures = append(signatures, strings.Join(signature, "|"))
-	}
-	if signatures[0] != signatures[1] {
-		t.Fatal("canonical H1/H2 presentation rules drifted between template trees")
 	}
 }
 

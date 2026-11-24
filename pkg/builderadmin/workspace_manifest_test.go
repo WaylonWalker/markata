@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/WaylonWalker/markata/internal/fileidentity"
 )
 
 func TestPublicationManifest_WarmAndRestoredModificationTime(t *testing.T) {
@@ -95,7 +97,7 @@ func TestPublicationManifest_InvalidCacheFallsBack(t *testing.T) {
 func TestPublicationManifest_TimestampUncertainty(t *testing.T) {
 	sum := sha256.Sum256([]byte("content"))
 	committed := time.Now()
-	identity := publicationIdentity{Inode: 1, Modified: committed.Add(-2 * time.Second).UnixNano(), Changed: committed.Add(-2 * time.Second).UnixNano()}
+	identity := fileidentity.Identity{Inode: 1, Modified: committed.Add(-2 * time.Second).UnixNano(), Changed: committed.Add(-2 * time.Second).UnixNano()}
 	record := publicationRecord{Source: identity, Digest: hex.EncodeToString(sum[:])}
 	if !cachedSourceDigest(record, identity, committed, committed) {
 		t.Fatal("old unchanged identity rejected")

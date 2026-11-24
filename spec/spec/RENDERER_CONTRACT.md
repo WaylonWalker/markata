@@ -44,7 +44,7 @@ This prints a JSON description without reading document stdin or rendering Markd
 - `loads_site_config`: false until configuration is explicitly supported in standalone rendering.
 - `external_url_audit`: false until authored and generated resource references are fully audited.
 
-The current standalone engine supports **client-mode Mermaid and Chart.js**. The *site builder* has additional Mermaid render modes; those are not advertised here because this entry point does not expose them.
+The standalone renderer supports **native Go SVG Mermaid by default** (or explicit `client` mode) and client-mode Chart.js. Other Mermaid modes (`cli` and `chromium`) remain site-builder-only.
 
 Clients should check capabilities rather than assuming all Markata site features are available. Unknown future fields should be ignored. New capability names may be added in compatible releases.
 
@@ -89,9 +89,16 @@ title and a default destination folder. The slug field MUST remain empty when
 using the suggested slug; its placeholder and the displayed destination path
 MUST update as the title changes. If the author enters a slug, that value MUST
 take precedence over the title-derived suggestion.
+For a title-derived Link filename, the New Post flow MUST show the generated
+URL slug as `/link/<title-slug>[-<source-id>]/` and write that value to
+frontmatter. When the source URL contains a recognized stable post identifier,
+the preview MUST include it in the filename and URL slug. The file path MUST
+keep the generated filename under the selected folder.
 Feed navigation MUST use feed names as tree roots and paths relative to the
-workspace root beneath them; absolute filesystem paths MUST NOT appear as feed
-labels.
+workspace root beneath them. Configured feed filters MUST evaluate `path`
+against workspace-relative paths, including when the editor's workspace root
+was supplied as a relative path. Absolute filesystem paths MUST NOT appear as
+feed labels or member paths.
 In split layout, source and preview scrolling MUST synchronize in both directions
 by default. The active pane controls the position; editing or moving the source
 cursor makes the editor the active pane. Users MUST be able to disable scrolling

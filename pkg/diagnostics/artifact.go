@@ -26,6 +26,11 @@ const (
 	// DefaultArtifactPath is relative to a build's output directory.
 	DefaultArtifactPath = ".markata/diagnostics.json"
 
+	// CompressedArtifactPath is the losslessly compressed artifact path used by
+	// Builder Admin releases. The decoded JSON has the same bytes and schema as
+	// DefaultArtifactPath.
+	CompressedArtifactPath = DefaultArtifactPath + ".gz"
+
 	// ArtifactExecutorLegacy identifies the normal lifecycle build path.
 	ArtifactExecutorLegacy = "legacy"
 	// ArtifactExecutorDAG identifies the feature-flagged task-graph build path.
@@ -45,6 +50,7 @@ type Artifact struct {
 	Executor      string               `json:"executor,omitempty"`
 	Summary       ContentSummary       `json:"summary"`
 	TemplateCache *TemplateCacheStats  `json:"template_cache,omitempty"`
+	PublishIO     *PublishIOStats      `json:"publish_io,omitempty"`
 	Entries       []ContentDisposition `json:"entries"`
 }
 
@@ -99,6 +105,7 @@ func NewArtifact(snapshot ContentLedgerSnapshot, info ArtifactBuildInfo) Artifac
 		Executor:      strings.TrimSpace(info.Executor),
 		Summary:       snapshot.Summary,
 		TemplateCache: cloneTemplateCacheStats(snapshot.TemplateCache),
+		PublishIO:     clonePublishIOStats(snapshot.PublishIO),
 		Entries:       cloneArtifactEntries(snapshot.Entries),
 	}
 	if commit := reliableCommit(info.SourceCommit); commit != "" {
@@ -122,7 +129,7 @@ func MarshalArtifact(snapshot ContentLedgerSnapshot, info ArtifactBuildInfo) ([]
 // the ordering index scales with entry count.
 // Use a buffered writer when publishing to a file, and flush it before syncing.
 func WriteArtifact(writer io.Writer, snapshot ContentLedgerSnapshot, info ArtifactBuildInfo) error {
-	header := NewArtifact(ContentLedgerSnapshot{Summary: snapshot.Summary, TemplateCache: snapshot.TemplateCache}, info)
+	header := NewArtifact(ContentLedgerSnapshot{Summary: snapshot.Summary, TemplateCache: snapshot.TemplateCache, PublishIO: snapshot.PublishIO}, info)
 	if err := validateArtifact(header); err != nil {
 		return err
 	}

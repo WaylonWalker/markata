@@ -15,6 +15,7 @@ import (
 // fixture so source mutations cannot influence each other.
 func TestBuildLabPublishedOutputOwnershipParity(t *testing.T) {
 	requireLinuxBuildLab(t)
+	parallelBuildLab(t)
 	fixture := t.TempDir()
 	writeBuildLabFixtureFile(t, fixture, "markata-go.toml", `[markata-go]
 title = "HTML ownership regression"
@@ -44,6 +45,7 @@ build = false
 
 func TestBuildLabNoAliasSlugRenameParity(t *testing.T) {
 	requireLinuxBuildLab(t)
+	parallelBuildLab(t)
 	fixture := filepath.Join(moduleRoot(t), "cmd", "markata-go", "cmd", "testdata", "buildlab-site")
 	runBuildLabOwnershipScenario(t, fixture, "rename-target-without-alias", []buildlab.Operation{
 		{Type: buildlab.OpClearCache},
@@ -57,6 +59,7 @@ func TestBuildLabNoAliasSlugRenameParity(t *testing.T) {
 
 func TestBuildLabGardenDeletionParity(t *testing.T) {
 	requireLinuxBuildLab(t)
+	parallelBuildLab(t)
 	fixture := t.TempDir()
 	writeBuildLabFixtureFile(t, fixture, "markata-go.toml", `[markata-go]
 title = "Garden deletion regression"

@@ -7,11 +7,24 @@
   function attach(editor) {
     const workspace = window.MarkataSiteTree;
     if (!workspace?.files || !workspace?.openFile) return;
+    // The newer site tree has a searchable, image-aware picker. Keep it as
+    // the only file picker while registering its action with the app keymap.
+    if (typeof workspace.openPicker === 'function') {
+      if (window.MarkataShortcuts) {
+        window.MarkataShortcuts.register({
+          id:'workbench.quickOpen', label:'Go to File', category:'Navigation',
+          description:'Find a workspace file by title, slug or path.',
+          bindings:{vscode:'Mod+P',writer:'Mod+P',vim:'Mod+P',emacs:'Ctrl+X Ctrl+F'},
+          run:()=>workspace.openPicker()
+        });
+      }
+      return;
+    }
 
     const dialog = document.createElement('dialog');
     dialog.className = 'file-finder';
     dialog.setAttribute('aria-labelledby', 'file-finder-title');
-    dialog.innerHTML = '<div class="file-finder-heading"><h2 id="file-finder-title">Go to File</h2><button type="button" class="file-finder-close" aria-label="Close file finder">Close</button></div><label for="file-finder-query">Search site files</label><input id="file-finder-query" type="search" placeholder="Type a path, title, slug, or tag" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="file-finder-results"><p id="file-finder-count" role="status"></p><div id="file-finder-results" role="listbox" aria-label="Workspace files"></div><p class="file-finder-help">↑ ↓ Choose · Enter Open · Esc Close</p>';
+    dialog.innerHTML = '<div class="file-finder-heading"><h2 id="file-finder-title">Go to File</h2><button type="button" class="file-finder-close" aria-label="Close file finder">Close</button></div><label for="file-finder-query">Search site files</label><input id="file-finder-query" type="search" placeholder="Type a path, title, slug, or tag" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="file-finder-results"><p id="file-finder-count" role="status"></p><div id="file-finder-results" role="listbox" aria-label="Workspace files"></div><p class="file-finder-help"><kbd>↑</kbd> <kbd>↓</kbd> choose · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</p>';
     document.body.append(dialog);
 
     const query = dialog.querySelector('#file-finder-query');
@@ -131,10 +144,19 @@
       const bounds = dialog.getBoundingClientRect();
       if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
     });
-    document.addEventListener('keydown', event => {
-      if (event.isComposing || event.altKey || event.shiftKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'p') return;
-      event.preventDefault(); event.stopPropagation();
-      if (!dialog.open) open();
-    }, true);
+    if (window.MarkataShortcuts) {
+      window.MarkataShortcuts.register({
+        id:'workbench.quickOpen', label:'Go to File', category:'Navigation',
+        description:'Find a site document by title, slug, path or tag.',
+        bindings:{vscode:'Mod+P',writer:'Mod+P',vim:'Mod+P',emacs:'Ctrl+X Ctrl+F'},
+        run:open
+      });
+    } else {
+      document.addEventListener('keydown', event => {
+        if (event.isComposing || event.altKey || event.shiftKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'p') return;
+        event.preventDefault();event.stopPropagation();
+        if (!dialog.open) open();
+      },true);
+    }
   }
 })();

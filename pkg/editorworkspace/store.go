@@ -3,6 +3,7 @@ package editorworkspace
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log"
@@ -33,6 +34,30 @@ type metadataEntry struct {
 // StoreStats reports work performed by a long-lived workspace store.
 type StoreStats struct{ GlobScans, MetadataLoads, SourceReads uint64 }
 
+const (
+	indexPhaseQueued      = "queued"
+	indexPhaseFrontmatter = "frontmatter"
+	indexPhaseLinks       = "links"
+	indexPhaseReady       = "ready"
+	indexPhaseError       = "error"
+)
+
+// IndexStatus is a read-only snapshot of discovery and metadata indexing.
+// It never calls Files(), scans the disk, or blocks on the metadata load lock.
+type IndexStatus struct {
+	Phase         string `json:"phase"`
+	Files         int    `json:"files"`
+	Indexed       int    `json:"indexed"`
+	Pending       int    `json:"pending"`
+	Ready         bool   `json:"ready"`
+	ElapsedMS     int64  `json:"elapsed_ms"`
+	LastLoadMS    int64  `json:"last_load_ms"`
+	FrontmatterMS int64  `json:"frontmatter_ms"`
+	LinksMS       int64  `json:"links_ms"`
+	GlobScans     uint64 `json:"glob_scans"`
+	MetadataLoads uint64 `json:"metadata_loads"`
+}
+
 // Store retains discovery, metadata and immutable LSP snapshots for one server.
 // Close it, or cancel its parent context, when the server shuts down.
 type Store struct {
@@ -54,10 +79,19 @@ type Store struct {
 	metadataRunning  bool
 	jobs             sync.WaitGroup
 	paths            map[string]sourceStamp
+	sourceVersions   map[string]uint64
 	entries          map[string]metadataEntry
 	index            *lsp.Index
 	indexRevision    uint64
 	stats            StoreStats
+	indexPhase       string
+	indexStarted     time.Time
+	indexLastLoad    time.Duration
+	indexFrontmatter time.Duration
+	indexLinks       time.Duration
+	indexLinksAt     time.Time
+	indexPending     int
+	indexParsed      int
 }
 
 // Open discovers content once and starts filesystem invalidation for a server.
@@ -77,12 +111,14 @@ func Open(ctx context.Context, root string) (*Store, error) {
 		_ = watcher.Close()
 		return nil, err
 	}
-	store := &Store{indexRoot: indexRoot, workspace: workspace, ctx: child, cancel: cancel, watcher: watcher, done: make(chan struct{}), paths: make(map[string]sourceStamp), entries: make(map[string]metadataEntry), index: lsp.NewIndex(log.Default())}
+	store := &Store{indexRoot: indexRoot, workspace: workspace, ctx: child, cancel: cancel, watcher: watcher, done: make(chan struct{}), paths: make(map[string]sourceStamp), sourceVersions: make(map[string]uint64), entries: make(map[string]metadataEntry), index: lsp.NewIndex(log.Default())}
+	started := time.Now()
 	if err = store.refresh(nil, false); err != nil {
 		cancel()
 		_ = watcher.Close()
 		return nil, err
 	}
+	log.Printf("editor startup: discovered %d site files and registered filesystem watchers in %s", len(store.paths), time.Since(started).Round(time.Millisecond))
 	go store.watch()
 	return store, nil
 }
@@ -118,6 +154,34 @@ func (s *Store) ConfigRevision() uint64 { s.mu.RLock(); defer s.mu.RUnlock(); re
 
 // Stats returns operation counts without changing cached state.
 func (s *Store) Stats() StoreStats { s.mu.RLock(); defer s.mu.RUnlock(); return s.stats }
+
+// IndexStatus reads phase/count telemetry without triggering any indexing work.
+func (s *Store) IndexStatus() IndexStatus {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	ready := s.metadataRevision == s.revision && s.metadataErr == nil
+	phase := s.indexPhase
+	if s.metadataRevision == s.revision {
+		if s.metadataErr != nil {
+			phase = indexPhaseError
+		} else {
+			phase = indexPhaseReady
+		}
+	} else if phase == "" || phase == indexPhaseReady {
+		phase = indexPhaseQueued
+	}
+	elapsed := s.indexLastLoad.Milliseconds()
+	if phase == indexPhaseFrontmatter || phase == indexPhaseLinks {
+		elapsed = time.Since(s.indexStarted).Milliseconds()
+	}
+	return IndexStatus{
+		Phase: phase, Files: len(s.paths), Indexed: len(s.entries),
+		Pending: s.indexPending, Ready: ready, ElapsedMS: elapsed,
+		LastLoadMS: s.indexLastLoad.Milliseconds(), FrontmatterMS: s.indexFrontmatter.Milliseconds(),
+		LinksMS: s.indexLinks.Milliseconds(), GlobScans: s.stats.GlobScans,
+		MetadataLoads: s.stats.MetadataLoads,
+	}
+}
 
 // Paths returns cached path membership without scanning or reading document bodies.
 func (s *Store) Paths() ([]File, error) {
@@ -168,7 +232,25 @@ func (s *Store) Write(path, source string) error {
 	return s.workspace.writeSource(path, source)
 }
 
-// Create adds a Markdown file in a directory that already contains discovered content.
+// Delete removes one previously discovered source after its exact version is
+// verified. Git's untracked/staged checks belong to the calling workbench.
+func (s *Store) Delete(path, expectedVersion string) error {
+	if err := s.ctx.Err(); err != nil {
+		return err
+	}
+	s.mu.RLock()
+	_, found := s.paths[path]
+	s.mu.RUnlock()
+	if !found {
+		return fmt.Errorf("source file is not in the workspace content globs")
+	}
+	if err := s.workspace.Delete(path, expectedVersion); err != nil {
+		return err
+	}
+	return s.refresh(nil, false)
+}
+
+// Create adds a Markdown file to the workspace.
 func (s *Store) Create(path, source string) error {
 	if err := s.ctx.Err(); err != nil {
 		return err
@@ -181,27 +263,107 @@ func (s *Store) Create(path, source string) error {
 		return fmt.Errorf("new workspace path must be a local Markdown file")
 	}
 	path = filepath.ToSlash(local)
-	directory := filepath.ToSlash(filepath.Dir(local))
 	s.mu.RLock()
 	_, exists := s.paths[path]
-	allowedDirectory := false
-	for existing := range s.paths {
-		if filepath.ToSlash(filepath.Dir(filepath.FromSlash(existing))) == directory {
-			allowedDirectory = true
-			break
-		}
-	}
 	s.mu.RUnlock()
 	if exists {
 		return fmt.Errorf("workspace file already exists")
-	}
-	if !allowedDirectory {
-		return fmt.Errorf("new files must use a directory with discovered workspace content")
 	}
 	if err := s.workspace.Create(path, source); err != nil {
 		return err
 	}
 	return s.refresh(nil, false)
+}
+
+// CheckCreate verifies a new source path before a remote image upload begins.
+func (s *Store) CheckCreate(path string) error {
+	if err := s.ctx.Err(); err != nil {
+		return err
+	}
+	local := filepath.Clean(filepath.FromSlash(path))
+	if !filepath.IsLocal(local) || !isMarkdownSource(local) {
+		return fmt.Errorf("new workspace path must be a local Markdown file")
+	}
+	path = filepath.ToSlash(local)
+	s.mu.RLock()
+	_, exists := s.paths[path]
+	s.mu.RUnlock()
+	if exists {
+		return fmt.Errorf("workspace file already exists")
+	}
+	return s.workspace.CheckCreate(path)
+}
+
+// CreateWithImage creates a Markdown file and its local static image.
+func (s *Store) CreateWithImage(path, source, imageName, contentType string, image []byte) (string, error) {
+	if err := s.ctx.Err(); err != nil {
+		return "", err
+	}
+	local := filepath.Clean(filepath.FromSlash(path))
+	if !filepath.IsLocal(local) || !isMarkdownSource(local) {
+		return "", fmt.Errorf("new workspace path must be a local Markdown file")
+	}
+	path = filepath.ToSlash(local)
+	s.mu.RLock()
+	_, exists := s.paths[path]
+	s.mu.RUnlock()
+	if exists {
+		return "", fmt.Errorf("workspace file already exists")
+	}
+	imageURL, err := s.workspace.CreateWithImage(path, source, imageName, contentType, image)
+	if err != nil {
+		return "", err
+	}
+	if err := s.refresh(nil, false); err != nil {
+		return "", err
+	}
+	return imageURL, nil
+}
+
+// CreateWithImages creates a post and 2-8 images while keeping the store index
+// consistent with the single-image creation path.
+func (s *Store) CreateWithImages(path, source, imageName string, images []UploadedImage) ([]string, error) {
+	if err := s.ctx.Err(); err != nil {
+		return nil, err
+	}
+	local := filepath.Clean(filepath.FromSlash(path))
+	if !filepath.IsLocal(local) || !isMarkdownSource(local) {
+		return nil, fmt.Errorf("new workspace path must be a local Markdown file")
+	}
+	path = filepath.ToSlash(local)
+	s.mu.RLock()
+	_, exists := s.paths[path]
+	s.mu.RUnlock()
+	if exists {
+		return nil, fmt.Errorf("workspace file already exists")
+	}
+	urls, err := s.workspace.CreateWithImages(path, source, imageName, images)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.refresh(nil, false); err != nil {
+		return nil, err
+	}
+	return urls, nil
+}
+
+// SetContentTemplateDefaults updates site-wide starter placement and naming.
+func (s *Store) SetContentTemplateDefaults(name, directory, filenameMode string) error {
+	if err := s.ctx.Err(); err != nil {
+		return err
+	}
+	if err := s.workspace.SetContentTemplateDefaults(name, directory, filenameMode); err != nil {
+		return err
+	}
+	return s.refresh(nil, true)
+}
+
+// ReadImage serves a contained static image for the editor preview.
+func (s *Store) ReadImage(name string) ([]byte, error) {
+	if err := s.ctx.Err(); err != nil {
+		return nil, err
+	}
+	return s.workspace.ReadImage(name)
 }
 
 // Snapshot shares parsed workspace information, without sharing mutable drafts.
@@ -241,13 +403,26 @@ func (s *Store) Files() ([]File, error) {
 			return files, err
 		}
 		cfg := s.lifecycleConfig
+		configRevision := s.configRevision
 		changed := make([]string, 0)
-		for path := range s.paths {
+		stamps := make(map[string]sourceStamp)
+		versions := make(map[string]uint64)
+		for path, stamp := range s.paths {
 			if _, ok := s.entries[path]; !ok {
 				changed = append(changed, filepath.FromSlash(path))
+				stamps[path] = stamp
+				versions[path] = s.sourceVersions[path]
 			}
 		}
 		s.mu.RUnlock()
+		s.mu.Lock()
+		s.indexStarted = time.Now()
+		s.indexPhase = indexPhaseFrontmatter
+		s.indexPending = len(changed)
+		s.indexParsed = 0
+		s.indexFrontmatter = 0
+		s.indexLinks = 0
+		s.mu.Unlock()
 		sort.Strings(changed)
 		manager := lifecycle.NewManager()
 		manager.SetConfig(cfg)
@@ -263,16 +438,28 @@ func (s *Store) Files() ([]File, error) {
 		parsed := make(map[string]metadataEntry)
 		for _, post := range manager.Posts() {
 			path := filepath.ToSlash(post.Path)
-			parsed[path] = metadataEntry{file: File{Path: path, Slug: post.Slug, Title: post.Title, Tags: append([]string(nil), post.Tags...)}, info: lsp.LoadedPostInfo(s.indexRoot, post)}
+			image := ""
+			if value, ok := post.Extra["image"].(string); ok {
+				image = value
+			}
+			parsed[path] = metadataEntry{file: File{Path: path, Slug: post.Slug, Title: post.Title, Tags: append([]string(nil), post.Tags...), Image: image, Date: fileDate(post), Status: fileStatus(post)}, info: lsp.LoadedPostInfo(s.indexRoot, post)}
 		}
 		s.mu.Lock()
+		s.indexPhase = indexPhaseLinks
+		s.indexParsed = len(parsed)
+		s.indexFrontmatter = time.Since(s.indexStarted)
+		s.indexLinksAt = time.Now()
 		s.stats.MetadataLoads += uint64(len(changed))
+		if s.configRevision == configRevision {
+			for path, entry := range parsed {
+				if stamp, ok := stamps[path]; ok && s.paths[path] == stamp && s.sourceVersions[path] == versions[path] {
+					s.entries[path] = entry
+				}
+			}
+		}
 		if s.revision != revision {
 			s.mu.Unlock()
 			continue
-		}
-		for path, entry := range parsed {
-			s.entries[path] = entry
 		}
 		infos := make([]*lsp.PostInfo, 0, len(s.entries))
 		for _, entry := range s.entries {
@@ -294,10 +481,28 @@ func (s *Store) Files() ([]File, error) {
 		s.indexRevision++
 		s.metadataRevision = revision
 		s.metadataErr = err
+		s.indexLastLoad = time.Since(s.indexStarted)
+		s.indexLinks = time.Since(s.indexLinksAt)
+		s.indexPhase = indexPhaseReady
+		if err != nil {
+			s.indexPhase = indexPhaseError
+		}
+		s.indexPending = 0
 		files := s.filesLocked()
+		duration := s.indexLastLoad
+		frontmatter := s.indexFrontmatter
+		links := s.indexLinks
 		s.mu.Unlock()
+		log.Printf("editor site index: %d files, %d frontmatter loads, %s total (frontmatter %s, links %s, phase=%s)", len(files), len(changed), duration.Round(time.Millisecond), frontmatter.Round(time.Millisecond), links.Round(time.Millisecond), sIndexPhase(err))
 		return files, err
 	}
+}
+
+func sIndexPhase(err error) string {
+	if err != nil {
+		return indexPhaseError
+	}
+	return indexPhaseReady
 }
 
 func (s *Store) filesLocked() []File {
@@ -321,7 +526,7 @@ func (s *Store) refresh(events map[string]bool, forceConfig bool) error {
 	if err := s.ctx.Err(); err != nil {
 		return err
 	}
-	manager, err := s.workspace.manager()
+	manager, isIgnoredPath, err := s.workspace.managerWithIgnoreRules()
 	if err != nil {
 		return err
 	}
@@ -341,6 +546,13 @@ func (s *Store) refresh(events map[string]bool, forceConfig bool) error {
 			paths[filepath.ToSlash(path)] = sourceStamp{Modified: info.ModTime().UnixNano(), Size: info.Size()}
 		}
 	}
+	// Install watches for newly included config and appearance directories
+	// before publishing the corresponding config snapshot. Otherwise a caller
+	// can observe the new config and edit a nested file before its directory is
+	// watched, losing that update.
+	if err := s.addWatches(isIgnoredPath); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	s.stats.GlobScans++
 	configChanged := s.configRevision == 0 || forceConfig || !reflect.DeepEqual(s.cfg, authored)
@@ -348,12 +560,14 @@ func (s *Store) refresh(events map[string]bool, forceConfig bool) error {
 	for path := range events {
 		if _, ok := paths[path]; ok {
 			delete(s.entries, path)
+			s.sourceVersions[path]++
 			changed = true
 		}
 	}
 	for path, previous := range s.paths {
 		if next, ok := paths[path]; !ok || next != previous {
 			delete(s.entries, path)
+			s.sourceVersions[path]++
 		}
 	}
 	if configChanged {
@@ -366,30 +580,63 @@ func (s *Store) refresh(events map[string]bool, forceConfig bool) error {
 	if changed {
 		s.revision++
 		s.metadataErr = nil
+		s.indexPhase = indexPhaseQueued
+		s.indexPending = len(paths) - len(s.entries)
 	}
 	s.mu.Unlock()
-	return s.addWatches()
+	return nil
 }
 
-func (s *Store) addWatches() error {
-	return filepath.WalkDir(s.workspace.root, func(path string, entry fs.DirEntry, walkErr error) error {
+func (s *Store) addWatches(isIgnoredPath func(string) bool) error {
+	directories, ignoredDirectories, err := workspaceWatchDirectories(s.workspace.root, isIgnoredPath)
+	if err != nil {
+		return err
+	}
+	for _, path := range ignoredDirectories {
+		if err := s.watcher.Remove(path); err != nil && !errors.Is(err, fsnotify.ErrNonExistentWatch) {
+			return fmt.Errorf("remove ignored workspace watch: %w", err)
+		}
+	}
+	for _, path := range directories {
+		if err := s.watcher.Add(path); err != nil {
+			return fmt.Errorf("watch workspace directory: %w", err)
+		}
+	}
+	return nil
+}
+
+func workspaceWatchDirectories(root string, isIgnoredPath func(string) bool) (directories, ignoredDirectories []string, err error) {
+	directories = make([]string, 0)
+	ignoredDirectories = make([]string, 0)
+	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return nil
 		}
 		if !entry.IsDir() {
 			return nil
 		}
-		if path != s.workspace.root {
+		if path != root {
+			relative, err := filepath.Rel(root, path)
+			if err != nil {
+				return fmt.Errorf("resolve workspace watch path: %w", err)
+			}
+			if isIgnoredPath != nil && isIgnoredPath(filepath.ToSlash(relative)) {
+				ignoredDirectories = append(ignoredDirectories, path)
+				return filepath.SkipDir
+			}
 			switch entry.Name() {
 			case ".git", "node_modules", "output", "cache", ".markata", ".markata-cache", ".venv", "venv":
+				ignoredDirectories = append(ignoredDirectories, path)
 				return filepath.SkipDir
 			}
 		}
-		if err := s.watcher.Add(path); err != nil {
-			return fmt.Errorf("watch workspace directory: %w", err)
-		}
+		directories = append(directories, path)
 		return nil
 	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("walk workspace watch directories: %w", err)
+	}
+	return directories, ignoredDirectories, nil
 }
 
 func (s *Store) watch() {

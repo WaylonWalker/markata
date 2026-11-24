@@ -2,7 +2,6 @@ package builderadmin
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -140,16 +139,8 @@ func (s *Service) revisionStatus(state State) RevisionStatus {
 
 func (s *Service) liveReleaseRevisions() (builder, source string) {
 	path := filepath.Join(s.cfg.SiteDir, "current", diagnostics.DefaultArtifactPath)
-	info, err := os.Stat(path)
-	if err != nil || info.Size() > 2<<20 {
-		return "", ""
-	}
-	payload, err := os.ReadFile(path)
-	if err != nil {
-		return "", ""
-	}
-	artifact, err := diagnostics.ParseArtifact(payload)
-	if err != nil {
+	artifact, ok := readDiagnosticsArtifactIdentity(path)
+	if !ok {
 		return "", ""
 	}
 	builder = reliableBuilderRevision(artifact.Generator.Commit)

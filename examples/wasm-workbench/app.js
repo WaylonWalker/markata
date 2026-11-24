@@ -33,6 +33,8 @@ if (new URLSearchParams(location.search).has('example')) {
     try { localStorage.setItem('markata-editor-keymap',keymap.value); } catch {}
     editor.focus();
   });
+  // A background renderer result may not dismiss an invalid-import warning.
+  let rejectedImportRevision = -1;
   let revision = 0, busy = false, ready = false, pending = false, timer, worker;
   let previewReady = false, latestResult;
   const transferred = new Set();
@@ -115,12 +117,12 @@ if (new URLSearchParams(location.search).has('example')) {
     const file = e.target.files[0];
     if (!file) return;
     e.target.value='';
-    if (file.size > 200000) { showError('Document exceeds 200,000 UTF-8 bytes. Your current draft has been kept.'); return; }
+    if (file.size > 200000) { rejectedImportRevision = revision; showError('Document exceeds 200,000 UTF-8 bytes. Your current draft has been kept.'); return; }
     try {
       const text = await file.text();
       if (new TextEncoder().encode(text).length > 200000) throw new Error('Document exceeds 200,000 UTF-8 bytes.');
       editor.setValue(text);
-    } catch (error) { showError(`Cannot read file: ${error.message}`); }
+    } catch (error) { rejectedImportRevision = revision; showError(`Cannot read file: ${error.message}`); }
     e.target.value='';
   });
   try {
@@ -134,7 +136,7 @@ if (new URLSearchParams(location.search).has('example')) {
       if (data.revision === revision) {
         if (data.result.error) { showError(data.result.error);status.textContent='Preview failed · edit to retry'; }
         else {
-          errorBox.hidden=true;
+          if (rejectedImportRevision !== data.revision) errorBox.hidden = true;
           try {
             const populated=await populateAssets(data.result);
             await previewPromise;

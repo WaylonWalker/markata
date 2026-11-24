@@ -14,9 +14,12 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/WaylonWalker/markata/internal/fileidentity"
 	"github.com/WaylonWalker/markata/pkg/buildcache"
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/logging"
 	"github.com/WaylonWalker/markata/pkg/templates"
 
 	"golang.org/x/net/html"
@@ -133,17 +136,25 @@ func reconcileFinalCSSAssets(m *lifecycle.Manager, outputFS *os.Root, outputDir 
 	if len(changes) == 0 {
 		return nil
 	}
-	updatedHTMLHashes, err := rewriteOutputCSSLinks(outputFS, outputDir, changes)
+	started := time.Now()
+	cachePath := finalCSSLinkCachePath(m.Config().ContentDir, outputDir)
+	rules := finalCSSLinkRules(changes)
+	previous := loadFinalCSSLinkCache(cachePath, rules, started)
+	result, err := rewriteOutputCSSLinks(outputFS, outputDir, changes, previous, cachePath != "")
 	if err != nil {
 		return err
 	}
-	if err := refreshImageLibraryCSSOwnership(GetBuildCache(m), outputDir, updatedHTMLHashes); err != nil {
+	if err := refreshImageLibraryCSSOwnership(GetBuildCache(m), outputDir, result.updatedHTMLHashes); err != nil {
 		return fmt.Errorf("refreshing CSS-rewritten image library ownership: %w", err)
 	}
 	for asset, hash := range finalHashes {
 		m.SetAssetHash(asset, hash)
 	}
 	templates.SetAssetHashes(finalHashes)
+	saveFinalCSSLinkCache(cachePath, finalCSSLinkCache{Rules: rules, Observed: time.Now(), Files: result.verified})
+	logging.Component("static_assets").Phase("cleanup").Level("debug").Printf(
+		"final CSS links: checked=%d reused=%d rewritten=%d html_bytes_read=%d duration=%s",
+		result.checked, result.reused, len(result.updatedHTMLHashes), result.bytesRead, time.Since(started))
 	return nil
 }
 
@@ -184,10 +195,21 @@ func collectFinalCSSChanges(hashes map[string]string, outputFS *os.Root, outputD
 	return changes, finalHashes, nil
 }
 
+type finalCSSLinkResult struct {
+	updatedHTMLHashes map[string]string
+	verified          map[string]fileidentity.Identity
+	checked           int
+	reused            int
+	bytesRead         int64
+}
+
 // Read/write only output-root-confined regular HTML files. Preserve output
 // unchanged when no link needs rewriting, including warm builds.
-func rewriteOutputCSSLinks(outputFS *os.Root, outputDir string, changes []finalCSSReplacement) (map[string]string, error) {
-	updatedHTMLHashes := make(map[string]string)
+func rewriteOutputCSSLinks(outputFS *os.Root, outputDir string, changes []finalCSSReplacement, previous finalCSSLinkCache, recordVerification bool) (finalCSSLinkResult, error) {
+	result := finalCSSLinkResult{updatedHTMLHashes: make(map[string]string)}
+	if recordVerification {
+		result.verified = make(map[string]fileidentity.Identity, len(previous.Files))
+	}
 	err := filepath.WalkDir(outputDir, func(filePath string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
@@ -202,27 +224,53 @@ func rewriteOutputCSSLinks(outputFS *os.Root, outputDir string, changes []finalC
 		if err != nil {
 			return err
 		}
+		var before fileidentity.Identity
+		if recordVerification {
+			info, err := outputFS.Lstat(relative)
+			if err != nil {
+				return err
+			}
+			if !info.Mode().IsRegular() {
+				return fmt.Errorf("HTML output is no longer a regular file: %s", relative)
+			}
+			before = fileidentity.Read(info)
+			if before == previous.Files[relative] && before.StableBefore(previous.Observed) {
+				result.verified[relative] = before
+				result.reused++
+				return nil
+			}
+		}
+
 		data, err := outputFS.ReadFile(relative)
 		if err != nil {
 			return err
 		}
+		result.checked++
+		result.bytesRead += int64(len(data))
 		after, err := rewriteCSSLinkReferences(data, relative, changes)
 		if err != nil {
 			return fmt.Errorf("reconcile CSS links in %s: %w", relative, err)
 		}
-		if bytes.Equal(data, after) {
-			return nil
+		if !bytes.Equal(data, after) {
+			if err := outputFS.WriteFile(relative, after, 0o644); err != nil {
+				return err
+			}
+			result.updatedHTMLHashes[relative] = buildcache.ContentHash(string(after))
 		}
-		if err := outputFS.WriteFile(relative, after, 0o644); err != nil {
-			return err
+		if before.Inode != 0 {
+			if info, err := outputFS.Lstat(relative); err == nil {
+				identity := fileidentity.Read(info)
+				if identity == before {
+					result.verified[relative] = identity
+				}
+			}
 		}
-		updatedHTMLHashes[filepath.Clean(relative)] = buildcache.ContentHash(string(after))
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("updating HTML CSS URLs: %w", err)
+		return finalCSSLinkResult{}, fmt.Errorf("updating HTML CSS URLs: %w", err)
 	}
-	return updatedHTMLHashes, nil
+	return result, nil
 }
 
 // refreshImageLibraryCSSOwnership keeps the image library's ownership hashes

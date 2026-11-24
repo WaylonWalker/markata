@@ -1,5 +1,7 @@
 package plugins
 
+import "sort"
+
 // StandaloneSchemaVersion is the version of the existing standalone JSON result.
 // New transports must not change this value without a compatibility plan.
 const StandaloneSchemaVersion = 1
@@ -26,19 +28,26 @@ type StandaloneCapabilities struct {
 // currently implemented standalone renderer. Keep this conservative: only
 // advertise behavior supported by RenderStandalone, not the full site builder.
 func GetStandaloneCapabilities() StandaloneCapabilities {
+	features := []string{
+		standaloneFeatureAdmonitions, "anchors", featureFenceChartJS, "checklists", standaloneFeatureCode,
+		"figures", featureFenceMermaid, standaloneFeatureRoads, "tables",
+	}
+	diagramModes := map[string][]string{
+		featureFenceChartJS: {mermaidModeClient},
+		featureFenceMermaid: availableMermaidModes(),
+	}
+	if modes := availableExcalidrawModes(); len(modes) > 0 {
+		features = append(features, "excalidraw")
+		diagramModes["excalidraw"] = modes
+	}
+	sort.Strings(features)
 	return StandaloneCapabilities{
-		SchemaVersion: StandaloneSchemaVersion,
-		Renderer:      "markata-standalone",
-		Formats:       []string{"html_fragment"},
-		Options:       []string{"asset_base", "inline_assets", "unsafe", "mermaid_mode"},
-		Features: []string{
-			"admonitions", "anchors", "chartjs", "checklists", "code",
-			"figures", "mermaid", "roads", "tables",
-		},
-		DiagramModes: map[string][]string{
-			"chartjs": {mermaidModeClient},
-			"mermaid": availableMermaidModes(),
-		},
+		SchemaVersion:    StandaloneSchemaVersion,
+		Renderer:         "markata-standalone",
+		Formats:          []string{"html_fragment"},
+		Options:          []string{"asset_base", "inline_assets", "unsafe", "mermaid_mode"},
+		Features:         features,
+		DiagramModes:     diagramModes,
 		AssetModes:       []string{"inline", "linked"},
 		LoadsSiteConfig:  false,
 		ExternalURLAudit: false,

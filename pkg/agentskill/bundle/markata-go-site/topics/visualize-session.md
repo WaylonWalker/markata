@@ -43,6 +43,9 @@ Select an available port without stopping another service.
 
 Use the agent's supported persistent-process mechanism so the server remains available after the response.
 Retain the process handle, site directory, and log location.
+Write the server log outside the site directory, for example to a sibling `logs/` directory.
+The server watches the site directory and does not ignore log files.
+A log inside the site causes a rebuild on each write, and each rebuild writes to the log again.
 If persistent processes require approval, obtain that approval through the available permission mechanism.
 If persistence is unavailable, report the limitation instead of promising a lasting preview.
 
@@ -52,6 +55,7 @@ Keep the source publication flags unchanged.
 Local preview does not authorize public publishing, deployment, or a public tunnel.
 
 **Done:** The intended server is running on loopback, with a known process handle and lifetime.
+The log is outside the site directory, and the server stays idle when no source file changes.
 
 ## 4. Check the post URL
 

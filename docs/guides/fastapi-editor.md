@@ -68,6 +68,10 @@ Default, Vim, Emacs, or Sublime bindings. Your choice persists in this browser.
 With Vim selected, press `i` to insert text and `Escape` to return to normal mode.
 Editor colors follow the appearance picker. CodeMirror requires no CDN requests.
 
+Select **Drawing** to create or edit an Excalidraw scene inside the Markdown.
+The scene is stored as JSON in an `excalidraw` code fence. The canvas code and
+fonts are served locally. See the [Excalidraw editor guide](excalidraw-editor.md).
+
 
 ## Run the demo integration tests
 

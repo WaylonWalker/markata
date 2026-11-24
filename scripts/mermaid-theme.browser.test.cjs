@@ -39,7 +39,7 @@ async function resolvedCssColor(page, variable) {
 
 before(async () => {
   fs.cpSync(gallery, siteRoot, {recursive: true});
-  fs.appendFileSync(path.join(siteRoot, 'markata-go.toml'), '\n[markata-go.icons]\nauto_vendor = false\n');
+  fs.appendFileSync(path.join(siteRoot, 'markata-go.toml'), '\n[markata-go.icons]\nauto_vendor = false\n[markata-go.mermaid]\nmode = "client"\n');
   execFileSync(process.env.MARKATA_GO_BIN || 'go', [
     'run', './cmd/markata-go', 'build', '-c', path.join(siteRoot, 'markata-go.toml'),
   ], {cwd: repoRoot, stdio: 'inherit'});

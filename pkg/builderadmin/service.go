@@ -42,6 +42,8 @@ const (
 	maxWebhookBodyBytes = 1 << 20
 )
 
+const pageWeightReportPath = ".markata/page-weight.json"
+
 var ErrBuildQueueFull = errors.New("build queue is full")
 
 type Config struct {
@@ -59,6 +61,7 @@ type Config struct {
 	AutoBuildOnUpgrade   bool
 	WatchDebounce        time.Duration
 	Fast                 bool
+	SkipPageWeight       bool
 	MermaidMode          string
 	ReleasesKeep         int
 	SuccessfulBuildsKeep int
@@ -1446,17 +1449,22 @@ func (s *Service) buildCommandArgs(id, buildWork string) ([]string, func(), erro
 		args = append(args, "--config", s.cfg.ConfigPath)
 	}
 	cleanup := func() {}
+	overridePath := filepath.Join(s.overrideDir, "builder-admin.toml")
+	var contents strings.Builder
 	if s.cfg.MermaidMode != "" {
-		overridePath := filepath.Join(s.overrideDir, "builder-admin.toml")
-		contents := fmt.Sprintf("[markata-go.mermaid]\nmode = %q\n", s.cfg.MermaidMode)
-		if err := os.WriteFile(overridePath, []byte(contents), 0o644); err != nil {
-			return nil, cleanup, err
-		}
-		args = append(args, "-m", overridePath)
+		fmt.Fprintf(&contents, "[markata-go.mermaid]\nmode = %q\n\n", s.cfg.MermaidMode)
 	}
+	contents.WriteString("[markata-go.diagnostics_artifact]\ncompression = \"gzip\"\n")
+	if err := os.WriteFile(overridePath, []byte(contents.String()), 0o644); err != nil {
+		return nil, cleanup, err
+	}
+	args = append(args, "-m", overridePath)
 	args = append(args, "build")
 	if s.cfg.Fast {
 		args = append(args, "--fast")
+	}
+	if s.cfg.SkipPageWeight {
+		args = append(args, "--page-weight=false")
 	}
 	args = append(args, "--output", buildWork)
 	return args, cleanup, nil
@@ -1469,6 +1477,12 @@ func (s *Service) promoteBuild(buildWork string) (string, string, error) {
 func (s *Service) promoteBuildLogged(buildWork string, log io.Writer) (string, string, error) {
 	s.releaseMu.Lock()
 	defer s.releaseMu.Unlock()
+	if s.cfg.SkipPageWeight {
+		if err := removePageWeightReport(buildWork); err != nil {
+			return "", "", err
+		}
+		_, _ = fmt.Fprintln(log, "page-weight scan disabled")
+	}
 	releaseID := time.Now().UTC().Format("20060102T150405Z") + "-" + hostSuffix()
 	releasesDir := filepath.Join(s.cfg.SiteDir, "releases")
 	releasePath, stats, err := stageIncrementalWorkspace(buildWork, releasesDir, releaseID, s.currentReleaseID())
@@ -1480,6 +1494,18 @@ func (s *Service) promoteBuildLogged(buildWork string, log io.Writer) (string, s
 		return "", "", err
 	}
 	return releaseID, releasePath, nil
+}
+
+func removePageWeightReport(workspace string) error {
+	root, err := os.OpenRoot(workspace)
+	if err != nil {
+		return fmt.Errorf("open build workspace for page-weight report cleanup: %w", err)
+	}
+	defer func() { _ = root.Close() }()
+	if err := root.Remove(pageWeightReportPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("remove stale page-weight report: %w", err)
+	}
+	return nil
 }
 
 func (s *Service) switchCurrentRelease(releaseID string) error {
@@ -2206,12 +2232,8 @@ func (s *Service) addCurrentReleaseDiagnostics(snapshot *servecontrol.Snapshot, 
 		return
 	}
 	path := filepath.Join(s.cfg.SiteDir, "current", diagnostics.DefaultArtifactPath)
-	info, err := os.Stat(path)
-	if err != nil || info.Size() > 16<<20 {
-		return
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
+	data, ok := readDiagnosticsArtifactBounded(path, 16<<20)
+	if !ok {
 		return
 	}
 	artifact, err := diagnostics.ParseArtifact(data)

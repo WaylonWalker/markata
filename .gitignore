@@ -595,6 +595,9 @@ mono_crash.*
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
+# Release notes are source content for the documentation site, not artifacts.
+!docs/releases/
+!docs/releases/**
 x64/
 x86/
 [Ww][Ii][Nn]32/
@@ -979,9 +982,14 @@ cache
 output
 output-rendering-contract
 .markata
+docs-site/_site/
+static/.icons/
 
 # Test-generated artifacts (tailwind rebuilds on every test run)
 tests/static/markata-tailwind.css
+static/markata-tailwind.css
+docs-site/_site/
+**/.icons/
 .agents
 .markata-secrets
 continue-prompt-gpt-54-issue-942.txt

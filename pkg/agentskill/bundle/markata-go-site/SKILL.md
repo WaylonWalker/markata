@@ -20,6 +20,10 @@ read `topics/visualize-session.md` for the create, serve, and open workflow.
 An explicit source-only or single-file request takes precedence over automatic preview.
 Ordinary chart, diagram, and styling requests use the relevant authoring topics without automatically starting a server.
 
+## New-site or bring-your-own-agent setup
+
+For new-site setup and portable agent handoff, first read `topics/first-setup.md`. The `markata --skill` CLI prints that same version-matched standalone guide without installing anything.
+
 ## Start Here
 
 Before making changes:
@@ -56,13 +60,15 @@ Chart.js source blocks. Neither is project-specific boilerplate.
 
 ## Current static-SVG backend availability
 
-Markata has an **internal** static SVG asset foundation in `pkg/visualizations`,
-but it is **not** yet an authoring feature. Do not invent `d2` or
-`vega-lite` Markdown fenced blocks, new config keys, or an `offline-static`
-guarantee. Until engine integration lands, author diagrams using supported
-Mermaid syntax and numerical charts using supported `chartjs` JSON, and
-verify the resulting page. See `docs/guides/static-visualizations.md`
-for the developer-only contract.
+Markata renders `excalidraw` scene fences to static SVG through the shared
+`pkg/visualizations` pipeline. Native builds need local Chrome or Chromium only
+when a scene is present. Shapes, lines, arrows, freehand strokes, and text are
+supported; embedded images, links, and web embeds are not. SVG exports follow
+the configured theme fallback mode, with dark mode as the default. Use Excalidraw for
+custom hand-drawn illustrations, and prefer Mermaid when relationships or
+flow are the main information. Do not invent `d2` or `vega-lite` fences or an
+`offline-static` guarantee. See `docs/guides/excalidraw-editor.md` and
+`docs/guides/static-visualizations.md` for the authoring and renderer limits.
 
 ## Chart-first data visualization
 

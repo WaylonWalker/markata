@@ -16,16 +16,16 @@ Markata is a single Go binary; you do not need Python to run it. Choose your ins
 Read [the installer source](https://github.com/WaylonWalker/markata/blob/main/install.sh) before running it, especially on managed machines.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
+curl -fsSL https://markata.dev/install.sh | bash
 markata version
 ```
 
-This checks GitHub Releases, detects platform and architecture, and installs into a writable binary directory (usually `~/.local/bin` for non-root users). Add that directory to your `PATH` if necessary.
+This checks GitHub Releases, detects platform and architecture, verifies the archive against the published SHA-256 checksums, and installs into a writable binary directory (usually `~/.local/bin` for non-root users). Add that directory to your `PATH` if necessary.
 
 ## Bash (download then inspect)
 
 ```bash
-curl -fsSLo install-markata.sh https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh
+curl -fsSLo install-markata.sh https://markata.dev/install.sh
 less install-markata.sh
 bash install-markata.sh
 markata version
@@ -37,7 +37,7 @@ To choose an install location or a version, pass variables to **the Bash process
 MARKATA_INSTALL_DIR="$HOME/.local/bin" MARKATA_VERSION="v0.13.0" bash install-markata.sh
 ```
 
-The script refuses to overwrite an unrelated `markata` executable, including one belonging to Python Markata.
+The static installer is kept identical to the repository root by the installer regression test. The script refuses to overwrite an unrelated `markata` executable, including one belonging to Python Markata.
 
 ## mise
 

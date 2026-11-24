@@ -373,6 +373,15 @@ func TestLayouts_FallbackToSiteTitleForDerivedEmptyTitle(t *testing.T) {
 		t.Fatal(err)
 	}
 	config := &models.Config{Title: "My Site"}
+	heroEnabled := true
+	config.Layout.Landing.HeroEnabled = &heroEnabled
+	post.Extra = map[string]interface{}{
+		"hero": map[string]interface{}{
+			"title":       "Landing headline",
+			"title_lines": []string{"Landing", "headline"},
+			"eyebrow":     "Markdown to website",
+		},
+	}
 	if post.TitleText != "" || !post.TitleTextDerived || post.PlainTitle() != "" {
 		t.Fatalf("semantic title = %q, derived = %v, plain = %q", post.TitleText, post.TitleTextDerived, post.PlainTitle())
 	}
@@ -389,6 +398,21 @@ func TestLayouts_FallbackToSiteTitleForDerivedEmptyTitle(t *testing.T) {
 				t.Fatalf("rendered title was empty: %q", output)
 			}
 		})
+	}
+
+	embeddedEngine := templates.NewEmbeddedEngine()
+	output, err := embeddedEngine.Render("layouts/landing.html", templates.NewContext(post, "<p>Landing content</p>", config))
+	if err != nil {
+		t.Fatalf("render bundled landing layout: %v", err)
+	}
+	if !strings.Contains(output, `<h1 class="hero-title">`) ||
+		!strings.Contains(output, `<p class="hero-eyebrow">Markdown to website</p>`) ||
+		!strings.Contains(output, `<span class="hero-title-line">Landing</span>`) ||
+		!strings.Contains(output, `<span class="hero-title-line">headline</span>`) {
+		t.Fatalf("bundled landing layout did not render the eyebrow and title lines")
+	}
+	if !strings.Contains(output, "Landing content") {
+		t.Fatalf("bundled landing layout did not render Markdown body")
 	}
 }
 

@@ -76,6 +76,36 @@ This baseline measures the **existing** CI workflow, not the newly introduced
 `PR Gate`. Repeat the same sample method after its deployment; add separate
 runner queue and dependency-wait metrics from attempt-specific timestamps.
 
+## Measurement in the timing instrumentation PR
+
+The PR gate and three existing Linux race/coverage shards now record Go test
+package timings from the **same test invocation** using `go test -json`.
+No extra Go test pass is added. CI adds a short summary of the ten slowest
+packages and uploads machine-readable JSON as a workflow artifact for 14 days:
+
+- Fast PR validation: `pr-go-timings`.
+- Full CI: `ci-go-timings-linux-core`,
+  `ci-go-timings-linux-cli`, and `ci-go-timings-linux-site`.
+
+Each JSON report records wall-clock command time, package-level Go-reported
+elapsed time, the slowest individual test cases, exit status, runner OS, and
+the tested SHA. The wrapper retains live test output and propagates failures.
+Missing artifacts on docs-only PRs or if tests never started are expected.
+
+Interpret measurements carefully: package times **overlap** because Go runs
+packages concurrently, and their sum is not the job duration. Command wall
+time includes compilation and test startup; neither it nor the difference
+between wall time and the slowest package is a pure compilation metric.
+The Actions job-step timestamps separately expose checkout, setup, dependency
+download, and CLI build overhead. macOS/Windows durations are initially
+compared from Actions job steps, rather than Go package instrumentation.
+
+The October 29–November 2 figures below are **historical baseline measurements**,
+not timing improvements attributed to this PR. After this instrumentation
+lands, sample completed non-cancelled runs on distinct PR SHAs and compare
+p50/p90 values per change class. Keep the existing shadow gate and branch
+protection untouched until sufficient evidence exists.
+
 ## Baseline and progression
 
 Before switching branch protection, record at least 20 completed, non-cancelled
@@ -106,3 +136,15 @@ For merge queue, `merge_group` is already subscribed.
 Restore the existing required check set and disable/remove `pr-fast.yml` in a
 small revert PR. Docker source tests on actual publication are unchanged.
 Never roll back by bypassing a failed release test or forcing a publication.
+
+## Editor parity split — issue #1927
+
+Wheel construction and editor parity are separately named jobs. Parity consumes the wheel artifact from the packaging job. An editor failure can no longer obscure a successfully built wheel; screenshots and Playwright traces accompany parity failures. Explicit release publishing depends on both jobs, while the migration of required merge checks remains a separate, measured change.
+
+### Observed shadow-gate snapshot (November 2, 2026)
+
+A read-only sample of the latest 400 PR-triggered workflow runs contained **45 Fast PR validation** and **45 CI** runs. Among completed runs, the Fast PR gate had 13 successes, 4 failures and 27 cancellations (44 total); CI had 12 successes, 1 failure and 30 cancellations (43 total). Excluding cancelled and nonfinal runs and requiring attempt 1, fast gate latency was **p50 218s, p90 272s** (17 runs), versus full CI **p50 372s, p90 457s** (13 runs). Times are approximated by workflow `updated_at - created_at` and may include queue/dependency waits. They are not comparable matched-pair test durations.
+
+Across 43 same-SHA workflow pairs, there were **no observed Fast PR success / full CI failure disagreements** in this narrow sample. However, fewer than 20 completed noncancelled runs exist for either workflow in the snapshot, and this is not yet sufficient to migrate branch protection. Continue collecting path-varied runs, critical-path job latencies and false-negative evidence before changing required checks. A successful browser parity job and wheel packaging job must also be evaluated independently.
+
+For future snapshots, enumerate PR-triggered Actions runs with `gh api 'repos/WaylonWalker/markata/actions/runs?event=pull_request&per_page=100&page=1'` and paginate. Group by workflow name and SHA, exclude cancelled and incomplete attempts from successful latency percentiles, and record cancellation counts separately. Confirm every candidate required-check change against the actual latest SHA and merge-group checks; do not infer safety from one p50 comparison.

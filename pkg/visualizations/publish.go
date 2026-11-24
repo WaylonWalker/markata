@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -61,8 +63,22 @@ func Publish(outputDir string, asset Asset) (string, error) {
 // browser reserves space before the external SVG is fetched. No rendering JS
 // is needed. External site CSS can make the image responsive (max-width:100%).
 func FigureHTML(asset Asset, alt, caption string, aboveFold bool) (string, error) {
+	return FigureHTMLWithBasePath(asset, alt, caption, aboveFold, "")
+}
+
+// FigureHTMLWithBasePath emits the same figure with an optional site URL path
+// prefix, such as "/blog" for a site hosted below the domain root.
+func FigureHTMLWithBasePath(asset Asset, alt, caption string, aboveFold bool, basePath string) (string, error) {
 	if strings.TrimSpace(alt) == "" {
 		return "", errors.New("SVG figure requires descriptive alternative text")
+	}
+	basePath = strings.TrimRight(strings.TrimSpace(basePath), "/")
+	if basePath != "" {
+		decoded, err := url.PathUnescape(basePath)
+		if err != nil || !strings.HasPrefix(basePath, "/") || strings.HasPrefix(basePath, "//") ||
+			strings.ContainsAny(decoded, "?#\\") || path.Clean(decoded) != decoded {
+			return "", errors.New("SVG figure base path must be a normalized local URL path")
+		}
 	}
 	canonical, err := NewSVGAsset(asset.SVG)
 	if err != nil {
@@ -75,7 +91,7 @@ func FigureHTML(asset Asset, alt, caption string, aboveFold bool) (string, error
 	if aboveFold {
 		loading = "eager"
 	}
-	markup := `<figure class="markata-visualization"><img src="/` + html.EscapeString(asset.Path) +
+	markup := `<figure class="markata-visualization"><img src="` + html.EscapeString(basePath+"/"+asset.Path) +
 		`" width="` + strconv.Itoa(asset.Width) + `" height="` + strconv.Itoa(asset.Height) +
 		`" loading="` + loading + `" decoding="async" alt="` + html.EscapeString(alt) + `">`
 	if caption != "" {

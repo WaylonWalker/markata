@@ -25,4 +25,9 @@ Lighthouse scores. It is a deterministic, fast signal for agents and authors.
   diagnostics are enabled.
 - The analysis does not request external resources and must not treat HTML
   markup counts as actual network requests.
+- A page can exceed a raw HTML budget because of shared template markup or
+  unique page content. Use representative compressed responses and browser
+  resource timing to estimate transfer costs; do not infer network weight from
+  the raw report alone. Repeated, cacheable assets and page-specific content
+  should be measured separately before changing defaults or removing content.
 - All page data is generated locally; no remote telemetry or uploads occur.

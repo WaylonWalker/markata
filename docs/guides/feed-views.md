@@ -98,7 +98,6 @@ grouping. Smaller or unclassified feeds retain the classic view.
 Custom HTML templates, such as `feed-photo-grid.html`, take precedence
 over automatic layout detection.
 
-
 ### Opt-in CSS grid, masonry, and subgrid
 
 The default theme also ships **CSS layout classes** for custom feed templates.

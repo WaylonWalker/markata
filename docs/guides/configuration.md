@@ -342,6 +342,21 @@ disabled_hooks = ["sitemap"]
 concurrency = 4
 ```
 
+### Diagnostics Artifact Compression
+
+Full builds write `.markata/diagnostics.json` by default. To reduce the size of
+large releases without dropping diagnostic entries, select gzip compression:
+
+```toml
+[markata-go.diagnostics_artifact]
+compression = "gzip"
+```
+
+The build writes the same complete version-1 JSON data to
+`.markata/diagnostics.json.gz` and removes the stale counterpart after
+publication succeeds. Supported values are `none` (the default) and `gzip`.
+Builder Admin enables gzip for its releases automatically.
+
 ### Python Docs (`[markata-go.python_docs]`)
 
 Generate API reference pages from Python source files.
@@ -519,7 +534,11 @@ url = "https://github.com/WaylonWalker/markata-go"
 external = true
 ```
 
-The default theme adds a small preview when a local header or footer navigation URL matches a generated feed or published post. For a feed such as `/blog/`, hovering the link or focusing it with a keyboard shows its description, public post count, total words, reading time, and publication rhythm when those values are available. For a post, the preview uses its description, tags, word count, and reading time. Enabled Reader and Blogroll links show the number of active followed sources; an enabled Random post link shows how many posts are in its draw. External and unmatched links stay as ordinary links. Previews remain open while the pointer moves from the link into the panel, close when it leaves, and appear above page content. They are hidden on narrow or touch screens, where the navigation is a scrollable strip.
+The default theme adds a small preview when a local header or footer navigation URL matches a generated feed or published post. For a feed such as `/blog/`, the preview shows its description, public post count, and publication rhythm when available. For a post, the preview uses its description and tags. Enabled Reader and Blogroll links show the number of active followed sources.
+
+The Random post link shows a fixed description. Markata updates the eligible post list at the Random route when the draw changes. The shared preview can stay in cache.
+
+Open a preview with the pointer or keyboard focus. A pointer preview stays open while the pointer is on the link or panel. External and unmatched URLs use ordinary links. On narrow or touch screens, the navigation uses a scrollable strip in place of previews.
 
 Links inside a post can use the same preview. Write a normal Markdown link such as `[Start here](/start/)` or a wikilink such as `[[start]]`. When its destination is a public post or feed, hover or keyboard focus shows the destination title and available metadata. An absolute URL for the configured site also works; `http://localhost:8000/start/` works during local development. Tags shown on a post get a collection preview when their `/tags/<tag>/` feed exists. Links to other sites and links without a matching public page keep their usual behavior.
 
@@ -670,11 +689,35 @@ custom `preserve` list, include `"md-code-*"` alongside your own patterns;
 custom lists replace, rather than extend, the defaults.
  The purge logic always preserves key @-rules and keeps
 pseudo-only selectors like `:root` or `::selection` to avoid dropping base/theme styles.
-Full builds cache the discovered selector set and purged CSS under
-`.markata-cache/css-purge` in the content directory. The selector cache checks a content
-fingerprint of generated HTML paths and bytes. Purged CSS is reused only when stylesheet
-bytes, discovered selectors, and purge options match. Missing or invalid cache entries
-fall back to the normal scan or purge path.
+Full builds cache discovered selectors and purged CSS under
+`.markata-cache/css-purge` in the content directory. The selector cache checks exact content
+hashes for generated HTML paths and bytes. If one page changes, the cache reuses selector
+data for unchanged pages and scans only new or changed pages. Removed pages are removed from
+the selector set. Purged CSS is reused only when stylesheet bytes, discovered selectors, and
+purge options match. Missing or invalid cache entries fall back to the normal scan or purge
+path. If Markata cannot scan every HTML file, it stops CSS purging so it cannot remove rules
+used by an unread page. The output tree must stay unchanged while cleanup scans it; concurrent
+writers are not supported. If a changed page differs from its hashed snapshot, CSS purging
+aborts.
+
+On Linux filesystems with verified file identities, a warm build can reuse the complete
+selector set without reading unchanged HTML again. If one or more identities change, Markata
+can still reuse selectors for files whose identities match the prior exact scan. It hashes
+only files with changed, missing, or unstable identities, then parses only files whose exact
+content hash is new. Added files are hashed and scanned; removed files are omitted. If file
+identities cannot be established, including symlinked HTML, Markata checks exact content for
+the full path set. Other filesystems also keep the full content check on every build.
+
+The `reused` count means selector sets reused. In `mode=identity-partial`, matching identities
+avoid both hashing and parsing; `bytes_hashed` counts only files with changed or unverified
+identities. In other modes it reports the bytes read for the full fingerprint pass. Look for
+`mode=identity` with `bytes_hashed=0` for a complete identity hit, or `mode=identity-partial`
+for a partial build that avoided reading unchanged HTML.
+
+On Linux, Markata can reuse a previous check of final stylesheet links in
+unchanged HTML. A new stylesheet digest or a changed HTML file causes a new
+check. The build log lists how many HTML files Markata checks, reuses, and
+rewrites.
 
 ### Tailwind (`[markata-go.tailwind]`)
 
@@ -1311,7 +1354,7 @@ the typed setting disabled.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `enabled` | bool | `true` | Whether mermaid diagram processing is active |
-| `mode` | string | `"client"` | Rendering mode: `client` (browser-side), `cli` (mmdc), or `chromium` (headless Chrome) |
+| `mode` | string | `"go"` | Rendering mode: `go` (native SVG), `client` (browser), `cli` (mmdc), or `chromium` (headless Chrome) |
 | `cdn_url` | string | `/assets/vendor/mermaid/mermaid.min.js` | Mermaid JS URL (local by default) |
 | `theme` | string | `"default"` | Mermaid theme: `default`, `dark`, `forest`, `neutral`. Ignored when `use_css_variables` is true. |
 | `use_css_variables` | bool | `true` | Derive diagram colors from site CSS custom properties. Nodes and edge labels use the surface color, labels use the text color, borders and edges use the border color (falling back to the primary color), and clusters use the background color. |
@@ -1321,6 +1364,41 @@ the typed setting disabled.
 In client mode, diagrams rerender when readers change the active theme or
 palette. Chromium mode uses the same palette colors in its static SVGs. CLI mode
 uses the Mermaid CLI theme and configuration.
+
+### Excalidraw Settings (`[markata-go.excalidraw]`)
+
+Excalidraw fences render to static SVG by default. The default `auto` mode
+reuses a fingerprinted SVG artifact generated when the Go workbench applies a
+scene. It never starts Chromium. A missing or stale artifact stops the build
+with an actionable error. Select `chromium` explicitly for compatibility
+rendering.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `mode` | string | `"auto"` | `"auto"` or `"cached"` uses only a matching editor artifact; `"chromium"` explicitly runs Chrome or Chromium. |
+| `enabled` | bool | `true` | Render Excalidraw fences as static SVG. Set to `false` to keep them as highlighted JSON code. |
+| `chromium.browser_path` | string | `""` | Path to Chrome or Chromium. Auto-detected when empty. |
+| `chromium.timeout` | int | `30` | Maximum seconds to wait for each SVG export. |
+| `chromium.no_sandbox` | bool | `false` | Disable the browser sandbox for containers that require it. |
+
+```toml
+[markata-go.excalidraw]
+enabled = true
+mode = "auto"
+
+[markata-go.excalidraw.chromium]
+browser_path = ""
+timeout = 30
+no_sandbox = false
+```
+
+Applying a scene in the Go workbench stores its editable JSON and optional
+compressed SVG together in the Markdown fence. Markata checks the scene,
+bundled renderer and fonts, theme, and export options before using that SVG.
+Editing any of these inputs invalidates the artifact. Published pages load
+only the resulting static SVG, not the Excalidraw editor runtime. Static output
+supports shapes, lines, arrows, freehand strokes, and text. Embedded images,
+links, and web embeds return an error until the static renderer supports them.
 
 #### CLI Mode Settings (`[markata-go.mermaid.cli]`)
 
@@ -1485,6 +1563,18 @@ name = "docs"  # Default layout for all pages
 "blog" = "blog"
 ```
 
+The longest matching prefix wins. A root mapping can select a landing layout
+for `/` while a more specific prefix keeps its own layout:
+
+```toml
+[markata-go.layout.paths]
+"/" = "landing"
+"/docs/" = "docs"
+```
+
+This keeps the homepage full width and preserves the documentation sidebar on
+pages such as `/docs/quickstart/`.
+
 #### Documentation Layout (`[markata-go.layout.docs]`)
 
 The default theme includes a documentation page template. Set `name = "docs"`
@@ -1510,6 +1600,7 @@ need to replace the built-in markup.
 [markata-go.layout.docs]
 sidebar_position = "left"
 sidebar_width = "280px"
+sidebar_default_open = false # Keep the mobile navigation drawer closed on page load
 toc_position = "right"
 toc_width = "220px"
 content_max_width = "800px"
@@ -1570,6 +1661,19 @@ content_max_width = "100%"
 header_style = "transparent"
 header_sticky = true
 hero_enabled = true
+```
+
+Landing pages can define an eyebrow and explicit title lines in frontmatter.
+The title remains the semantic heading and page title; `title_lines` only
+controls its visual line breaks.
+
+```yaml
+hero:
+  title: "Your words. On your web."
+  eyebrow: "Markdown to website"
+  title_lines:
+    - "Your words."
+    - "On your web."
 ```
 
 ### Sidebar Configuration (`[markata-go.sidebar]`)
@@ -1959,17 +2063,27 @@ Content templates configure the `markata-go new` command, controlling default fr
 |-------|------|---------|-------------|
 | `directory` | string | `"content-templates"` | Directory for user-defined template files |
 | `placement` | object | `{post:"pages/post",page:"pages",docs:"docs"}` | Map of template names to output directories |
+| `filename_mode` | object | Title slug, except Ping and Gratitude use numbered names | Map of template names to `"title"` or `"numbered"` filenames |
+| `image_upload` | string | `"auto"` | `"auto"`, `"local"`, or `"dropper"` for uploaded images |
+| `dropper_upload_url` | string | Dropper's JSON upload endpoint | Optional API endpoint override |
 | `templates` | array | `[]` | Custom template definitions |
 
 ```toml
 [content_templates]
 directory = "content-templates"
+image_upload = "dropper"
 
 # Override default directory placement
 [content_templates.placement]
 post = "blog"          # markata-go new -t post creates in blog/
 page = "pages"
 docs = "documentation"
+ping = "pages/ping"
+
+[content_templates.filename_mode]
+ping = "numbered"
+gratitude = "numbered"
+note = "title"
 
 # Define custom templates
 [[content_templates.templates]]
@@ -1992,6 +2106,21 @@ prep_time = ""
 cook_time = ""
 servings = 4
 ```
+
+In `auto` mode, the workbench uploads pasted, dropped, or selected images to
+Dropper when it has a configured uploader or server-side `DROPPER_TOKEN`;
+otherwise it saves them under `static/images/`. Use `local` or `dropper` to
+select a provider explicitly. The token is never sent to the browser. For
+hosted deployments, configure the chart's `builderAdmin.editor.dropperUploader`
+sidecar so the editor process does not receive the token. Local workbenches can
+use the server environment or site `.env`. Set `dropper_upload_url` or
+`DROPPER_API_URL` when the upload API endpoint differs from the default.
+
+The workbench's new-post form lets you override the folder and filename mode
+for one post. Keep **Remember folder and file name style for this post type**
+selected to save changed defaults in this section of the site's config. The
+CLI uses those saved folder and filename defaults too. Numbered filenames use
+`<type>-N` and continue after the largest matching Markdown filename.
 
 **File-based Templates:**
 
@@ -2038,7 +2167,7 @@ markata-go new "Tutorial" -t tutorial     # Use custom template
 markata-go new "Recipe" -t recipe --dir custom  # Override directory
 ```
 
-Built-in content templates are listed with aliases in `markata-go new --list`, such as `note (aka: ping, thought, status, tweet)`. Built-in aliases are also accepted directly with `--template`.
+Built-in content templates are listed with aliases in `markata-go new --list`, such as `note (aka: thought, status, tweet)`. Ping is a separate type. Built-in aliases are also accepted directly with `--template`.
 
 Generated files include frontmatter plus the configured body template, but they do not include a starter `# H1` heading. markata-go already renders the page title from frontmatter, so starter content should begin with body text or `##` sections.
 

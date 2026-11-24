@@ -34,8 +34,19 @@ run *args:
     go run -ldflags '{{ldflags}}' {{main}} {{args}}
 
 # Install to $GOPATH/bin
-install:
+install *args:
     go install -ldflags '{{ldflags}}' {{main}}
+    # Use this checkout's freshly built code rather than an older markata on PATH.
+    @if [ "{{args}}" = "--all-installed-tools" ]; then \
+        go run -ldflags '{{ldflags}}' {{main}} agent install --all-installed-tools && \
+        go run -ldflags '{{ldflags}}' {{main}} agent doctor --global; \
+    elif [ -z "{{args}}" ]; then \
+        go run -ldflags '{{ldflags}}' {{main}} agent update --global && \
+        go run -ldflags '{{ldflags}}' {{main}} agent doctor --global; \
+    else \
+        echo "Usage: just install [--all-installed-tools]" >&2; \
+        exit 2; \
+    fi
 
 # Clean build artifacts
 clean:
@@ -277,3 +288,13 @@ perf-generate:
     @echo "Generating benchmark fixture..."
     go run benchmarks/generate_posts.go
     @echo "Generated benchmark posts in benchmarks/site/posts/"
+
+# Local merge preflight. Go build/test/gofmt implementation is shared with PR Gate.
+pr-check *args:
+    python3 scripts/ci/pr_check.py {{args}}
+
+ci-diagnose run:
+    python3 scripts/ci/diagnose.py --run {{run}}
+
+test-ci-helpers:
+    python3 -m unittest discover -s scripts/ci -p 'test_*.py'

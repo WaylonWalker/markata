@@ -181,7 +181,7 @@ The plugin MUST implement:
 ```toml
 [markata-go.mermaid]
 enabled = true
-mode = "client"                         # "client", "cli", or "chromium"
+mode = "go"                             # default native SVG; alternatives: "client", "cli", "chromium"
 cdn_url = "/assets/vendor/mermaid/mermaid.min.js"  # vendored UMD bundle; .mjs URLs are ES-module imported
 theme = "default"                       # default, dark, forest, neutral
 use_css_variables = true                # Use site palette CSS variables for diagram theming
@@ -1041,8 +1041,10 @@ cwebp_path = ""                   # Optional explicit path
 2. Skip external URLs, protocol-relative URLs, and data URIs.
 3. Rewrite each qualifying `<img>` into a `<picture>` element with `source` tags, using `srcset` and `sizes` when widths are configured.
 4. During write, generate requested formats and responsive width variants next to the original output image.
-5. Use cache metadata to skip re-encoding unchanged inputs.
+5. Use a SHA-256 source-content digest and cache metadata to skip re-encoding unchanged inputs. Compute the digest once per deduplicated source target in each build; a source timestamp change alone must not invalidate the cache.
 6. If an encoder is missing, warn and skip that format without failing the build.
+7. Keep every qualifying HTML image reference, but process each resolved output path once per build using the union of its requested responsive widths.
+8. Report image target occurrences and unique target candidates after deduplication. Count each candidate once in `unique_targets`, including candidates whose paths cannot be resolved or whose source files are missing; also include those candidates in `missing_sources`. Report `duplicate_targets` as occurrences removed by deduplication so repeated references remain visible without implying repeated encoding.
 
 **Output Files:**
 

@@ -55,7 +55,11 @@ and `markata workspace --workspace /path/to/site --file posts/hello.md`.
 The Go and FastAPI servers provide `GET /workspace` and
 `GET /workspace/file?path=posts/hello.md`. The Go server also accepts
 `PUT /workspace/file?path=posts/hello.md` for autosave. The browser loads source
-on demand.
+on demand. The Go editor requires `X-Markata-Expected-Version`
+for each PUT: use the exact `version` returned by GET, then update that version
+from every successful write response. A missing token returns 428; a mismatched
+token returns 409 and does not replace newer disk content. POST file creation
+uses a separate creation path and does not require a previous version.
 See the [Go editor guide](./go-workbench/) and [Python editor guide](./fastapi-editor/).
 
 ## Site defaults
@@ -66,6 +70,11 @@ and Markdown highlighting settings. Local `palettes/` and `aesthetics/` catalogs
 resolve from that workspace, as does an explicit `fontpacks_file`.
 Saved browser appearance preferences take priority over site defaults.
 The preview remains an article preview; it does not run page templates or a site build.
+
+Shot posts with an `image: /images/...` frontmatter field show that image above
+their Markdown body in the editor preview. The image loads from the workspace's
+`static/images/` directory. The editor preview does not apply the site's feed
+photo-grid template; use a site build to inspect the complete feed layout.
 
 Python hosts can pass `workspace="/path/to/site"` to `appearance()`, `render()`,
 and `render_async()`. The JSON command equivalent is

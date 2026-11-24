@@ -96,6 +96,11 @@ Profiling:
 	RunE: runRootCommand,
 	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 		currentCmd = cmd
+		// The agent handoff is a fast, read-only introspection command. Do not
+		// load a workspace, execute config/plugin setup or require a valid site.
+		if cmd.Parent() == nil && rootSkillRequested {
+			return nil
+		}
 		if cmd.Flags().Lookup("dag") != nil {
 			if err := validateDAGEnvironment(cmd); err != nil {
 				return err
@@ -161,6 +166,12 @@ Profiling:
 }
 
 func runRootCommand(cmd *cobra.Command, args []string) error {
+	if rootSkillRequested {
+		if len(args) != 0 {
+			return fmt.Errorf("--skill does not accept file arguments")
+		}
+		return printFirstRunSkill(cmd.OutOrStdout())
+	}
 	if len(args) == 0 {
 		return cmd.Help()
 	}

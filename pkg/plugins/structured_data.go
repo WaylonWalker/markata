@@ -306,15 +306,53 @@ func (p *StructuredDataPlugin) getAuthor(post *models.Post, config *lifecycle.Co
 		}
 	}
 
+	// Resolve against configured multi-author registry when available
+	if modelsConfig, ok := config.Extra["models_config"].(*models.Config); ok && modelsConfig.Authors.Authors != nil {
+		// If frontmatter author matches a configured author ID, use full metadata
+		if authorName != "" {
+			if author, exists := modelsConfig.Authors.Authors[authorName]; exists && author.Name != "" {
+				agent := models.NewSchemaAgent("Person", author.Name)
+				if author.URL != nil && *author.URL != "" {
+					agent.WithURL(*author.URL)
+				}
+				return agent
+			}
+		}
+		// Check resolved post authors (authors / author frontmatter)
+		if authorIDs := post.GetAuthors(); len(authorIDs) > 0 {
+			if author, exists := modelsConfig.Authors.Authors[authorIDs[0]]; exists && author.Name != "" {
+				agent := models.NewSchemaAgent("Person", author.Name)
+				if author.URL != nil && *author.URL != "" {
+					agent.WithURL(*author.URL)
+				}
+				return agent
+			}
+		}
+	}
+
 	// If we have a custom author name, create a basic agent
 	if authorName != "" {
 		return models.NewSchemaAgent("Person", authorName)
 	}
 
-	// Use default author from config
+	// Use default author from SEO structured_data config
 	if seoConfig.StructuredData.DefaultAuthor != nil {
 		da := seoConfig.StructuredData.DefaultAuthor
 		return models.NewSchemaAgent(da.Type, da.Name).WithURL(da.URL)
+	}
+
+	// Check configured default author in [authors]
+	if modelsConfig, ok := config.Extra["models_config"].(*models.Config); ok && modelsConfig.Authors.Authors != nil {
+		for id := range modelsConfig.Authors.Authors {
+			author := modelsConfig.Authors.Authors[id]
+			if author.Default && author.Name != "" {
+				agent := models.NewSchemaAgent("Person", author.Name)
+				if author.URL != nil && *author.URL != "" {
+					agent.WithURL(*author.URL)
+				}
+				return agent
+			}
+		}
 	}
 
 	// Fall back to site author

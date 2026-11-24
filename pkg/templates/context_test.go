@@ -28,6 +28,46 @@ func TestPostToMap_TitleSize(t *testing.T) {
 	}
 }
 
+func TestConfigToMap_PreservesExplicitFalseLayoutDefaults(t *testing.T) {
+	closed := false
+	config := &models.Config{}
+	config.Layout.Docs.SidebarDefaultOpen = &closed
+	config.Layout.Docs.TocDefaultOpen = &closed
+
+	configMap := GetConfigMap(config)
+	layout, ok := configMap["layout"].(map[string]interface{})
+	if !ok {
+		t.Fatal("layout config is missing from template context")
+	}
+	docs, ok := layout["docs"].(map[string]interface{})
+	if !ok {
+		t.Fatal("docs layout config is missing from template context")
+	}
+	if got := docs["sidebar_default_open"]; got != false {
+		t.Fatalf("sidebar_default_open = %v, want false", got)
+	}
+	if got := docs["toc_default_open"]; got != false {
+		t.Fatalf("toc_default_open = %v, want false", got)
+	}
+}
+
+func TestConfigToMap_PrimaryFeedsRequiresHTMLFormat(t *testing.T) {
+	config := &models.Config{
+		Feeds: []models.FeedConfig{
+			{Slug: "blog", Title: "Blog", Primary: true, Formats: models.FeedFormats{HTML: true, RSS: true}},
+			{Slug: "json-only", Title: "JSON Only", Primary: true, Formats: models.FeedFormats{HTML: false, JSON: true}},
+		},
+	}
+	configMap := GetConfigMap(config)
+	feeds, ok := configMap["primary_feeds"].([]map[string]interface{})
+	if !ok {
+		t.Fatalf("primary_feeds missing or wrong type: %T", configMap["primary_feeds"])
+	}
+	if len(feeds) != 1 || feeds[0]["slug"] != "blog" {
+		t.Fatalf("expected only HTML-enabled primary feed 'blog', got %+v", feeds)
+	}
+}
+
 func TestPostToMap_InlinksOutlinks(t *testing.T) {
 	sourceTitle := "Source"
 	targetTitle := "Target"

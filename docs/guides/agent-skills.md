@@ -11,6 +11,16 @@ Let's be honest: a lot of websites get built alongside coding agents. **Give the
 
 The skill is bundled with the **Go binary**; you don't need a separate installer or a proprietary cloud service.
 
+## Start without installing an agent integration
+
+```sh
+markata --skill
+```
+
+This prints the **self-contained, release-matched first-run guide** bundled with the CLI. Paste its output into Amp, Codex, Claude Code, or any agent of your choice. The guide asks the agent to inspect your existing site, clarify where you want to publish, prefer native config and templates before plugins, then verify a full build before deployment. No files are written and no provider is selected automatically.
+
+To give your agent the complete topic-based skill (custom templates, plugins, builds, performance, deployments), continue below.
+
 ## 1. Open your site repository
 
 ```bash
@@ -36,6 +46,15 @@ markata agent install --agent claude-code
 markata agent install --agent codex
 ```
 
+Install for several agents in one command by repeating `--agent`, or passing
+comma-separated names:
+
+```bash
+markata agent install --agent github-copilot --agent claude-code
+markata agent install --agent github-copilot,claude-code
+markata agent install -g --agent github-copilot --agent claude-code
+```
+
 For a specific agent, use `--agent`. For Claude Code, the project skill goes in `.claude/skills/markata-go-site/`; for a universal project install, it goes in `.agents/skills/markata-go-site/`.
 
 The `setup` alias also installs the skill. On an interactive terminal, either
@@ -56,8 +75,10 @@ The selected agent and matching characters use the terminal theme colors.
 Type an agent name or abbreviation, such as `copilot` or `ghcp`. Use the arrow keys to navigate. Press Enter to select.
 Escape or Ctrl+C cancels without an installation.
 `--no-color` or `NO_COLOR` disables the colors.
-If an install for multiple agents fails, the error identifies the failed agent.
-Installations completed before the error remain in place.
+For multiple-agent installs and updates, agent names and aliases are deduplicated.
+Agents sharing a project or global skill directory require only one write.
+A failure includes the agent name; other independent destinations are still
+attempted, and completed installations remain in place.
 
 For scripts, project installs keep the environment-detected agent or universal fallback. Global installs need an explicit agent:
 
@@ -70,6 +91,36 @@ The picker requires interactive input and output terminals. With `--no-input` or
 Unknown names show suggestions, such as `Did you mean --agent github-copilot?` for `--agent copilot`.
 Suggestions do not select an agent automatically.
 
+## Install or update global skills for detected agents
+
+The repository's `just install` recipe installs the `markata` binary, updates
+global skills for detected agents that already have one, and checks those
+installations:
+
+```bash
+just install
+```
+
+To install or refresh the skill for every supported agent executable found on
+`PATH`, use:
+
+```bash
+just install --all-installed-tools
+```
+
+This installs globally for detected executables such as `claude`, `codex`, or
+`opencode`. The recipe then runs `agent doctor` for the detected global
+installations. It does not infer additional tools from generic shared skill
+directories.
+
+You can run the global update and check steps directly after installing a new
+binary:
+
+```bash
+markata agent update --global
+markata agent doctor --global
+```
+
 ## 3. Check it
 
 ```bash
@@ -80,6 +131,7 @@ On a Markata upgrade, bring your skill up to date:
 
 ```bash
 markata agent update
+markata agent update -g --agent github-copilot --agent claude-code
 markata agent doctor
 ```
 

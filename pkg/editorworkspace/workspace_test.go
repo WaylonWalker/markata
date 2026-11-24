@@ -1,10 +1,74 @@
 package editorworkspace
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+func TestWorkspace_ReadImageConfinesStaticFiles(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "static", "images"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	want := []byte("image bytes")
+	if err := os.WriteFile(filepath.Join(root, "static", "images", "photo.jpg"), want, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "private.jpg"), want, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := workspace.ReadImage("images/photo.jpg")
+	if err != nil || !bytes.Equal(got, want) {
+		t.Fatalf("ReadImage() = %q, %v", got, err)
+	}
+	for _, path := range []string{"../private.jpg", "images/photo.md", "/images/photo.jpg"} {
+		if _, err := workspace.ReadImage(path); err == nil {
+			t.Errorf("ReadImage(%q) accepted an unsafe path", path)
+		}
+	}
+}
+
+func TestWorkspace_ReadImageSizeAndFileType(t *testing.T) {
+	root := t.TempDir()
+	images := filepath.Join(root, "static", "images")
+	if err := os.MkdirAll(images, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	photo := filepath.Join(images, "large.jpg")
+	if err := os.WriteFile(photo, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	const maxImageBytes = 15 << 20
+	if err := os.Truncate(photo, maxImageBytes); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := workspace.ReadImage("images/large.jpg")
+	if err != nil || len(data) != maxImageBytes {
+		t.Fatalf("image at byte limit: got %d bytes, error %v", len(data), err)
+	}
+	if err := os.Truncate(photo, maxImageBytes+1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := workspace.ReadImage("images/large.jpg"); err == nil {
+		t.Fatal("accepted image exceeding 15 MiB")
+	}
+	if err := os.Mkdir(filepath.Join(images, "directory.jpg"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := workspace.ReadImage("images/directory.jpg"); err == nil {
+		t.Fatal("accepted directory as image")
+	}
+}
 
 func TestWorkspace_ConfiguredDiscoveryAndSource(t *testing.T) {
 	root := t.TempDir()
@@ -92,5 +156,114 @@ func TestWorkspace_PathsDoesNotParseBodies(t *testing.T) {
 	}
 	if _, err := workspace.Files(); err == nil {
 		t.Fatal("fixture must fail metadata parsing")
+	}
+}
+
+func TestWorkspace_DeleteRejectsSymlinksAndStaleVersions(t *testing.T) {
+	root := t.TempDir()
+	target := filepath.Join(root, "new.md")
+	source := "# First"
+	if err := os.WriteFile(target, []byte(source), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := workspace.Delete("new.md", SourceVersion("# Old")); err == nil {
+		t.Fatal("deleted a newer version")
+	}
+	if _, err := os.Stat(target); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, filepath.Join(root, "linked.md")); err == nil {
+		if err := workspace.Delete("linked.md", SourceVersion(source)); err == nil {
+			t.Fatal("deleted through a symlink")
+		}
+		if _, err := os.Stat(target); err != nil {
+			t.Fatalf("symlink deletion touched target: %v", err)
+		}
+	}
+	if err := workspace.Delete("../new.md", SourceVersion(source)); err == nil {
+		t.Fatal("accepted escaping path")
+	}
+	if err := workspace.Delete("new.md", SourceVersion(source)); err != nil {
+		t.Fatalf("safe deletion failed: %v", err)
+	}
+	if _, err := os.Stat(target); !os.IsNotExist(err) {
+		t.Fatalf("file still exists: %v", err)
+	}
+}
+
+func TestWorkspace_CreateWithImagesCreatesGalleryAndCover(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "posts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	photos := []UploadedImage{
+		{ContentType: "image/gif", Data: []byte("GIF89a")},
+		{ContentType: "image/gif", Data: []byte("GIF89a")},
+	}
+	source := "---\ntitle: Shared album\ndraft: true\n---\n\nFrom Android.\n"
+	urls, err := workspace.CreateWithImages("posts/shared.md", source, "shared", photos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(urls) != 2 || urls[0] != "/images/shared-1.gif" || urls[1] != "/images/shared-2.gif" {
+		t.Fatalf("unexpected photo URLs: %v", urls)
+	}
+	data, err := os.ReadFile(filepath.Join(root, "posts", "shared.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(data, []byte(`image: "/images/shared-1.gif"`)) ||
+		!bytes.Contains(data, []byte("![Shared photo 1](/images/shared-1.gif)")) ||
+		!bytes.Contains(data, []byte("![Shared photo 2](/images/shared-2.gif)")) {
+		t.Fatalf("Markdown lost shared photos: %s", data)
+	}
+	for _, name := range []string{"shared-1.gif", "shared-2.gif"} {
+		if _, err := os.Stat(filepath.Join(root, "static", "images", name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestWorkspace_CreateWithImagesRejectsExistingImageWithoutWritingPost(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "posts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "static", "images"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	existing := filepath.Join(root, "static", "images", "shared-2.gif")
+	if err := os.WriteFile(existing, []byte("existing"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	photos := []UploadedImage{
+		{ContentType: "image/gif", Data: []byte("GIF89a")},
+		{ContentType: "image/gif", Data: []byte("GIF89a")},
+	}
+	if _, err := workspace.CreateWithImages("posts/shared.md", "# Album", "shared", photos); err == nil {
+		t.Fatal("duplicate image was accepted")
+	}
+	for _, path := range []string{
+		filepath.Join(root, "posts", "shared.md"),
+		filepath.Join(root, "static", "images", "shared-1.gif"),
+	} {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Fatalf("partial write at %q: %v", path, err)
+		}
+	}
+	if data, err := os.ReadFile(existing); err != nil || string(data) != "existing" {
+		t.Fatalf("existing image changed: %q, %v", data, err)
 	}
 }

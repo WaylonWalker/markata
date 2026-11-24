@@ -22,7 +22,7 @@ import (
 //
 // Example output (HTML):
 //
-//	<video loop muted playsinline controls preload="none" class="md-video" style="margin-inline:auto">
+//	<video data-authored-autoplay="true" loop muted playsinline controls preload="none" class="md-video" style="margin-inline:auto">
 //	  <source src="video.mp4" type="video/mp4">
 //	  Your browser does not support the video tag.
 //	</video>
