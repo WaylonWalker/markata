@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"encoding/json"
 	"image"
 	"image/color"
 	"image/png"
@@ -10,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"golang.org/x/net/html"
 
@@ -74,6 +76,22 @@ func TestImageOptimization_StatsCountMissingSource(t *testing.T) {
 	}
 	if plugin.stats.uniqueTargets != 1 || plugin.stats.missingSources != 1 {
 		t.Fatalf("unexpected image stats: %+v", plugin.stats)
+	}
+}
+
+func TestImageOptimizationMissingEncoderDoesNotHashSource(t *testing.T) {
+	outputDir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(outputDir, "photo.png"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	plugin := NewImageOptimizationPlugin()
+	plugin.config = defaultImageOptimizationConfig()
+	plugin.availableFormats = []string{formatWebP}
+	if err := plugin.optimizeTarget(outputDir, t.TempDir(), imageOptimizationTarget{Src: "/photo.png"}); err != nil {
+		t.Fatalf("optimizeTarget() error without encoder = %v, want nil", err)
+	}
+	if plugin.stats.encoderCalls != 0 || plugin.stats.cacheMisses != 0 {
+		t.Fatalf("stats without encoder = %+v, want no cache work or encoding", plugin.stats)
 	}
 }
 
@@ -296,15 +314,131 @@ func TestImageOptimization_StatsCountEncoderCallsAndCacheHits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := plugin.optimizeImageFormat(source, cache, info, formatWebP, nil); err != nil {
+	sourceHash, err := hashImageSource(source)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := plugin.optimizeImageFormat(source, cache, info, formatWebP, nil); err != nil {
+	if err := plugin.optimizeImageFormat(source, cache, info, sourceHash, formatWebP, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := plugin.optimizeImageFormat(source, cache, info, sourceHash, formatWebP, nil); err != nil {
 		t.Fatal(err)
 	}
 	if plugin.stats.variantsChecked != 2 || plugin.stats.cacheMisses != 1 ||
 		plugin.stats.cacheHits != 1 || plugin.stats.encoderCalls != 1 || plugin.stats.encoderFailures != 0 {
 		t.Fatalf("unexpected image optimization stats: %+v", plugin.stats)
+	}
+}
+
+func TestImageOptimizationCacheUsesSourceContentInsteadOfModTime(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("test fake encoder requires a POSIX shell")
+	}
+
+	outputDir := t.TempDir()
+	cacheDir := filepath.Join(t.TempDir(), "image-cache")
+	source := filepath.Join(outputDir, "photo.png")
+	firstContent := []byte("first image")
+	secondContent := []byte("other image")
+	if len(firstContent) != len(secondContent) {
+		t.Fatal("fixture contents must have the same size")
+	}
+	if err := os.WriteFile(source, firstContent, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	encoder := filepath.Join(t.TempDir(), "fake-cwebp")
+	script := "#!/bin/sh\nwhile [ \"$#\" -gt 1 ]; do shift; done\nprintf 'webp' > \"$1\"\n"
+	if err := os.WriteFile(encoder, []byte(script), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(encoder, 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	manager := lifecycle.NewManager()
+	manager.Config().OutputDir = outputDir
+	post := models.NewPost("post.md")
+	post.Extra = map[string]any{"image_optimization": []imageOptimizationTarget{{Src: "/photo.png"}}}
+	manager.SetPosts([]*models.Post{post})
+	plugin := NewImageOptimizationPlugin()
+	plugin.config = defaultImageOptimizationConfig()
+	plugin.config.CacheDir = cacheDir
+	plugin.config.Widths = []int{480}
+	plugin.availableFormats = []string{formatWebP}
+	plugin.cwebpPath = encoder
+
+	fixedTime := time.Unix(1_700_000_000, 0)
+	if err := os.Chtimes(source, fixedTime, fixedTime); err != nil {
+		t.Fatal(err)
+	}
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("first Write() error = %v", err)
+	}
+	if plugin.stats.encoderCalls != 1 {
+		t.Fatalf("first run encoder calls = %d, want 1", plugin.stats.encoderCalls)
+	}
+
+	changedTime := fixedTime.Add(time.Hour)
+	if err := os.Chtimes(source, changedTime, changedTime); err != nil {
+		t.Fatal(err)
+	}
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("same-content Write() error = %v", err)
+	}
+	if plugin.stats.encoderCalls != 0 || plugin.stats.cacheHits != 1 {
+		t.Fatalf("same-content stats = %+v, want one cache hit and no encode after mtime change", plugin.stats)
+	}
+
+	if err := os.WriteFile(source, secondContent, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(source, changedTime, changedTime); err != nil {
+		t.Fatal(err)
+	}
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("changed-content Write() error = %v", err)
+	}
+	if plugin.stats.encoderCalls != 1 || plugin.stats.cacheMisses != 1 {
+		t.Fatalf("changed-content stats = %+v, want one cache miss and encode for same-size content change", plugin.stats)
+	}
+}
+
+func TestImageOptimizationCacheRejectsLegacyTimestampEntry(t *testing.T) {
+	root := t.TempDir()
+	source := filepath.Join(root, "photo.png")
+	destination := filepath.Join(root, "photo-480w.webp")
+	cachePath := filepath.Join(root, "cache.json")
+	if err := os.WriteFile(source, []byte("image"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(destination, []byte("webp"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacyEntry, err := json.Marshal(map[string]any{
+		"source_path":     source,
+		"source_size":     info.Size(),
+		"source_mod_time": info.ModTime().UnixNano(),
+		"format":          formatWebP,
+		"width":           480,
+		"quality":         80,
+		"encoder":         "/fixture/bin/cwebp",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cachePath, legacyEntry, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sourceHash, err := hashImageSource(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if isImageCacheValid(cachePath, source, info, sourceHash, formatWebP, 480, 80, "/fixture/bin/cwebp", destination) {
+		t.Fatal("legacy timestamp-only cache entry was accepted without a source digest")
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/models"
@@ -15,7 +16,7 @@ const (
 	imageOptimizationProductionUniqueTargets     = 18
 )
 
-func TestImageOptimizationProductionShapeDeduplicatesDiskWork(t *testing.T) {
+func TestImageOptimizationProductionShapeDeduplicatesDiskWorkAndKeepsContentCacheHits(t *testing.T) {
 	plugin, manager, targets := newRepeatedImageOptimizationFixture(t)
 	outputDir := manager.Config().OutputDir
 	cacheDir := plugin.config.CacheDir
@@ -31,6 +32,13 @@ func TestImageOptimizationProductionShapeDeduplicatesDiskWork(t *testing.T) {
 		t.Fatalf("baseline cache-hit stats = %+v, want every repeated variant to hit without encoding", plugin.stats)
 	}
 	plugin.stats = imageOptimizationStats{}
+	for index := range imageOptimizationProductionUniqueTargets {
+		sourcePath := filepath.Join(outputDir, "images", fmt.Sprintf("photo-%02d.jpg", index))
+		changedTime := time.Unix(1_600_000_000, 0)
+		if err := os.Chtimes(sourcePath, changedTime, changedTime); err != nil {
+			t.Fatalf("change source mtime for %s: %v", sourcePath, err)
+		}
+	}
 
 	if err := plugin.Write(manager); err != nil {
 		t.Fatalf("Write() error = %v", err)
@@ -50,7 +58,10 @@ func TestImageOptimizationProductionShapeDeduplicatesDiskWork(t *testing.T) {
 }
 
 func BenchmarkImageOptimizationRepeatedTargetDiskWork(b *testing.B) {
-	for _, mode := range []string{"before-deduplication", "after-deduplication"} {
+	// Both cases use the current content-addressed cache. This compares repeated
+	// and deduplicated target work in the current implementation; it is not a
+	// historical before/after benchmark.
+	for _, mode := range []string{"without-deduplication", "with-deduplication"} {
 		b.Run(mode, func(b *testing.B) {
 			plugin, manager, targets := newRepeatedImageOptimizationFixture(b)
 			outputDir := manager.Config().OutputDir
@@ -59,20 +70,46 @@ func BenchmarkImageOptimizationRepeatedTargetDiskWork(b *testing.B) {
 			b.ResetTimer()
 			for range b.N {
 				plugin.stats = imageOptimizationStats{}
-				if mode == "before-deduplication" {
-					for _, target := range targets {
-						if err := plugin.optimizeTarget(outputDir, cacheDir, target); err != nil {
-							b.Fatal(err)
-						}
-					}
-					continue
+				targetsToOptimize := targets
+				if mode == "with-deduplication" {
+					targetsToOptimize = deduplicateImageOptimizationTargets(outputDir, targets, plugin.config.Widths)
 				}
-				if err := plugin.Write(manager); err != nil {
-					b.Fatal(err)
+				for _, target := range targetsToOptimize {
+					if err := plugin.optimizeTarget(outputDir, cacheDir, target); err != nil {
+						b.Fatal(err)
+					}
 				}
 			}
 		})
 	}
+}
+
+func BenchmarkImageOptimizationHashProductionSourceSet(b *testing.B) {
+	root := b.TempDir()
+	sizes := []int{56680, 140868, 6066, 7454}
+	paths := make([]string, len(sizes))
+	var totalBytes int
+	for i, size := range sizes {
+		paths[i] = filepath.Join(root, fmt.Sprintf("source-%d.bin", i))
+		if err := os.WriteFile(paths[i], make([]byte, size), 0o600); err != nil {
+			b.Fatal(err)
+		}
+		totalBytes += size
+	}
+	var hashSink string
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		for _, path := range paths {
+			var err error
+			hashSink, err = hashImageSource(path)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+	_ = hashSink
+	b.ReportMetric(float64(totalBytes), "source-bytes/op")
 }
 
 func newRepeatedImageOptimizationFixture(tb testing.TB) (*ImageOptimizationPlugin, *lifecycle.Manager, []imageOptimizationTarget) {
@@ -104,6 +141,10 @@ func newRepeatedImageOptimizationFixture(tb testing.TB) (*ImageOptimizationPlugi
 		if err != nil {
 			tb.Fatal(err)
 		}
+		sourceHash, err := hashImageSource(sourcePath)
+		if err != nil {
+			tb.Fatal(err)
+		}
 		src := fmt.Sprintf("/images/photo-%02d.jpg", index)
 		uniqueTargets[index] = imageOptimizationTarget{Src: src}
 		for _, format := range plugin.availableFormats {
@@ -113,7 +154,7 @@ func newRepeatedImageOptimizationFixture(tb testing.TB) (*ImageOptimizationPlugi
 				tb.Fatal(err)
 			}
 			cachePath := imageOptimizationCachePath(cacheDir, sourcePath, format, variant.Width, plugin.qualityForFormat(format), encoder)
-			if err := writeImageCache(cachePath, sourcePath, info, format, variant.Width, plugin.qualityForFormat(format), encoder); err != nil {
+			if err := writeImageCache(cachePath, sourcePath, info, sourceHash, format, variant.Width, plugin.qualityForFormat(format), encoder); err != nil {
 				tb.Fatal(err)
 			}
 		}
