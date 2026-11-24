@@ -20,6 +20,19 @@ sanitized diagnostics artifact below the configured output directory:
 For example, a build with `-o dist` writes `dist/.markata/diagnostics.json`.
 The artifact is enabled by default. It is part of the generated output, so a
 Builder Admin release from such a build carries it with the rest of the site.
+Builder Admin stores the full artifact losslessly compressed at
+`.markata/diagnostics.json.gz`; ordinary CLI builds keep the plain JSON path.
+
+To inspect a Builder Admin release, decompress it before passing it to `jq`:
+
+```bash
+gzip -dc public/.markata/diagnostics.json.gz | jq '.summary'
+gzip -dc public/.markata/diagnostics.json.gz | jq '.entries[] | select(.disposition == "excluded")'
+```
+
+The optional setting is `markata-go.diagnostics_artifact.compression`. Its
+default is `none`; use `gzip` to write the lossless `.json.gz` artifact instead
+of `.json`. Builder Admin selects this automatically for releases.
 
 ## Inspect the artifact
 

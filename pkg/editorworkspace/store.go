@@ -320,6 +320,33 @@ func (s *Store) CreateWithImage(path, source, imageName, contentType string, ima
 	return imageURL, nil
 }
 
+// CreateWithImages creates a post and 2-8 images while keeping the store index
+// consistent with the single-image creation path.
+func (s *Store) CreateWithImages(path, source, imageName string, images []UploadedImage) ([]string, error) {
+	if err := s.ctx.Err(); err != nil {
+		return nil, err
+	}
+	local := filepath.Clean(filepath.FromSlash(path))
+	if !filepath.IsLocal(local) || !isMarkdownSource(local) {
+		return nil, fmt.Errorf("new workspace path must be a local Markdown file")
+	}
+	path = filepath.ToSlash(local)
+	s.mu.RLock()
+	_, exists := s.paths[path]
+	s.mu.RUnlock()
+	if exists {
+		return nil, fmt.Errorf("workspace file already exists")
+	}
+	urls, err := s.workspace.CreateWithImages(path, source, imageName, images)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.refresh(nil, false); err != nil {
+		return nil, err
+	}
+	return urls, nil
+}
+
 // SetContentTemplateDefaults updates site-wide starter placement and naming.
 func (s *Store) SetContentTemplateDefaults(name, directory, filenameMode string) error {
 	if err := s.ctx.Err(); err != nil {
@@ -519,6 +546,13 @@ func (s *Store) refresh(events map[string]bool, forceConfig bool) error {
 			paths[filepath.ToSlash(path)] = sourceStamp{Modified: info.ModTime().UnixNano(), Size: info.Size()}
 		}
 	}
+	// Install watches for newly included config and appearance directories
+	// before publishing the corresponding config snapshot. Otherwise a caller
+	// can observe the new config and edit a nested file before its directory is
+	// watched, losing that update.
+	if err := s.addWatches(isIgnoredPath); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	s.stats.GlobScans++
 	configChanged := s.configRevision == 0 || forceConfig || !reflect.DeepEqual(s.cfg, authored)
@@ -550,7 +584,7 @@ func (s *Store) refresh(events map[string]bool, forceConfig bool) error {
 		s.indexPending = len(paths) - len(s.entries)
 	}
 	s.mu.Unlock()
-	return s.addWatches(isIgnoredPath)
+	return nil
 }
 
 func (s *Store) addWatches(isIgnoredPath func(string) bool) error {

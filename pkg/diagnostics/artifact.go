@@ -26,6 +26,11 @@ const (
 	// DefaultArtifactPath is relative to a build's output directory.
 	DefaultArtifactPath = ".markata/diagnostics.json"
 
+	// CompressedArtifactPath is the losslessly compressed artifact path used by
+	// Builder Admin releases. The decoded JSON has the same bytes and schema as
+	// DefaultArtifactPath.
+	CompressedArtifactPath = DefaultArtifactPath + ".gz"
+
 	// ArtifactExecutorLegacy identifies the normal lifecycle build path.
 	ArtifactExecutorLegacy = "legacy"
 	// ArtifactExecutorDAG identifies the feature-flagged task-graph build path.

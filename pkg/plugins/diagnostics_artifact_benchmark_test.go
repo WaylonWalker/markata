@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
@@ -107,4 +108,37 @@ func BenchmarkDiagnosticsArtifactPublication_CompleteFeeds(b *testing.B) {
 			b.ReportMetric(float64(rawBytes)/float64(b.N), "raw-write-bytes/op")
 		})
 	}
+}
+
+func BenchmarkDiagnosticsArtifactPublication_GzipCompleteFeeds(b *testing.B) {
+	snapshot := diagnosticsArtifactFeedFixture(512, 418)
+	info := diagnostics.ArtifactBuildInfo{BuiltAt: time.Unix(1, 0)}
+	destination := filepath.Join(b.TempDir(), diagnostics.CompressedArtifactPath)
+	var rawDuration time.Duration
+	var rawCalls, rawBytes int64
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		var phases diagnosticsArtifactPhases
+		err := writeDiagnosticsArtifactMeasured(destination, func(writer io.Writer) error {
+			compressed, err := gzip.NewWriterLevel(writer, gzip.BestSpeed)
+			if err != nil {
+				return err
+			}
+			if err := diagnostics.WriteArtifact(compressed, snapshot, info); err != nil {
+				_ = compressed.Close()
+				return err
+			}
+			return compressed.Close()
+		}, &phases)
+		if err != nil {
+			b.Fatal(err)
+		}
+		rawDuration += phases.fileWrite
+		rawCalls += phases.fileWriteCalls
+		rawBytes += phases.fileWriteBytes
+	}
+	b.ReportMetric(float64(rawDuration.Nanoseconds())/float64(b.N), "raw-write-ns/op")
+	b.ReportMetric(float64(rawCalls)/float64(b.N), "raw-write-calls/op")
+	b.ReportMetric(float64(rawBytes)/float64(b.N), "compressed-bytes/op")
 }

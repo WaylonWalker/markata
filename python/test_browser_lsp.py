@@ -190,6 +190,7 @@ class BrowserLSPTest(unittest.TestCase):
                 page.locator(".template-choice").filter(has_text="Save a web link").click()
                 expect(page.locator("#create-dialog")).to_be_visible()
                 expect(page.locator("#create-link-field")).to_be_visible()
+                expect(page.locator("#create-link-url")).to_be_focused()
                 page.locator("#create-title").fill("An interesting article")
                 page.locator("#create-slug").fill("link-post-from-url")
                 page.locator("#create-directory").fill(".")
@@ -219,6 +220,26 @@ class BrowserLSPTest(unittest.TestCase):
                 self.assertEqual(errors, [])
         finally:
             target.unlink(missing_ok=True)
+
+    def test_go_photo_and_shot_starters_focus_image_url(self):
+        with self.browser.new_context() as context:
+            page = context.new_page()
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.goto(self.go_url)
+            for name, description in (("Photo", "A photo post"), ("Shot", "A shot post")):
+                page.wait_for_function(
+                    "() => Boolean(window.MarkataShortcuts?.all?.().some(c => c.id === 'workbench.newPost'))"
+                )
+                self.assertTrue(page.evaluate("window.MarkataShortcuts.execute('workbench.newPost')"))
+                expect(page.locator("#template-picker")).to_be_visible(timeout=10000)
+                page.locator("#template-picker-query").fill(name)
+                page.locator(".template-choice").filter(has_text=description).click()
+                expect(page.locator("#create-dialog")).to_be_visible()
+                expect(page.locator("#create-image-field")).to_be_visible()
+                expect(page.locator("#create-image-url")).to_be_focused()
+                page.locator("#create-cancel").click()
+            self.assertEqual(errors, [])
 
     def test_link_completion_and_diagnostics(self):
         for name, url in [("Python", self.python_url), ("Go", self.go_url)]:

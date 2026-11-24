@@ -669,9 +669,9 @@ Delete this post.
 	}
 	readArtifact := func(releasePath string) diagnostics.Artifact {
 		t.Helper()
-		data, err := os.ReadFile(filepath.Join(releasePath, diagnostics.DefaultArtifactPath))
-		if err != nil {
-			t.Fatalf("read diagnostics artifact from release: %v", err)
+		data, ok := readDiagnosticsArtifactBounded(filepath.Join(releasePath, diagnostics.DefaultArtifactPath), 16<<20)
+		if !ok {
+			t.Fatal("read diagnostics artifact from release")
 		}
 		artifact, err := diagnostics.ParseArtifact(data)
 		if err != nil {
@@ -680,6 +680,12 @@ Delete this post.
 		return artifact
 	}
 	firstArtifact := readArtifact(first.ReleasePath)
+	if _, err := os.Stat(filepath.Join(first.ReleasePath, diagnostics.CompressedArtifactPath)); err != nil {
+		t.Fatalf("first release did not include compressed diagnostics: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(first.ReleasePath, diagnostics.DefaultArtifactPath)); !os.IsNotExist(err) {
+		t.Fatalf("first release retained plain diagnostics: %v", err)
+	}
 	if firstArtifact.Summary.Discovered != 2 {
 		t.Fatalf("first release diagnostics summary = %+v, want two discovered files", firstArtifact.Summary)
 	}

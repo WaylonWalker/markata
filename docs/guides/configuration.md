@@ -342,6 +342,21 @@ disabled_hooks = ["sitemap"]
 concurrency = 4
 ```
 
+### Diagnostics Artifact Compression
+
+Full builds write `.markata/diagnostics.json` by default. To reduce the size of
+large releases without dropping diagnostic entries, select gzip compression:
+
+```toml
+[markata-go.diagnostics_artifact]
+compression = "gzip"
+```
+
+The build writes the same complete version-1 JSON data to
+`.markata/diagnostics.json.gz` and removes the stale counterpart after
+publication succeeds. Supported values are `none` (the default) and `gzip`.
+Builder Admin enables gzip for its releases automatically.
+
 ### Python Docs (`[markata-go.python_docs]`)
 
 Generate API reference pages from Python source files.

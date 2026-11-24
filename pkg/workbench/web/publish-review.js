@@ -218,7 +218,10 @@
     dialog.querySelector('#publish-message-count').textContent=bytes+' / 4000 bytes';
     const fields=state.data?frontmatter(state.data.current):{};
     const canCommit=Boolean(state.data?.changed&&fields.published==='true'&&fields.draft!=='true');
-    dialog.querySelector('#publish-confirm').disabled=!canCommit||!input.value.trim()||bytes>4000;
+    const disabled=!canCommit||!input.value.trim()||bytes>4000;
+    dialog.querySelector('#publish-confirm').disabled=disabled;
+    const commitPush=dialog.querySelector('#publish-commit-and-push');
+    if(commitPush)commitPush.disabled=disabled;
   }
   function comparisonScrollSync(event) {
     const before=dialog.querySelector('#publish-before-frame');
@@ -341,6 +344,8 @@
     dialog.querySelector('[data-publish-mode="rich"]').disabled=false;
     dialog.querySelector('#publish-confirm').hidden=false;
     dialog.querySelector('#publish-confirm').disabled=true;
+    const commitPushBtn=dialog.querySelector('#publish-commit-and-push');
+    if(commitPushBtn){commitPushBtn.hidden=false;commitPushBtn.disabled=true;}
     dialog.querySelector('#publish-discard').hidden=true;
     dialog.querySelector('#publish-discard-warning').hidden=true;
     dialog.querySelector('#publish-discard-confirmation').hidden=true;
@@ -376,7 +381,10 @@
       renderDiff(data);
       const fields=frontmatter(data.current);
       dialog.querySelector('#publish-mark-public').hidden=fields.published==='true' && fields.draft!=='true';
-      dialog.querySelector('#publish-confirm').disabled=!data.changed || fields.published!=='true' || fields.draft==='true';
+      const commitDisabled=!data.changed || fields.published!=='true' || fields.draft==='true';
+      dialog.querySelector('#publish-confirm').disabled=commitDisabled;
+      const commitPushBtn2=dialog.querySelector('#publish-commit-and-push');
+      if(commitPushBtn2)commitPushBtn2.disabled=commitDisabled;
       dialog.querySelector('#publish-commit-message').value=`Publish: ${path}`;
       updateCommitMessage();
       comparisonMaps.before=[];comparisonMaps.after=[];
@@ -509,11 +517,63 @@
       refreshChangeGutter();
       refreshWorkspaceChanges();
       btn.hidden=true;
+      const commitPush=dialog.querySelector('#publish-commit-and-push');
+      if(commitPush)commitPush.hidden=true;
       dialog.querySelector('#publish-mark-public').hidden=true;
       dialog.querySelector('#publish-push').hidden=false;
       setNotice('Committed only this page to Git. Other staged files were excluded. Push separately to trigger your configured deployment pipeline.','info');
     }catch(err){setNotice(err.message,'warning');btn.disabled=false;}
     finally{state.busy=false;btn.textContent='Commit selected page';}
+  }
+  async function commitAndPushReview() {
+    if(state.busy||!state.data)return;
+    const data=state.data;
+    const messageField=dialog.querySelector('#publish-commit-message');
+    const message=messageField.value.trim();
+    if(messageField.value!==message){messageField.value=message;updateCommitMessage();}
+    if(!message||new TextEncoder().encode(message).length>4000) {
+      setNotice('Enter a commit message of 1 to 4000 bytes before publishing.','warning');return;
+    }
+    if(state.path!==window.MarkataSiteTree?.activeFile?.()||editor.getValue()!==data.current) {
+      setNotice('The document changed. Close and reopen review before publishing.','warning');return;
+    }
+    state.busy=true;
+    const pushBtn=dialog.querySelector('#publish-commit-and-push');
+    const commitBtn=dialog.querySelector('#publish-confirm');
+    pushBtn.disabled=true;commitBtn.disabled=true;
+    pushBtn.textContent='Publishing…';
+    try{
+      const response=await fetch('/workspace/publish/commit',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({path:data.path,head:data.head,version:data.version,message})
+      });
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.error||'Cannot commit this revision.');
+      state.commit=result;
+      refreshChangeGutter();
+      refreshWorkspaceChanges();
+      commitBtn.hidden=true;
+      pushBtn.hidden=true;
+      dialog.querySelector('#publish-mark-public').hidden=true;
+      const pushResp=await fetch('/workspace/publish/push?path='+encodeURIComponent(state.path),{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({commit:state.commit.commit,branch:state.commit.branch})
+      });
+      const pushResult=await pushResp.json();
+      if(!pushResp.ok){
+        dialog.querySelector('#publish-push').hidden=false;
+        throw new Error(pushResult.error||'Committed locally, but push failed. Click Push to origin to retry.');
+      }
+      refreshWorkspaceChanges();
+      dialog.querySelector('#publish-live-check').hidden=false;
+      setNotice('Committed and pushed to origin. Click Check live status to verify the builder release, if configured.','info');
+    }catch(err){
+      setNotice(err.message,'warning');
+      if(!state.commit){pushBtn.disabled=false;commitBtn.disabled=false;}
+    }finally{
+      state.busy=false;
+      pushBtn.textContent='Commit & Push';
+    }
   }
   async function checkLiveDeployment() {
     if(!state.commit || state.busy)return;
@@ -570,16 +630,64 @@
     return head + tail;
   }
 
+  function draftPostSource(source) {
+    const newline = source.includes('\r\n') ? '\r\n' : '\n';
+    if (!source.startsWith('---' + newline))
+      return '---' + newline + 'published: false' + newline + 'draft: true' +
+        newline + '---' + newline + newline + source;
+    const end = source.indexOf(newline + '---', 3 + newline.length);
+    if (end < 0) throw new Error('Fix malformed YAML frontmatter before saving as draft.');
+    let head = source.slice(0,end);
+    const tail = source.slice(end);
+    if (/^published:\s*(true|false)\s*$/im.test(head))
+      head = head.replace(/^published:\s*(true|false)\s*$/im, 'published: false');
+    else head += newline + 'published: false';
+    if (/^draft:\s*(true|false)\s*$/im.test(head))
+      head = head.replace(/^draft:\s*(true|false)\s*$/im, 'draft: true');
+    else head += newline + 'draft: true';
+    return head + tail;
+  }
+
   // Writer-first publication keeps the Git transaction behind one explicit
   // action, while preserving the guarded review/commit/push endpoints.
   let quickBusy = false;
   let pendingQuick = null;
   let publishStatus = null;
   function reportQuick(message, type='info') {
-    if (!publishStatus) return;
-    publishStatus.textContent = message;
-    publishStatus.dataset.state = type;
-    publishStatus.title = message;
+    if (publishStatus) {
+      publishStatus.textContent = message;
+      publishStatus.dataset.state = type;
+      publishStatus.title = message;
+    }
+    window.dispatchEvent(new CustomEvent('markata:publish-status', {
+      detail: { message, type, pending: Boolean(pendingQuick) }
+    }));
+  }
+  async function saveAsDraft() {
+    if (quickBusy || state.busy) return;
+    const path = canOpen();
+    if (!path) {
+      reportQuick('Choose a site Markdown post first.', 'warning');
+      return;
+    }
+    quickBusy = true;
+    try {
+      const current = editor.getValue();
+      const next = draftPostSource(current);
+      if (next !== current) {
+        editor.operation(() => editor.replaceRange(next, {line:0,ch:0},
+          {line:editor.lastLine(),ch:editor.getLine(editor.lastLine()).length}, '+draft-meta'));
+      }
+      reportQuick('Saving as draft…', 'loading');
+      await awaitSaved(path, editor.getValue());
+      reportQuick('Saved as draft (not published)', 'info');
+      refreshWorkspaceChanges();
+      refreshChangeGutter();
+    } catch (error) {
+      reportQuick('Could not save draft: ' + error.message, 'warning');
+    } finally {
+      quickBusy = false;
+    }
   }
   async function finishQuickPush(pending) {
     reportQuick('Publishing to your site…', 'loading');
@@ -1397,7 +1505,7 @@
     '<div id="publish-view-message" role="tabpanel" aria-labelledby="publish-tab-message" data-publish-view="message" hidden><label for="publish-commit-message">Commit message</label><textarea id="publish-commit-message" rows="4" maxlength="4000" spellcheck="true"></textarea><p class="publish-message-help"><span id="publish-message-count">0 / 4000 bytes</span> Used for the local commit. Nothing is pushed from this screen.</p></div></div>'+
     '<div id="publish-discard-warning" hidden role="status"></div>'+
     '<div id="publish-discard-confirmation" hidden role="alertdialog" aria-label="Confirm discard"><p id="publish-discard-description">Restore this document to its last committed version? This removes your reviewed unpublished changes, without changing Git history.</p><button type="button" id="publish-discard-cancel">Cancel</button><button type="button" id="publish-discard-accept">Discard reviewed changes</button></div>'+
-    '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-discard" hidden>Discard changes…</button><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-push" hidden>Push to origin</button><button type="button" id="publish-live-check" hidden>Check live status</button></footer>';
+    '<footer class="publish-actions"><span>A Git commit is not a verified deployment.</span><button type="button" id="publish-discard" hidden>Discard changes…</button><button type="button" id="publish-back">Back to editing</button><button type="button" id="publish-mark-public" hidden>Mark as public</button><button type="button" id="publish-confirm" disabled>Commit selected page</button><button type="button" id="publish-commit-and-push" disabled>Commit &amp; Push</button><button type="button" id="publish-push" hidden>Push to origin</button><button type="button" id="publish-live-check" hidden>Check live status</button></footer>';
     document.body.append(doc);dialog=doc;notice=doc.querySelector('#publish-notice');panels=doc.querySelector('#publish-body');
     button.addEventListener('click',quickPublish);
     // Keep detailed review discoverable without making it a publish prerequisite.
@@ -1438,6 +1546,7 @@
     doc.querySelector('#publish-discard-accept').addEventListener('click',discardReviewed);
     doc.querySelector('#publish-mark-public').addEventListener('click',markPublicAndReviewAgain);
     doc.querySelector('#publish-confirm').addEventListener('click',commitReview);
+    doc.querySelector('#publish-commit-and-push').addEventListener('click',commitAndPushReview);
     doc.querySelector('#publish-push').addEventListener('click',pushReview);
     doc.querySelector('#publish-live-check').addEventListener('click',checkLiveDeployment);
     doc.addEventListener('close',()=>{
@@ -1493,5 +1602,5 @@
       },true);
     }
   }
-  window.MarkataPublishReview={attach,open,quickPublish};
+  window.MarkataPublishReview={attach,open,quickPublish,saveAsDraft};
 })();

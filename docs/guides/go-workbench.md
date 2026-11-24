@@ -484,6 +484,9 @@ template defaults. The slug field stays empty when using the suggestion; its
 ghost text and the destination path update as the title changes. Enter a custom
 slug only when you want to override the title-derived filename. Creating the
 post opens the new file in the editor, where later edits autosave to the site.
+The Link starter opens with focus in its source URL field. Photo and Shot
+starters open with focus in the image URL field, ready for a pasted URL or
+clipboard image. Other starters open with the title selected.
 The built-in **Link** starter accepts a source URL and can fill in the title,
 description, and preview image from the same configured oEmbed and Open Graph
 providers used by [external embeds](./embeds/). It also imports available site,
