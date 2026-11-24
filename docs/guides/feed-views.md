@@ -124,6 +124,18 @@ The outer class disables the default single-column `.feed.h-feed` selector in
 `feeds.css`; the inner class activates the layout rules in `cards.css`.
 Applying the class to only one element does **not** reliably enable the layout.
 
+Both classes also set the layout display on the element itself. Keep the outer
+feed in normal block flow so its header, controls, posts list and pagination do
+not become competing grid or masonry items. Add this rule to your custom theme
+stylesheet, leaving the inner posts list to own the grid or masonry layout:
+
+```css
+.feed.h-feed.feed-layout-grid,
+.feed.h-feed.feed-layout-masonry {
+  display: block;
+}
+```
+
 | Class | When supported | Progressive fallback |
 | --- | --- | --- |
 | `feed-layout-grid` | Responsive CSS grid columns | Grid still works without subgrid; cards use their normal internal layout |
