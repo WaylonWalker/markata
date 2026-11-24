@@ -30,6 +30,7 @@ var (
 	upPreviewPort = upDefaultPreviewPort
 	upEditorOnly  bool
 	upBuilderOnly bool
+	upStrictPorts bool
 )
 
 // up starts the existing Go editor and site builder in independent child
@@ -48,6 +49,7 @@ func init() {
 	upCmd.Flags().IntVar(&upPreviewPort, "preview-port", upDefaultPreviewPort, "local site preview and builder port")
 	upCmd.Flags().BoolVar(&upEditorOnly, "editor-only", false, "start only the editor")
 	upCmd.Flags().BoolVar(&upBuilderOnly, "builder-only", false, "start only the builder and live preview")
+	upCmd.Flags().BoolVar(&upStrictPorts, "strict-ports", false, "fail if either configured port is occupied; never select another port")
 }
 
 type upOptions struct {
@@ -172,9 +174,20 @@ func runUpCommand(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("resolve child options: %w", err)
 	}
-	// Prevent an accidental connection to an unrelated local listener. Child
-	// commands still validate their own binding if another process races us.
-	if err := checkUpPorts(cmd.Context(), services); err != nil {
+	policy := upPortPolicy{
+		strict:          upStrictPorts,
+		editorExplicit:  cmd.Flags().Changed("editor-port"),
+		previewExplicit: cmd.Flags().Changed("preview-port"),
+	}
+	// Recognize existing Markata services for this workspace before choosing
+	// new ports. No unknown process is attached to, stopped, or replaced.
+	toLaunch, reused, err := findExistingUpServices(cmd.Context(), services, workspace, policy)
+	if err != nil {
+		return err
+	}
+	// Default local ports are conveniences; explicit ports remain strict.
+	services, changes, err := chooseUpPorts(cmd.Context(), toLaunch, policy)
+	if err != nil {
 		return err
 	}
 	executable, err := os.Executable()
@@ -182,10 +195,25 @@ func runUpCommand(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("locate Markata executable: %w", err)
 	}
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Markata workspace: %s\n", workspace)
+	for _, change := range changes {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "%s port %d is occupied; using %d instead (loopback only).\n", change.service, change.previous, change.selected)
+	}
+	for _, service := range reused {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s already running for this workspace: %s\n", service.name, service.url)
+	}
 	for _, service := range services {
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s starting: %s\n", service.name, service.url)
 	}
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Ctrl+C stops this workspace. Save does not publish.")
+	if len(services) == 0 {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Workspace already running. No duplicate services started.")
+		return nil
+	}
+	if len(reused) > 0 {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Ctrl+C stops only the new services; existing services keep running.")
+	} else {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Ctrl+C stops this workspace.")
+	}
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Saving drafts does not publish.")
 	ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	return superviseUp(ctx, executable, workspace, globalArgs, services, cmd.OutOrStdout(), cmd.ErrOrStderr())

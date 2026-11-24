@@ -90,7 +90,15 @@ markata up
 markata up --editor-port 8767 --preview-port 8001
 markata up --editor-only
 markata up --builder-only
+markata up --strict-ports        # fail rather than move default ports
 ```
+
+By default, an occupied editor/preview port triggers a search for a free
+loopback port, and Markata prints the actual URL. The command reuses any
+existing same-workspace Markata editor/preview it recognizes through its
+local-only identity endpoint. Explicit `--editor-port` and `--preview-port`
+are never silently changed; `--strict-ports` also fixes defaults.
+An unknown listener is never stopped or adopted.
 
 The URLs shown at startup are expected addresses, not verified readiness.
 Ctrl+C requests shutdown; Windows may require forcefully terminating owned
