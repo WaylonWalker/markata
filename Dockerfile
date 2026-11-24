@@ -7,7 +7,7 @@
 FROM golang:1.27.3-alpine AS builder
 
 # Install ca-certificates for HTTPS support in final image
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates gzip
 
 WORKDIR /app
 
