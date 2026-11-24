@@ -23,7 +23,8 @@
     const host=document.querySelector('#preview-pipeline');
     if(!host||!latestPreviewPipeline)return;
     const {stages,details}=latestPreviewPipeline;
-    const entries=[['Waiting',stages.waiting_ms,'waiting'],['Rendering',stages.rendering_ms,'rendering'],['Network / response',stages.network_ms,'network'],['Display',stages.display_ms,'display']];
+    const transportLabel=details.engine==='wasm'?'Worker message / response':'Network / response';
+    const entries=[['Waiting',stages.waiting_ms,'waiting'],['Rendering',stages.rendering_ms,'rendering'],[transportLabel,stages.network_ms,'network'],['Display',stages.display_ms,'display']];
     const total=entries.reduce((sum,[,value])=>sum+Math.max(0,value),0);
     const bar=host.querySelector('.pipeline-bar');
     bar.replaceChildren(...entries.map(([label,value,key])=>{
@@ -46,6 +47,7 @@
     const iframe=details.iframe;
     const display=host.querySelector('.pipeline-display-detail');
     display.textContent=iframe?`Iframe ${iframe.total_ms.toFixed(1)} ms · HTML parse ${iframe.html_parse_ms.toFixed(1)} ms · DOM patch ${iframe.dom_patch_ms.toFixed(1)} ms · features ${iframe.features_ms.toFixed(1)} ms`:Number.isFinite(details.frame_content_ready_ms)?`Initial frame content ${details.frame_content_ready_ms.toFixed(1)} ms · feature startup continues separately`: 'Iframe stage detail unavailable';
+    host.querySelector('.pipeline-note').textContent=details.engine==='wasm' ? 'Local mode uses a worker message round trip, not an HTTP render request. Worker initialization is measured separately.' : 'Waiting includes edit debounce. Network / response is the HTTP round trip after measured server queue and Go rendering; it includes response encoding and browser JSON decoding.';
     const scroll=iframe?.scroll_state;
     host.querySelector('.pipeline-scroll-detail').textContent=scroll?`Scroll sync ${scroll.total_ms.toFixed(1)} ms · layout ${scroll.layout_flush_ms.toFixed(1)} ms · blocks ${scroll.block_geometry_ms.toFixed(1)} ms · anchors ${scroll.nested_anchor_ms.toFixed(1)} ms · map ${scroll.mapping_ms.toFixed(1)} ms · caret ${scroll.marker_ms.toFixed(1)} ms (rect ${scroll.caret_rect_ms.toFixed(1)} · line ${scroll.line_height_ms.toFixed(1)} · text ${scroll.text_position_ms.toFixed(1)} · style ${scroll.caret_style_ms.toFixed(1)} ms)`:'';
     host.querySelector('.pipeline-rows').replaceChildren(...rows);
