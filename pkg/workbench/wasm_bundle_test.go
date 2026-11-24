@@ -44,9 +44,9 @@ func TestHandler_OptionalBundledWasmPreview(t *testing.T) {
 func TestHandler_HostedWasmAssetsKeepAuthBoundary(t *testing.T) {
 	h := newHandler(t)
 	if err := h.EnableHostedAuth(HostedAuthConfig{
-		PublicOrigin: "https://edit.waylonwalker.com",
+		PublicOrigin:      "https://edit.waylonwalker.com",
 		TrustedProxyCIDRs: []string{"10.42.0.0/24"},
-		RequiredScope: "markata-editor:admin",
+		RequiredScope:     "markata-editor:admin",
 	}); err != nil {
 		t.Fatal(err)
 	}
