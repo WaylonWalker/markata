@@ -6,7 +6,7 @@
     const worker = new Worker('/editor/wasm/worker.js?v=' + encodeURIComponent(version),
       {name: 'markata-preview-wasm'});
     const pending = new Map();
-    let counter = 0, running = true, ready = false;
+    let counter = 0, running = true, ready = false, memoryBytes = 0;
     let completeReady, rejectReady;
     const initialized = new Promise((resolve, reject) => {
       completeReady = resolve; rejectReady = reject;
@@ -37,8 +37,9 @@
           return;
         }
         ready = true;
+        if (Number.isSafeInteger(data.memory_bytes) && data.memory_bytes > 0) memoryBytes = data.memory_bytes;
         clearTimeout(initializationTimeout);
-        completeReady();
+        completeReady({memory_bytes: memoryBytes});
         return;
       }
       if (data?.type !== 'result' || !Number.isSafeInteger(data.revision)) return;
@@ -46,8 +47,9 @@
       if (!entry) return; // Response from an obsolete request.
       pending.delete(data.revision);
       clearTimeout(entry.timeout);
+      if (Number.isSafeInteger(data.memory_bytes) && data.memory_bytes > 0) memoryBytes = data.memory_bytes;
       if (data.result?.error) entry.reject(new Error(data.result.error));
-      else entry.resolve({result: data.result, render_ms: data.render_ms});
+      else entry.resolve({result: data.result, render_ms: data.render_ms, memory_bytes: memoryBytes});
     };
     initialized.catch(() => {}); // Worker may fail before anyone requests it.
     return {

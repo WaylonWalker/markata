@@ -39,3 +39,25 @@ test('worker initialization is gated on an actual version and Worker capability'
   assert.throws(() => window.MarkataWasmPreview.create(''), /unavailable/);
   assert.throws(() => window.MarkataWasmPreview.create('v1'), /unavailable/);
 });
+
+test('worker readiness and render results retain linear-memory measurements', async () => {
+  let activeWorker;
+  class FakeWorker {
+    constructor() { activeWorker = this; }
+    postMessage(request) {
+      this.onmessage({data: {type: 'result', revision: request.revision,
+        result: {schema_version: 1, html: '<p>ok</p>', source_lines: [], assets: []},
+        render_ms: 1, memory_bytes: 131072}});
+    }
+    terminate() {}
+  }
+  const memoryWindow = {Worker: FakeWorker};
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'wasm-preview.js'),'utf8'),
+    {window: memoryWindow, Worker: FakeWorker, URL, setTimeout, clearTimeout, console});
+  const client = memoryWindow.MarkataWasmPreview.create('v1');
+  activeWorker.onmessage({data: {type: 'ready', schema_version: 1, version: 'v1', memory_bytes: 65536}});
+  assert.equal((await client.ready).memory_bytes, 65536);
+  const result = await client.render('# sample');
+  assert.equal(result.memory_bytes, 131072);
+  client.close();
+});

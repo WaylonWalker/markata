@@ -14,7 +14,8 @@
       throw new Error('Incompatible Go preview contract; reload the editor');
     if (!Number.isSafeInteger(sourceOffset) || sourceOffset < 0)
       throw new Error('Invalid preview source offset');
-    if (typeof response.html !== 'string' ||
+    if (typeof response.renderer_fingerprint !== 'string' ||
+        typeof response.html !== 'string' ||
         typeof response.feature_head_html !== 'string' ||
         typeof response.body_end_html !== 'string')
       throw new Error('Incomplete Go preview payload');
@@ -75,7 +76,22 @@
     if (requiresSiteRender) return {renderer: 'go', reason: 'site-dependent-content'};
     return {renderer: 'wasm', reason: 'certified-local-preview'};
   }
+  function wasmEligibility({workerSupported = false, wasmSupported = false,
+                            siteFingerprint = '', workerFingerprint = '',
+                            deviceMemory, hardwareConcurrency, saveData = false,
+                            effectiveType = ''} = {}) {
+    if (!workerSupported || !wasmSupported) return {allowed: false, reason: 'browser-unsupported'};
+    if (!siteFingerprint || siteFingerprint !== workerFingerprint)
+      return {allowed: false, reason: 'renderer-fingerprint-mismatch'};
+    if (!Number.isFinite(deviceMemory) || deviceMemory <= 4)
+      return {allowed: false, reason: 'device-memory-limited'};
+    if (!Number.isFinite(hardwareConcurrency) || hardwareConcurrency <= 4)
+      return {allowed: false, reason: 'processor-capacity-limited'};
+    if (saveData || effectiveType === 'slow-2g' || effectiveType === '2g')
+      return {allowed: false, reason: 'reduced-data'};
+    return {allowed: true, reason: 'eligible'};
+  }
   window.MarkataPreviewContract = Object.freeze({
-    schemaVersion: SCHEMA_VERSION, fromGo, fromWasm, chooseRenderer,
+    schemaVersion: SCHEMA_VERSION, fromGo, fromWasm, chooseRenderer, wasmEligibility,
   });
 })();

@@ -960,6 +960,7 @@ function finishPreview(version, patchTiming) {
         request_ms:requestMS,queue_ms:queueMS,engine:activeRender.engine,
         go_render_ms:activeRender.engine === 'go' ? renderMS : 0,
         wasm_render_ms:activeRender.engine === 'wasm' ? renderMS : 0,cached:data.cached,
+        wasm_memory_bytes:data.wasm_memory_bytes || null,
         input_bytes:data.input_bytes,html_bytes:data.html_bytes,mode:activeRender.mode,iframe:patchTiming||null,
         frame_content_ready_ms:activeRender.frameContentReadyMS ?? previewFrameContentReadyMS,
       });
@@ -1056,15 +1057,23 @@ async function certifyWasm(snapshot) {
   if (!wasmReady || !wasmWorker || !snapshot ||
       !window.MarkataWasmPreview.simpleTextOnly(snapshot.markdown) ||
       snapshot.version !== revision) return;
+  const siteFingerprint = snapshot.data.renderer_fingerprint || '';
+  if (!siteFingerprint || siteFingerprint !== window.MARKATA_PREVIEW_FINGERPRINT ||
+      siteFingerprint !== window.MARKATA_WASM_VERSION) {
+    wasmParity = null;
+    return;
+  }
   try {
     const reply = await wasmWorker.render(snapshot.markdown);
+    window.MarkataDiagnostics?.recordWasmMemory(reply.memory_bytes);
     const wasm = window.MarkataPreviewContract.fromWasm(reply.result,
       {render_ms: reply.render_ms, input_bytes: new TextEncoder().encode(snapshot.markdown).length});
     if (snapshot.version !== revision || snapshot.documentId !== previewDocumentIdentity()) return;
     const proof = window.MarkataWasmPreview.compareParity(snapshot.data, wasm, snapshot.sourceLineOffset);
     wasmParity = proof ? {
       ...proof, documentId: snapshot.documentId, frontmatter: snapshot.frontmatter,
-      sourceLineOffset: snapshot.sourceLineOffset,
+      sourceLineOffset: snapshot.sourceLineOffset, siteFingerprint,
+      workerFingerprint: window.MARKATA_WASM_VERSION,
     } : null;
   } catch {
     // An unknown feature or dependency is not proof of parity. Continue in Go.
@@ -1072,13 +1081,31 @@ async function certifyWasm(snapshot) {
   }
 }
 function startOptionalWasmPreview() {
-  if (wasmWorker || !wasmPreviewOptIn || !window.MARKATA_WASM_VERSION || !window.MarkataWasmPreview) return;
+  if (wasmWorker || !wasmPreviewOptIn || !window.MARKATA_WASM_VERSION ||
+      !window.MARKATA_PREVIEW_FINGERPRINT || !window.MarkataWasmPreview ||
+      !window.MarkataPreviewContract) return;
+  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  const eligibility = window.MarkataPreviewContract.wasmEligibility({
+    workerSupported: typeof Worker === 'function',
+    wasmSupported: typeof WebAssembly === 'object',
+    siteFingerprint: window.MARKATA_PREVIEW_FINGERPRINT,
+    workerFingerprint: window.MARKATA_WASM_VERSION,
+    deviceMemory: navigator.deviceMemory,
+    hardwareConcurrency: navigator.hardwareConcurrency,
+    saveData: connection?.saveData === true,
+    effectiveType: connection?.effectiveType || '',
+  });
+  if (!eligibility.allowed) {
+    console.info('WASM preview remains on Go:', eligibility.reason);
+    return;
+  }
   const started = performance.now();
   try {
     const worker = window.MarkataWasmPreview.create(window.MARKATA_WASM_VERSION);
     wasmWorker = worker;
-    worker.ready.then(() => {
+    worker.ready.then(info => {
       wasmReady = true;
+      window.MarkataDiagnostics?.recordWasmMemory(info?.memory_bytes);
       window.MarkataDiagnostics?.record('wasm_bootstrap', performance.now() - started);
       if (lastGoPreview) void certifyWasm(lastGoPreview);
     }).catch(error => {
@@ -1092,8 +1119,18 @@ function startOptionalWasmPreview() {
   }
 }
 function canUseWasmPreview(markdown, frontmatter, sourceLineOffset) {
-  return wasmReady && wasmWorker && wasmParity && previewStarted && previewReady &&
+  if (!window.MarkataPreviewContract || !window.MarkataWasmPreview) return false;
+  const rendererChoice = window.MarkataPreviewContract?.chooseRenderer({
+    workerReady: wasmReady,
+    previewFrameReady: previewReady,
+    siteFingerprint: wasmParity?.siteFingerprint || '',
+    workerFingerprint: wasmParity?.workerFingerprint || '',
+    parityCertified: Boolean(wasmParity),
+    requiresSiteRender: !window.MarkataWasmPreview.simpleTextOnly(markdown),
+  });
+  return rendererChoice?.renderer === 'wasm' && wasmReady && wasmWorker && wasmParity && previewStarted && previewReady &&
     wasmParity.documentId === previewDocumentIdentity() &&
+    wasmParity.siteFingerprint === window.MARKATA_PREVIEW_FINGERPRINT &&
     wasmParity.frontmatter === (frontmatter || '') &&
     wasmParity.sourceLineOffset === sourceLineOffset &&
     window.MarkataWasmPreview.simpleTextOnly(markdown);
@@ -1136,12 +1173,14 @@ async function render() {
       try {
         const reply = await wasmWorker.render(markdown);
         if (version !== revision) return;
+        window.MarkataDiagnostics?.recordWasmMemory(reply.memory_bytes);
         const local = window.MarkataPreviewContract.fromWasm(reply.result,
           {render_ms: reply.render_ms, input_bytes: bytes});
         const html = wasmParity.prefix + local.html;
         data = {...local, html,
           source_lines: local.source_lines.map(line => line + sourceLineOffset),
           source_offset: sourceLineOffset,
+          wasm_memory_bytes: reply.memory_bytes,
           html_bytes: new TextEncoder().encode(html).length};
         responseAt = performance.now();
         engine = 'wasm';

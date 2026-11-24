@@ -6,15 +6,23 @@ importScripts('wasm_exec.js' + (new URL(location.href).searchParams.has('v')
 (async () => {
   const url = new URL(location.href);
   const suffix = url.searchParams.has('v') ? '?v=' + encodeURIComponent(url.searchParams.get('v')) : '';
+  const expectedVersion = url.searchParams.get('v') || '';
   const go = new Go();
   const response = await fetch('markata.wasm' + suffix, {credentials: 'same-origin'});
   if (!response.ok) throw new Error('Cannot load editor WASM (' + response.status + ')');
+  if (!expectedVersion || response.headers.get('X-Markata-Wasm-Version') !== expectedVersion)
+    throw new Error('WASM asset version mismatch');
   let instance;
+  const canStream = typeof WebAssembly.instantiateStreaming === 'function' &&
+    response.headers.get('Content-Type')?.split(';', 1)[0].trim() === 'application/wasm';
   try {
+    if (!canStream) throw new Error('Streaming WASM is unavailable');
     ({instance} = await WebAssembly.instantiateStreaming(response.clone(), go.importObject));
   } catch {
     ({instance} = await WebAssembly.instantiate(await response.arrayBuffer(), go.importObject));
   }
+  const wasmMemory = instance.exports.mem;
+  const memoryBytes = () => wasmMemory?.buffer?.byteLength || 0;
   go.run(instance).catch(error => postMessage({type: 'fatal', error: String(error)}));
   if (typeof markataRender !== 'function') throw new Error('WASM renderer unavailable');
   onmessage = ({data}) => {
@@ -24,11 +32,13 @@ importScripts('wasm_exec.js' + (new URL(location.href).searchParams.has('v')
     try {
       const result = JSON.parse(markataRender(data.source));
       postMessage({type: 'result', revision: data.revision, result,
-        render_ms: performance.now() - started});
+        render_ms: performance.now() - started, memory_bytes: memoryBytes()});
     } catch (error) {
       postMessage({type: 'result', revision: data.revision,
-        result: {error: String(error)}, render_ms: performance.now() - started});
+        result: {error: String(error)}, render_ms: performance.now() - started,
+        memory_bytes: memoryBytes()});
     }
   };
-  postMessage({type: 'ready', schema_version: 1, version: url.searchParams.get('v') || ''});
+  postMessage({type: 'ready', schema_version: 1, version: expectedVersion,
+    memory_bytes: memoryBytes()});
 })().catch(error => postMessage({type: 'fatal', error: String(error)}));

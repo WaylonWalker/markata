@@ -29,6 +29,9 @@ func TestHandler_PreviewContractV1(t *testing.T) {
 			if payload.SchemaVersion != 1 {
 				t.Fatalf("preview schema version = %d, want 1", payload.SchemaVersion)
 			}
+			if payload.RendererFingerprint != h.previewFingerprint {
+				t.Fatalf("renderer fingerprint = %q, want %q", payload.RendererFingerprint, h.previewFingerprint)
+			}
 			if (payload.Document != nil) != tc.wantDocument {
 				t.Fatalf("initial document presence = %t, want %t", payload.Document != nil, tc.wantDocument)
 			}

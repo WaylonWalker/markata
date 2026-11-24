@@ -37,6 +37,16 @@ source-line mapping must first match a native Go render exactly. Subsequent
 edits in the supported plain-Markdown subset can then render in the browser,
 without a /render request. The editor identifies these as **Quick local
 preview** in the status and diagnostics panel.
+The diagnostics report the worker's WebAssembly linear-memory high-water mark
+for the current editor session.
+
+The worker starts only when the browser reports more than 4 GiB of device
+memory and more than four logical processors. It stays off when reduced data
+use is enabled, the connection reports 2G or slow-2G, or the browser does not
+support Web Workers and WebAssembly.
+The editor also keeps this path disabled when a site configuration is active,
+because the worker does not load site-specific Markdown settings. In these
+cases, the same editor continues to use Go.
 
 Wikilinks, embeddings, code fences, tables, rich plugins, HTML and changed
 frontmatter stay on Go. Any worker error, unavailable assets, missing proof of

@@ -30,6 +30,30 @@ controlled origin, because opaque-origin sandbox requests bypass service workers
 The server supports gzip negotiation, loopback binding, and explicit port/output
 options. It does not serve a render API or receive document contents.
 
+## Hosted editor preview pilot
+
+The hosted Go editor may offer an opt-in worker preview after its first
+authoritative Go preview. The worker must not delay that first preview. It may
+run only when the server and worker advertise the same WASM asset fingerprint,
+the workspace has no active site configuration, the worker is ready, and a
+Go render of the selected Markdown has certified matching HTML and source
+lines. Unsupported Markdown, a missing fingerprint, a worker error, or a
+fingerprint mismatch keeps the Go renderer active.
+
+The browser must not download or initialize the WASM worker when the browser
+does not report device memory greater than 4 GiB or more than four logical
+processors, requests reduced data use, reports a 2G or slow-2G connection, or
+lacks Worker or WebAssembly support. A WASM response must carry the fingerprint
+of the exact uncompressed module; the worker must compare it with the fingerprint
+in its URL before starting Go. Hosted worker, runtime, and module responses stay
+authenticated, private, and no-store. The first preview remains Go-rendered,
+and WASM remains opt-in until hosted compatibility, memory, and edit-to-visible
+measurements justify a wider rollout.
+When the worker reports readiness or a render result, it MUST include the
+current WebAssembly linear-memory size. Local diagnostics MUST retain the
+largest value observed in the session without recording source text, paths, or
+credentials.
+
 ## Reproducible worker benchmarks
 
 The worker benchmark uses the seven renderer integration fixtures without changing their bytes.

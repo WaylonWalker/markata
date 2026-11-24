@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestHandler_OptionalBundledWasmPreview(t *testing.T) {
@@ -19,6 +21,10 @@ func TestHandler_OptionalBundledWasmPreview(t *testing.T) {
 	}
 	if !strings.Contains(index.Body.String(), "MARKATA_WASM_VERSION=") {
 		t.Fatal("editor does not expose WASM capability handshake")
+	}
+	wantFingerprint := wasmPreviewFingerprint(h.wasmVersion, h.siteConfig)
+	if !strings.Contains(index.Body.String(), `MARKATA_PREVIEW_FINGERPRINT="`+wantFingerprint+`";`) {
+		t.Fatalf("editor preview fingerprint does not match active renderer config: %q", wantFingerprint)
 	}
 
 	worker := httptest.NewRecorder()
@@ -33,6 +39,9 @@ func TestHandler_OptionalBundledWasmPreview(t *testing.T) {
 	if bundled == nil {
 		if response.Code != http.StatusOK || response.Header().Get("Content-Type") != "application/wasm" {
 			t.Fatalf("bundled WASM returned %d, MIME %q", response.Code, response.Header().Get("Content-Type"))
+		}
+		if response.Header().Get("X-Markata-Wasm-Version") != h.wasmVersion {
+			t.Fatalf("WASM version response = %q, want %q", response.Header().Get("X-Markata-Wasm-Version"), h.wasmVersion)
 		}
 		if strings.Contains(index.Body.String(), "MARKATA_WASM_VERSION=\"\";") {
 			t.Fatal("embedded WASM was not advertised")
@@ -104,7 +113,8 @@ func TestHandler_WasmPrecompressedResponse(t *testing.T) {
 	h.ServeHTTP(response, request)
 	if response.Code != http.StatusOK || response.Header().Get("Content-Encoding") != "gzip" ||
 		response.Header().Get("Vary") != "Accept-Encoding" ||
-		response.Header().Get("Content-Type") != "application/wasm" {
+		response.Header().Get("Content-Type") != "application/wasm" ||
+		response.Header().Get("X-Markata-Wasm-Version") != wasmPreviewFingerprint(h.wasmVersion, nil) {
 		t.Fatalf("WASM gzip status=%d encoding=%q vary=%q type=%q",
 			response.Code, response.Header().Get("Content-Encoding"),
 			response.Header().Get("Vary"), response.Header().Get("Content-Type"))
@@ -133,5 +143,17 @@ func TestHandler_WasmPrecompressedResponse(t *testing.T) {
 		!bytes.Equal(plain.Body.Bytes(), raw) {
 		t.Fatalf("WASM identity fallback returned status=%d encoding=%q",
 			plain.Code, plain.Header().Get("Content-Encoding"))
+	}
+}
+
+func TestWasmPreviewFingerprintRequiresDefaultSiteRenderer(t *testing.T) {
+	if got := wasmPreviewFingerprint("abc123", nil); got != "abc123" {
+		t.Fatalf("unconfigured renderer fingerprint = %q, want bundled version", got)
+	}
+	if got := wasmPreviewFingerprint("abc123", &models.Config{}); got != "" {
+		t.Fatalf("configured renderer fingerprint = %q, want WASM disabled", got)
+	}
+	if got := wasmPreviewFingerprint("", nil); got != "" {
+		t.Fatalf("native-only renderer fingerprint = %q, want empty", got)
 	}
 }

@@ -7,9 +7,10 @@ const path = require('node:path');
 
 const scope = {window: {}, TextEncoder};
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'preview-contract.js'), 'utf8'), scope);
-const {fromGo, fromWasm, chooseRenderer} = scope.window.MarkataPreviewContract;
+const {fromGo, fromWasm, chooseRenderer, wasmEligibility} = scope.window.MarkataPreviewContract;
 const go = () => ({
-  schema_version: 1, html: '<h1>Title</h1>', document: '<!doctype html>',
+  schema_version: 1, renderer_fingerprint: 'build-abc',
+  html: '<h1>Title</h1>', document: '<!doctype html>',
   source_lines: [0, 2, 3], source_anchors: [1, 4],
   feature_head_html: '', body_end_html: '',
   render_ms: 2.5, queue_ms: 0, input_bytes: 21, html_bytes: 14, cached: false,
@@ -28,6 +29,7 @@ test('Go payload keeps first-frame HTML and offsets source lines exactly once', 
 
 test('Version skew and missing initial shell fail before iframe update', () => {
   assert.throws(() => fromGo({...go(), schema_version: 2}), /Incompatible Go/);
+  assert.throws(() => fromGo({...go(), renderer_fingerprint: undefined}), /Incomplete Go/);
   assert.throws(() => fromGo({...go(), document: null}, 0, true), /Initial Go/);
   assert.throws(() => fromGo({...go(), source_lines: [0, -1]}), /source lines/);
   assert.throws(() => fromGo({...go(), source_anchors: [NaN]}), /source anchors/);
@@ -79,4 +81,23 @@ test('Missing shell and worker readiness always keep Go available', () => {
   const opts = {siteFingerprint: 'v1', workerFingerprint: 'v1', parityCertified: true};
   assert.equal(chooseRenderer({...opts, workerReady: false, previewFrameReady: true}).renderer, 'go');
   assert.equal(chooseRenderer({...opts, workerReady: true, previewFrameReady: false}).renderer, 'go');
+});
+
+test('WASM avoids browsers with limited or unknown resources and mismatched site renderers', () => {
+  const capable = {workerSupported: true, wasmSupported: true,
+    siteFingerprint: 'wasm-v1', workerFingerprint: 'wasm-v1',
+    deviceMemory: 8, hardwareConcurrency: 8};
+  assert.equal(wasmEligibility(capable).allowed, true);
+  assert.equal(wasmEligibility({...capable, siteFingerprint: ''}).reason,
+    'renderer-fingerprint-mismatch');
+  assert.equal(wasmEligibility({...capable, deviceMemory: 4}).reason,
+    'device-memory-limited');
+  assert.equal(wasmEligibility({...capable, deviceMemory: undefined}).reason,
+    'device-memory-limited');
+  assert.equal(wasmEligibility({...capable, hardwareConcurrency: 4}).reason,
+    'processor-capacity-limited');
+  assert.equal(wasmEligibility({...capable, saveData: true}).reason, 'reduced-data');
+  assert.equal(wasmEligibility({...capable, effectiveType: '2g'}).reason, 'reduced-data');
+  assert.equal(wasmEligibility({...capable, workerSupported: false}).reason,
+    'browser-unsupported');
 });

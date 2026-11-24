@@ -2,9 +2,15 @@
 (() => {
   const samples = new Map();
   let latestPreviewPipeline = null;
+  let peakWasmMemoryBytes = 0;
   function record(name, milliseconds) {
     if (!Number.isFinite(milliseconds) || milliseconds < 0) return;
     const values=samples.get(name)||[]; values.push(milliseconds); if(values.length>100)values.shift(); samples.set(name,values);
+  }
+  function recordWasmMemory(bytes) {
+    if (!Number.isSafeInteger(bytes) || bytes <= 0) return;
+    peakWasmMemoryBytes = Math.max(peakWasmMemoryBytes, bytes);
+    renderPipeline();
   }
   function snapshot() {
     const measurements={};
@@ -12,7 +18,9 @@
       const sorted=[...values].sort((a,b)=>a-b);
       measurements[name]={count:values.length,last_ms:values.at(-1),p50_ms:sorted[Math.floor((sorted.length-1)*.5)],p95_ms:sorted[Math.ceil((sorted.length-1)*.95)]};
     }
-    return {schema_version:1, startup:window.MarkataStartupStatus?.snapshot() || null, measurements, preview_pipeline:latestPreviewPipeline};
+    return {schema_version:1, startup:window.MarkataStartupStatus?.snapshot() || null,
+      measurements, preview_pipeline:latestPreviewPipeline,
+      wasm_worker_memory_bytes:peakWasmMemoryBytes || null};
   }
   function recordPreviewPipeline(stages, details) {
     latestPreviewPipeline={stages,details,recorded_at:new Date().toISOString()};
@@ -43,7 +51,11 @@
       item.append(swatch,name,amount);return item;
     });
     const rendering=host.querySelector('.pipeline-render-detail');
-    rendering.textContent=details.engine==='wasm' ? `${details.mode||'Normal'} mode · local WASM ${details.wasm_render_ms.toFixed(1)} ms · no render HTTP request` : `${details.mode||'Normal'} mode · server queue ${details.queue_ms.toFixed(1)} ms · Go render ${details.go_render_ms.toFixed(1)} ms${details.cached?' · cached':''}`;
+    const workerMemory=details.wasm_memory_bytes||peakWasmMemoryBytes;
+    const memoryText=workerMemory?` · WASM linear memory ${(workerMemory/1048576).toFixed(1)} MiB`:'';
+    rendering.textContent=details.engine==='wasm' ? `${details.mode||'Normal'} mode · local WASM ${details.wasm_render_ms.toFixed(1)} ms · no render HTTP request${memoryText}` : `${details.mode||'Normal'} mode · server queue ${details.queue_ms.toFixed(1)} ms · Go render ${details.go_render_ms.toFixed(1)} ms${details.cached?' · cached':''}`;
+    const memoryDetail=host.querySelector('.pipeline-memory-detail');
+    memoryDetail.textContent=peakWasmMemoryBytes?`Worker memory high-water mark: ${(peakWasmMemoryBytes/1048576).toFixed(1)} MiB`:'Worker memory is not in use';
     const iframe=details.iframe;
     const display=host.querySelector('.pipeline-display-detail');
     display.textContent=iframe?`Iframe ${iframe.total_ms.toFixed(1)} ms · HTML parse ${iframe.html_parse_ms.toFixed(1)} ms · DOM patch ${iframe.dom_patch_ms.toFixed(1)} ms · features ${iframe.features_ms.toFixed(1)} ms`:Number.isFinite(details.frame_content_ready_ms)?`Initial frame content ${details.frame_content_ready_ms.toFixed(1)} ms · feature startup continues separately`: 'Iframe stage detail unavailable';
@@ -54,7 +66,7 @@
   }
   function attach() {
     const panel=document.createElement('aside'); panel.id='diagnostics-panel';panel.hidden=true;panel.setAttribute('aria-label','Performance diagnostics');
-    panel.innerHTML='<div class="diagnostics-heading"><h2>Performance diagnostics</h2><button type="button" aria-label="Close diagnostics">Close</button></div><p>Local measurements from this session. No content or search terms are collected.</p><div class="diagnostics-mode"><label for="diagnostics-preview-mode">Preview speed</label><select id="diagnostics-preview-mode"><option value="auto">Auto</option><option value="fast">Fast</option><option value="normal">Normal</option><option value="slow">Slow</option></select></div><section id="preview-pipeline" aria-labelledby="preview-pipeline-title"><div class="pipeline-heading"><h3 id="preview-pipeline-title">Latest preview pipeline</h3><strong class="pipeline-total">Waiting for a preview</strong></div><div class="pipeline-bar" role="img" aria-label="Preview timing stages"></div><div class="pipeline-rows"></div><p class="pipeline-render-detail"></p><p class="pipeline-display-detail"></p><p class="pipeline-scroll-detail"></p><p class="pipeline-note">Waiting includes the edit debounce. Network / response is the HTTP round trip after measured server queue and Go rendering; it includes response encoding and browser JSON decoding.</p></section><pre id="diagnostics-live"></pre><button id="diagnostics-copy" type="button">Copy full report</button><span id="diagnostics-copy-status" role="status"></span>';
+    panel.innerHTML='<div class="diagnostics-heading"><h2>Performance diagnostics</h2><button type="button" aria-label="Close diagnostics">Close</button></div><p>Local measurements from this session. No content or search terms are collected.</p><div class="diagnostics-mode"><label for="diagnostics-preview-mode">Preview speed</label><select id="diagnostics-preview-mode"><option value="auto">Auto</option><option value="fast">Fast</option><option value="normal">Normal</option><option value="slow">Slow</option></select></div><section id="preview-pipeline" aria-labelledby="preview-pipeline-title"><div class="pipeline-heading"><h3 id="preview-pipeline-title">Latest preview pipeline</h3><strong class="pipeline-total">Waiting for a preview</strong></div><div class="pipeline-bar" role="img" aria-label="Preview timing stages"></div><div class="pipeline-rows"></div><p class="pipeline-render-detail"></p><p class="pipeline-memory-detail" aria-live="polite"></p><p class="pipeline-display-detail"></p><p class="pipeline-scroll-detail"></p><p class="pipeline-note">Waiting includes the edit debounce. Network / response is the HTTP round trip after measured server queue and Go rendering; it includes response encoding and browser JSON decoding.</p></section><pre id="diagnostics-live"></pre><button id="diagnostics-copy" type="button">Copy full report</button><span id="diagnostics-copy-status" role="status"></span>';
     document.body.append(panel);
     const startup=document.querySelector('#startup-index');if(startup)panel.insertBefore(startup,panel.querySelector('pre'));
     const toggle=document.createElement('button');toggle.id='diagnostics-toggle';toggle.type='button';toggle.textContent='Diagnostics';toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-controls',panel.id);document.querySelector('#workbench-footer').append(toggle);
@@ -89,5 +101,5 @@
       });observer.observe({type:'resource',buffered:true});window.addEventListener('pagehide',()=>{observer.disconnect();clearInterval(refresh);},{once:true});
     }catch{/* Resource timing is optional. */}
   }
-  window.MarkataDiagnostics={record,recordPreviewPipeline,snapshot,attach};
+  window.MarkataDiagnostics={record,recordPreviewPipeline,recordWasmMemory,snapshot,attach};
 })();
