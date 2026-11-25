@@ -105,6 +105,23 @@ Ctrl+C requests shutdown; Windows may require forcefully terminating owned
 children. This optional foreground convenience does not configure hosting or
 pairing. See [Workspace Up](/docs/guides/workspace-up/).
 
+## Optional workspace bootstrap: `setup`
+
+`markata setup [workspace]` creates a default site configuration in a new
+workspace without overwriting an existing config. It works noninteractively
+and preserves supported legacy configuration names.
+
+```sh
+markata setup my-site
+cd my-site
+markata up
+```
+
+Use `markata editor` and `markata serve` instead when independent services are
+preferred. This optional command does not install an agent, choose a hosting
+provider, start a background service, or publish. For primary agent-first
+onboarding, use `markata --skill`.
+
 ## Agent-assisted troubleshooting: `triage`
 
 `markata triage` collects a small, privacy-conscious diagnostic summary and passes a troubleshooting prompt to an interactive coding agent, clipboard, or stdout. The default is a fuzzy picker of **detected installed** coding agents plus clipboard and stdout. When either terminal stream is redirected or `--no-input` is used, it prints **only the Markdown prompt** to stdout.
