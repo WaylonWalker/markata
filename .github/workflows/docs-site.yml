@@ -11,6 +11,7 @@ on:
       - 'pkg/**'
       - 'templates/**'
       - 'static/**'
+      - 'install.sh'
       - 'go.mod'
       - 'go.sum'
       - '.github/workflows/docs-site.yml'
@@ -24,6 +25,7 @@ on:
       - 'pkg/**'
       - 'templates/**'
       - 'static/**'
+      - 'install.sh'
       - 'go.mod'
       - 'go.sum'
       - '.github/workflows/docs-site.yml'
@@ -60,6 +62,12 @@ jobs:
           test -s docs-site/_site/docs/guides/authoring/index.html
           test -s docs-site/_site/docs/guides/deployment/index.html
           test -s docs-site/_site/docs/guides/deployment-guide/index.html
+          # Verify the generated branded installer before advertising its URL.
+          test -s docs-site/_site/install.sh
+          cmp install.sh static/install.sh
+          cmp static/install.sh docs-site/_site/install.sh
+          bash -n docs-site/_site/install.sh
+          head -n 1 docs-site/_site/install.sh | grep -Fx '#!/bin/bash'
           test -s docs-site/_site/favicon.ico
           grep -F 'class="chroma"' docs-site/_site/docs/guides/authoring/index.html
           grep -F 'aria-label="Documentation navigation"' docs-site/_site/docs/guides/authoring/index.html
