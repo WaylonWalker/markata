@@ -9,6 +9,7 @@ import (
 
 func TestContributionGraphPlugin_Name(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 	if got := p.Name(); got != "contribution_graph" {
 		t.Errorf("Name() = %q, want %q", got, "contribution_graph")
 	}
@@ -16,6 +17,7 @@ func TestContributionGraphPlugin_Name(t *testing.T) {
 
 func TestContributionGraphPlugin_ProcessPost_NoContributionGraph(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{ArticleHTML: "<p>Hello world</p>"}
 
@@ -31,6 +33,7 @@ func TestContributionGraphPlugin_ProcessPost_NoContributionGraph(t *testing.T) {
 
 func TestContributionGraphPlugin_ProcessPost_ValidGraph(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{ArticleHTML: `<p>Check out this contribution graph:</p>
 <pre><code class="language-contribution-graph">{
@@ -63,6 +66,7 @@ func TestContributionGraphPlugin_ProcessPost_ValidGraph(t *testing.T) {
 
 func TestContributionGraphPlugin_ProcessPost_InvalidJSON(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{ArticleHTML: `<pre><code class="language-contribution-graph">{ invalid json }</code></pre>`}
 
@@ -81,6 +85,7 @@ func TestContributionGraphPlugin_ProcessPost_InvalidJSON(t *testing.T) {
 
 func TestContributionGraphPlugin_ProcessPost_MultipleGraphs(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{ArticleHTML: `<pre><code class="language-contribution-graph">{"data": [], "options": {}}</code></pre>
 <p>And another:</p>
@@ -104,6 +109,7 @@ func TestContributionGraphPlugin_ProcessPost_MultipleGraphs(t *testing.T) {
 
 func TestContributionGraphPlugin_ProcessPost_SkipPost(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{
 		Skip:        true,
@@ -123,6 +129,7 @@ func TestContributionGraphPlugin_ProcessPost_SkipPost(t *testing.T) {
 
 func TestContributionGraphPlugin_ProcessPost_EmptyHTML(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{ArticleHTML: ""}
 
@@ -138,7 +145,9 @@ func TestContributionGraphPlugin_ProcessPost_EmptyHTML(t *testing.T) {
 
 func TestContributionGraphPlugin_ProcessPost_Disabled(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 	p.SetConfig(models.ContributionGraphConfig{
+		Mode:    "client",
 		Enabled: false,
 		CDNURL:  "https://cdn.jsdelivr.net/npm/cal-heatmap@4",
 	})
@@ -150,7 +159,9 @@ func TestContributionGraphPlugin_ProcessPost_Disabled(t *testing.T) {
 
 func TestContributionGraphPlugin_ProcessPost_CustomContainerClass(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 	p.SetConfig(models.ContributionGraphConfig{
+		Mode:           "client",
 		Enabled:        true,
 		CDNURL:         "https://example.com/cal-heatmap",
 		ContainerClass: "my-custom-graph",
@@ -177,6 +188,7 @@ func TestContributionGraphPlugin_ProcessPost_CustomContainerClass(t *testing.T) 
 
 func TestContributionGraphPlugin_ProcessPost_HTMLEntities(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{ArticleHTML: `<pre><code class="language-contribution-graph">{&quot;data&quot;: [], &quot;options&quot;: {}}</code></pre>`}
 
@@ -195,6 +207,7 @@ func TestContributionGraphPlugin_ProcessPost_HTMLEntities(t *testing.T) {
 
 func TestContributionGraphPlugin_ProcessPost_PreserveSurroundingContent(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{ArticleHTML: `<h1>Title</h1>
 <pre><code class="language-contribution-graph">{"data": []}</code></pre>
@@ -215,6 +228,7 @@ func TestContributionGraphPlugin_ProcessPost_PreserveSurroundingContent(t *testi
 
 func TestContributionGraphPlugin_ProcessPost_WithOptions(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{ArticleHTML: `<pre><code class="language-contribution-graph">{
   "data": [{"date": "2024-01-01", "value": 5}],
@@ -241,6 +255,7 @@ func TestContributionGraphPlugin_ProcessPost_WithOptions(t *testing.T) {
 
 func TestContributionGraphPlugin_ProcessPost_DataParsing(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{ArticleHTML: `<pre><code class="language-contribution-graph">{
   "data": [
@@ -266,6 +281,7 @@ func TestContributionGraphPlugin_ProcessPost_DataParsing(t *testing.T) {
 
 func TestContributionGraphPlugin_ProcessPost_MaxPercentileCapsScale(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{ArticleHTML: `<pre><code class="language-contribution-graph">{
   "data": [
@@ -291,6 +307,7 @@ func TestContributionGraphPlugin_ProcessPost_MaxPercentileCapsScale(t *testing.T
 
 func TestContributionGraphPlugin_ProcessPost_MaxValueOverridesScale(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 
 	post := &models.Post{ArticleHTML: `<pre><code class="language-contribution-graph">{
   "data": [
@@ -318,7 +335,9 @@ func TestContributionGraphPlugin_ProcessPost_MaxValueOverridesScale(t *testing.T
 
 func TestContributionGraphPlugin_ProcessPost_GlobalScaleMaxPercentile(t *testing.T) {
 	p := NewContributionGraphPlugin()
+	p.config.Mode = "client"
 	p.SetConfig(models.ContributionGraphConfig{
+		Mode:               "client",
 		Enabled:            true,
 		CDNURL:             "https://example.com/cal-heatmap",
 		ContainerClass:     "contribution-graph-container",

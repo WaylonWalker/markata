@@ -28,6 +28,7 @@ hooks = ["default", "contribution_graph"]
 
 [markata-go.contribution_graph]
 enabled = true
+mode = "auto"                                            # native SVG when supported; browser fallback otherwise
 cdn_url = "/assets/vendor/cal-heatmap"                # Cal-Heatmap base URL (local by default)
 container_class = "contribution-graph-container"
 theme = "light"
@@ -39,6 +40,7 @@ scale_max_percentile = 0                               # Optional global outlier
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | bool | `true` | Enable/disable the plugin |
+| `mode` | string | `auto` | Native SVG for supported year/day layouts; fall back to Cal-Heatmap for monthly or custom options. Use `go` for strict SVG or `client` for interactive output. |
 | `cdn_url` | string | `/assets/vendor/cal-heatmap` | Cal-Heatmap base URL (local by default) |
 | `container_class` | string | `contribution-graph-container` | CSS class for the container |
 | `theme` | string | `light` | Color theme (`light` or `dark`) |
