@@ -7,6 +7,8 @@ on:
       - 'pkg/workbench/web/offline-outbox.test.mjs'
       - 'pkg/workbench/web/offline-sync.mjs'
       - 'pkg/workbench/web/offline-sync.test.mjs'
+      - 'pkg/workbench/web/offline-session.mjs'
+      - 'pkg/workbench/web/offline-session.test.mjs'
       - 'pkg/workbench/web/offline-outbox.browser.html'
       - 'pkg/workbench/web/offline-outbox.browser-runner.mjs'
       - '.github/workflows/editor-offline-outbox.yml'
@@ -29,7 +31,9 @@ jobs:
           node --check pkg/workbench/web/offline-outbox.test.mjs
           node --check pkg/workbench/web/offline-sync.mjs
           node --check pkg/workbench/web/offline-sync.test.mjs
+          node --check pkg/workbench/web/offline-session.mjs
+          node --check pkg/workbench/web/offline-session.test.mjs
       - name: Test local draft and outbox transaction semantics
-        run: node --test pkg/workbench/web/offline-outbox.test.mjs pkg/workbench/web/offline-sync.test.mjs
+        run: node --test pkg/workbench/web/offline-outbox.test.mjs pkg/workbench/web/offline-sync.test.mjs pkg/workbench/web/offline-session.test.mjs
       - name: Verify native IndexedDB in headless Chrome
         run: node pkg/workbench/web/offline-outbox.browser-runner.mjs
