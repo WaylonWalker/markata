@@ -345,12 +345,14 @@
   function syncVisualViewport() {
     if (!isMobile()) {
       document.documentElement.style.removeProperty('--cms-viewport-height');
+      document.documentElement.style.removeProperty('--cms-viewport-top');
       document.body.classList.remove('mobile-writing-active');
       return;
     }
     const vv = window.visualViewport;
     if (vv) {
       document.documentElement.style.setProperty('--cms-viewport-height', `${Math.floor(vv.height)}px`);
+      document.documentElement.style.setProperty('--cms-viewport-top', `${Math.max(0, Math.floor(vv.offsetTop))}px`);
       const keyboardLikelyOpen = window.innerHeight - vv.height > 120;
       const cmFocused = Boolean(document.activeElement?.closest?.('.CodeMirror'));
       document.body.classList.toggle('mobile-writing-active', keyboardLikelyOpen && cmFocused);
@@ -359,9 +361,11 @@
   }
 
   window.visualViewport?.addEventListener('resize', syncVisualViewport);
+  window.visualViewport?.addEventListener('scroll', syncVisualViewport);
   document.addEventListener('focusin', (event) => {
-    if (isMobile() && event.target?.closest?.('.CodeMirror')) {
+    if (isMobile() && (event.target?.closest?.('.CodeMirror') || event.target?.closest?.('dialog'))) {
       syncVisualViewport();
+      setTimeout(syncVisualViewport, 120);
     }
   });
   document.addEventListener('focusout', () => {
@@ -667,9 +671,71 @@
 
   function hideToast() {
     clearTimeout(toastTimer);
+    toast.classList.remove('is-dragging');
+    toast.style.transform = '';
+    toast.style.opacity = '';
     toast.hidden = true;
   }
   toastClose.addEventListener('click', hideToast);
+
+  // 1:1 finger-tracked upward swipe-to-dismiss on the floating publish toast (matches entrance axis).
+  let toastDrag = null;
+  toast.addEventListener('pointerdown', (event) => {
+    if (event.target.closest('button')) return;
+    toastDrag = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startTime: performance.now(),
+      dy: 0,
+    };
+    toast.classList.add('is-dragging');
+    toast.setPointerCapture?.(event.pointerId);
+  });
+  toast.addEventListener('pointermove', (event) => {
+    if (!toastDrag || event.pointerId !== toastDrag.pointerId) return;
+    const rawDy = event.clientY - toastDrag.startY;
+    // Allow 1:1 upward drag; rubber-band downward drag gently.
+    const dy = rawDy < 0 ? rawDy : rawDy * 0.22;
+    toastDrag.dy = dy;
+    toast.style.transform = `translateY(${dy.toFixed(1)}px)`;
+    toast.style.opacity = String(Math.max(0.25, 1 + Math.min(0, dy) / 110));
+  });
+  function endToastDrag(event) {
+    if (!toastDrag || event.pointerId !== toastDrag.pointerId) return;
+    const { dy, startTime } = toastDrag;
+    const dt = Math.max(1, performance.now() - startTime);
+    const velocity = dy / dt; // px/ms (negative = upward flick)
+    toastDrag = null;
+    toast.classList.remove('is-dragging');
+    if (dy < -36 || velocity < -0.45) {
+      toast.style.transform = 'translateY(-110%)';
+      toast.style.opacity = '0';
+      setTimeout(hideToast, 180);
+    } else {
+      toast.style.transform = '';
+      toast.style.opacity = '';
+    }
+  }
+  toast.addEventListener('pointerup', endToastDrag);
+  toast.addEventListener('pointercancel', endToastDrag);
+
+  // Keep mobile browser/PWA status bar color matched to the active header surface.
+  function syncThemeColorMeta() {
+    const metas = document.querySelectorAll('meta[name="theme-color"]');
+    const topHeader = document.querySelector('body > header');
+    if (!metas.length || !topHeader) return;
+    const headerBg = getComputedStyle(topHeader).backgroundColor;
+    if (headerBg && headerBg !== 'rgba(0, 0, 0, 0)' && headerBg !== 'transparent') {
+      metas.forEach((meta) => meta.setAttribute('content', headerBg));
+    }
+  }
+  syncThemeColorMeta();
+  requestAnimationFrame(syncThemeColorMeta);
+  window.addEventListener('load', syncThemeColorMeta);
+  new MutationObserver(() => requestAnimationFrame(syncThemeColorMeta)).observe(
+    document.documentElement,
+    { attributes: true, attributeFilter: ['data-theme', 'data-palette', 'style', 'class'] }
+  );
 
   window.addEventListener('markata:publish-status', (event) => {
     const { message, type = 'info', pending = false } = event.detail || {};
@@ -698,6 +764,36 @@
     toast.hidden = false;
     if (type !== 'loading' && type !== 'warning') {
       toastTimer = setTimeout(hideToast, 5500);
+    }
+  });
+
+  // Close any open <dialog> modal when the user clicks its ::backdrop outside the dialog box.
+  // Require both pointerdown and click outside bounds so dragging text selection out doesn't dismiss.
+  let backdropDownDialog = null;
+  function isOutsideDialogBounds(dialog, event) {
+    if (event.target !== dialog) return false;
+    if (event.clientX === 0 && event.clientY === 0) return false;
+    const rect = dialog.getBoundingClientRect();
+    return (
+      event.clientX < rect.left ||
+      event.clientX > rect.right ||
+      event.clientY < rect.top ||
+      event.clientY > rect.bottom
+    );
+  }
+  document.addEventListener('pointerdown', (event) => {
+    const dialog = event.target instanceof HTMLDialogElement ? event.target : null;
+    backdropDownDialog =
+      dialog && dialog.open && !dialog.hasAttribute('data-no-backdrop-close') && isOutsideDialogBounds(dialog, event)
+        ? dialog
+        : null;
+  });
+  document.addEventListener('click', (event) => {
+    const dialog = backdropDownDialog;
+    backdropDownDialog = null;
+    if (!dialog || !dialog.open || dialog.hasAttribute('data-no-backdrop-close')) return;
+    if (isOutsideDialogBounds(dialog, event)) {
+      dialog.close();
     }
   });
 
