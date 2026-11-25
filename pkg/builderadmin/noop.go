@@ -586,9 +586,9 @@ func validateNoOpContentPatterns(patterns []string) error {
 }
 
 func validateNoOpExternalInputs(siteConfig *models.Config, builderMermaidMode []string) error {
-	if noOpWellKnownTimeEnabled(siteConfig) {
-		return errors.New("the well-known time endpoint changes on every build")
-	}
+	// Build-time outputs such as .well-known/time are preserved by the
+	// no-op release check. Only inputs that can change independently of the
+	// captured source, configuration, and cache fingerprints need guards here.
 	if noOpTailwindBuildEnabled(siteConfig) {
 		return errors.New("tailwind builds use an external executable and cache that are not covered by no-op snapshots")
 	}
@@ -611,18 +611,6 @@ func validateNoOpExternalInputs(siteConfig *models.Config, builderMermaidMode []
 		return errors.New("excalidraw chromium rendering uses an external browser not covered by no-op snapshots")
 	}
 	return nil
-}
-
-func noOpWellKnownTimeEnabled(siteConfig *models.Config) bool {
-	if siteConfig == nil || !siteConfig.WellKnown.IsEnabled() {
-		return false
-	}
-	for _, entry := range siteConfig.WellKnown.AutoGenerateList() {
-		if strings.EqualFold(strings.TrimSpace(entry), "time") {
-			return true
-		}
-	}
-	return false
 }
 
 func (s *Service) noOpInputSnapshot(ctx context.Context) (noOpSnapshot, error) {

@@ -54,6 +54,9 @@ func TestVerifiedNoOpLeavesCurrentReleaseAndWorkspaceUntouched(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(svc.cfg.SiteDir, "releases", "release-a", "index.html"), []byte("live"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	wellKnownTimePath := filepath.Join(svc.cfg.SiteDir, "releases", "release-a", ".well-known", "time")
+	wellKnownTime := "2026-11-25T20:00:00Z\n"
+	writeNoOpFile(t, wellKnownTimePath, wellKnownTime)
 	if err := os.Symlink(filepath.Join("releases", "release-a"), filepath.Join(svc.cfg.SiteDir, "current")); err != nil {
 		t.Fatal(err)
 	}
@@ -96,8 +99,11 @@ func TestVerifiedNoOpLeavesCurrentReleaseAndWorkspaceUntouched(t *testing.T) {
 	if record.Status != "success" || record.Result != "unchanged" || record.BecameLive || record.ReleaseID != "release-a" {
 		t.Fatalf("no-op record = %+v", record)
 	}
-	if record.NoOpReleaseEntries != 1 {
-		t.Fatalf("release entries = %d, want 1", record.NoOpReleaseEntries)
+	if record.NoOpReleaseEntries < 2 {
+		t.Fatalf("release entries = %d, want at least 2 including well-known time", record.NoOpReleaseEntries)
+	}
+	if got, err := os.ReadFile(wellKnownTimePath); err != nil || string(got) != wellKnownTime {
+		t.Fatalf("well-known time output changed during no-op: got=%q error=%v", got, err)
 	}
 	if got, err := os.Readlink(filepath.Join(svc.cfg.SiteDir, "current")); err != nil || got != filepath.Join("releases", "release-a") {
 		t.Fatalf("current symlink = %q, error=%v", got, err)
@@ -653,20 +659,13 @@ func TestNoOpConfigRejectsAbsoluteContentPatterns(t *testing.T) {
 	}
 }
 
-func TestNoOpWellKnownTimeFreshnessGuard(t *testing.T) {
-	config := models.NewConfig()
-	if !noOpWellKnownTimeEnabled(config) {
-		t.Fatal("default well-known time endpoint was not detected")
-	}
-	config.WellKnown.AutoGenerate = []string{"links"}
-	if noOpWellKnownTimeEnabled(config) {
-		t.Fatal("well-known time endpoint remained enabled after removal")
-	}
+func TestNoOpAllowsWellKnownTimeEndpoint(t *testing.T) {
+	config := newNoOpValidationConfig()
 	config.WellKnown.AutoGenerate = []string{"time"}
-	disabled := false
-	config.WellKnown.Enabled = &disabled
-	if noOpWellKnownTimeEnabled(config) {
-		t.Fatal("disabled well-known plugin was treated as a changing input")
+	config.Search.Backend = "bleve"
+	config.Extra = map[string]any{"tailwind": map[string]any{"build": false}}
+	if err := validateNoOpConfig(config); err != nil {
+		t.Fatalf("well-known time endpoint rejected for verified no-op: %v", err)
 	}
 }
 
@@ -847,7 +846,7 @@ func BenchmarkVerifiedNoOpProductionShape(b *testing.B) {
 	}
 	releaseID := "release-production-shaped"
 	releaseRoot := filepath.Join(svc.cfg.SiteDir, "releases", releaseID)
-	for i := 0; i < 37655; i++ {
+	for i := 0; i < 37654; i++ {
 		dir := filepath.Join(releaseRoot, "pages", "shard-"+strconv.Itoa(i/600))
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			b.Fatal(err)
@@ -856,6 +855,14 @@ func BenchmarkVerifiedNoOpProductionShape(b *testing.B) {
 		if err := os.WriteFile(path, []byte("<!doctype html><title>Page</title>"), 0o644); err != nil {
 			b.Fatal(err)
 		}
+	}
+	wellKnownTimePath := filepath.Join(releaseRoot, ".well-known", "time")
+	if err := os.MkdirAll(filepath.Dir(wellKnownTimePath), 0o755); err != nil {
+		b.Fatal(err)
+	}
+	wellKnownTime := []byte("2026-11-25T20:00:00Z\n")
+	if err := os.WriteFile(wellKnownTimePath, wellKnownTime, 0o644); err != nil {
+		b.Fatal(err)
 	}
 	if err := os.MkdirAll(filepath.Dir(filepath.Join(svc.cfg.SiteDir, "current")), 0o755); err != nil {
 		b.Fatal(err)
@@ -906,6 +913,9 @@ func BenchmarkVerifiedNoOpProductionShape(b *testing.B) {
 				b.Fatal("production-shaped unchanged request did not complete as a no-op")
 			}
 		}
+		if got, err := os.ReadFile(wellKnownTimePath); err != nil || string(got) != string(wellKnownTime) {
+			b.Fatalf("well-known time output changed during no-op benchmark: got=%q error=%v", got, err)
+		}
 	})
 }
 
@@ -913,7 +923,7 @@ func newNoOpFixture(t testing.TB) (*Service, string) {
 	t.Helper()
 	root := t.TempDir()
 	writeNoOpFile(t, filepath.Join(root, ".gitignore"), "cache/\n.cache/\n.markata/\ncustom/\n.env\n")
-	writeNoOpFile(t, filepath.Join(root, "markata-go.json"), `{"markata-go":{"templates_dir":"templates","assets_dir":"static","glob":{"use_gitignore":true},"tailwind":{"build":false},"search":{"backend":"bleve"},"well_known":{"auto_generate":["links"]},"webmentions":{"cache_dir":"custom/webmentions"}}}`)
+	writeNoOpFile(t, filepath.Join(root, "markata-go.json"), `{"markata-go":{"templates_dir":"templates","assets_dir":"static","glob":{"use_gitignore":true},"tailwind":{"build":false},"search":{"backend":"bleve"},"well_known":{"auto_generate":["time"]},"webmentions":{"cache_dir":"custom/webmentions"}}}`)
 	writeNoOpFile(t, filepath.Join(root, "templates", "footer.html"), `{{ now | date:"2006" }}`)
 	writeNoOpFile(t, filepath.Join(root, "static", "site.css"), "body{}\n")
 	for _, args := range [][]string{

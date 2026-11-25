@@ -205,7 +205,9 @@ releases. An unsafe pointer, unsupported file type, or changed release entry
 MUST fall through to a normal build. Concurrent out-of-band edits are outside
 the serialization contract. A no-op MUST NOT extend the baseline expiry or
 refresh publication timestamps such as the diagnostics artifact's `BuiltAt`
-value.
+value or `.well-known/time`. A no-op with the well-known time endpoint
+enabled MUST preserve the existing published timestamp; changed inputs or an
+explicit full build MUST regenerate it.
 
 Before accepting an unchanged result, Builder Admin MUST perform a final
 stability check. It MUST re-read Git source metadata and compare it with the
@@ -269,8 +271,11 @@ plugins can read those files as assets. It MUST also reject Git stat settings
 and index flags that can hide changed tracked files from `git status`. It MUST
 reject configured `core.fsmonitor` hooks and absolute content globs. Any external
 theme template or static directory that can affect the build MUST be included in
-the input fingerprint. The default `.well-known/time` endpoint changes on every
-build, so sites that enable it MUST use a full build.
+the input fingerprint. The `.well-known/time` endpoint is generated from build
+time, but it is an output rather than an input. When the verified inputs and
+live release remain unchanged, Builder Admin MAY return `unchanged` and preserve
+the existing timestamp. A full build after an input change or force request MUST
+generate a new timestamp.
 
 Manual UI and API build requests MUST default to the verified unchanged check.
 Both surfaces MUST provide an explicit force option that bypasses it. Legacy
