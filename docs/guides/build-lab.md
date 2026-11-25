@@ -149,3 +149,27 @@ markata-go buildlab run \
   --fixture /path/to/site \
   --tool-version pagefind=1.5.2,tailwind=4.1.0
 ```
+
+
+## Collect reproducibility and timing evidence on demand
+
+The existing **Build Lab characterization** GitHub Actions workflow has an
+on-demand production-output check. Choose *Actions → Build Lab characterization
+→ Run workflow*. It builds the current Markata binary, then uses **Build Lab
+itself** (not a second runner) to compare isolated baseline, incremental,
+and repeated clean production builds of `examples/editor-site`.
+
+The workflow deliberately uses neither `--fast` nor a volatile-path exemption.
+The resulting `buildlab-repro.json` artifact records the fixture digest,
+binary SHA-256, execution environment, per-checkpoint output equality, and
+clean/repeat/incremental timings. A separate standard-library parser checks
+that all repeated clean builds actually executed, succeeded, and matched;
+it appends a concise table to the GitHub run summary.
+
+Ordinary PRs do not run this workflow. Changes to its evidence tooling or
+workflow definition run the production-output check automatically; the broad
+mutation characterization remains manual. It measures one
+representative fixture, not every site's plugins or network inputs, and its
+runtime numbers are observations on that runner rather than speed promises.
+If any output changes unexpectedly, investigate the diff and input identity;
+do not suppress a regression by excluding arbitrary files.
