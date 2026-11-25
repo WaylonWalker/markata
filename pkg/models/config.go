@@ -1752,7 +1752,7 @@ type ContributionGraphConfig struct {
 // NewContributionGraphConfig creates a new ContributionGraphConfig with default values.
 func NewContributionGraphConfig() ContributionGraphConfig {
 	return ContributionGraphConfig{
-		Mode:               "auto",
+		Mode:               defaultExcalidrawMode,
 		Enabled:            true,
 		CDNURL:             "/assets/vendor/cal-heatmap",
 		ContainerClass:     "contribution-graph-container",
