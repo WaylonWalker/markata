@@ -1,7 +1,7 @@
 ---
 title: "Builder Admin Unchanged Build Benchmark"
 description: "Measures the verified unchanged build path on a production-shaped local fixture."
-date: 2026-11-24
+date: 2026-11-25
 published: true
 tags:
   - performance
@@ -17,6 +17,14 @@ This report measures the verified unchanged build path for issue #2045. The benc
 The pre-optimization implementation took a median of **389 ms** across five runs. The optimized implementation took a median of **164 ms** across five runs. This is a **58% reduction**. The optimized runs took 151–173 ms.
 
 The fixture contains 3,341 Markdown posts and 3,689 cache entries from production counts. It also contains 37,655 synthetic live-release files. The benchmark created these files before the timed runs.
+
+## Recheck with the well-known time endpoint
+
+On 2026-11-25, the production-shaped fixture was updated to enable `.well-known/time`. The verified no-op kept the published `time.txt` bytes unchanged, while a full build remains responsible for advancing that timestamp.
+
+Five fresh `complete-verified-no-op` samples took 155, 159, 159, 166, and 172 ms. The median was **159 ms**, within the 300 ms local target. Five live-release fingerprint samples took 108, 109, 112, 113, and 122 ms. The fixture still contained 3,341 source posts, 3,689 input-cache entries, and 37,655 release files.
+
+These results prove the time endpoint does not prevent the fast path on this fixture. They do not prove the same latency on the production Builder volume; that still requires an isolated non-promoting production check.
 
 ## Method
 

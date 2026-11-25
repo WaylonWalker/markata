@@ -410,7 +410,9 @@ minutes and expires at the next local calendar day boundary. If
 the service cannot verify its inputs, it runs a normal build. Build history records the unchanged
 result and its check duration. The build API accepts an optional `{"force": true}` body; existing
 empty-body requests continue to work. An unchanged result does not refresh publication timestamps
-such as the diagnostics artifact's `BuiltAt` value.
+such as the diagnostics artifact's `BuiltAt` value or `.well-known/time.txt`. A no-op keeps the
+timestamp from the last published build. A full build after an input change or a force request
+generates a new timestamp.
 
 The [unchanged-build benchmark report](/docs/reports/builder-admin-noop-benchmark/) records the local
 performance method and its limits. Production storage still needs a separate measurement.
@@ -428,8 +430,9 @@ external link hover, non-Go Mermaid modes, and Excalidraw Chromium rendering als
 that disable the shortcut. Pagefind search also disables the shortcut because its CLI can appear
 after a build that skipped indexing. The Bleve backend remains eligible. Use **Force full build** to
 retry transient external fetches before the unchanged window expires. Absolute content globs are not
-eligible. External theme template and static directories are fingerprinted when present. The default
-`.well-known/time` endpoint changes on every build, so sites that enable it use a full build.
+eligible. External theme template and static directories are fingerprinted when present. Sites that
+enable `.well-known/time` can use the unchanged result; it preserves the timestamp from the last
+published build and advances it only after a full build.
 
 When a post can fetch external embed metadata, the service also verifies that the persistent
 build cache contains the current transformed result for that post. The build cache must be enabled,
