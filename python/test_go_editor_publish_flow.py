@@ -3,6 +3,7 @@
 Set MARKATA_GO_EDITOR_BINARY to a built markata-go executable to run this
 end-to-end test. It creates a temporary site repository and bare remote.
 """
+import base64
 import os
 import re
 import socket
@@ -565,6 +566,13 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertIn("published: true", self.git(self.site, "show", "HEAD:posts/quick-publish.md"))
         self.assertEqual(self.git(self.site, "rev-parse", "HEAD"),
                          self.git(self.remote, "rev-parse", "refs/heads/main"))
+        publish_button = page.locator("#publish-open")
+        expect(publish_button).to_have_text("Up to date", timeout=15000)
+        expect(publish_button).to_be_disabled()
+        source = page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
+        self.edit_source(page, source + "\nA later edit to publish.\n")
+        expect(publish_button).to_have_text("Publish post", timeout=15000)
+        expect(publish_button).to_be_enabled()
         self.assertEqual(errors, [])
 
     def test_git_gutter_large_document(self):
@@ -602,6 +610,304 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         size = host.evaluate("(element) => element.scrollHeight")
         self.assertLess(size, 1800, f"Pierre compact hunk layout too tall: {size}px")
         review.locator("#publish-back").click()
+        self.assertEqual(errors, [])
+
+    def test_mobile_cms_navigation_and_desktop_mode_switcher(self):
+        # Desktop mode switcher and sidebar toggle
+        desktop_ctx = self.browser.new_context(viewport={"width": 1440, "height": 900})
+        self.addCleanup(desktop_ctx.close)
+        page = desktop_ctx.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+        expect(page.locator(".header-modes")).to_be_visible()
+        page.locator('.header-modes [data-layout-mode="editor"]').click()
+        expect(page.locator("#workbench")).to_have_attribute("data-layout", "editor")
+        page.locator('.header-modes [data-layout-mode="preview"]').click()
+        expect(page.locator("#workbench")).to_have_attribute("data-layout", "preview")
+        page.locator('.header-modes [data-layout-mode="split"]').click()
+        expect(page.locator("#workbench")).to_have_attribute("data-layout", "split")
+        page.locator("#sidebar-toggle").click()
+        expect(page.locator("#workbench")).to_have_class(re.compile(r"\bsidebar-hidden\b"))
+        page.locator("#sidebar-toggle").click()
+        expect(page.locator("#workbench")).not_to_have_class(re.compile(r"\bsidebar-hidden\b"))
+        self.assertEqual(errors, [])
+
+        # Mobile full-height CMS app shell (Content / Write / Preview / New)
+        mobile_ctx = self.browser.new_context(viewport={"width": 390, "height": 844})
+        self.addCleanup(mobile_ctx.close)
+        mpage = mobile_ctx.new_page()
+        merrors = []
+        mpage.on("pageerror", lambda error: merrors.append(str(error)))
+        mpage.goto(self.url)
+        expect(mpage.locator("#mobile-nav")).to_be_visible()
+        expect(mpage.locator("#site-sidebar")).to_be_visible()
+        expect(mpage.locator("#editor-pane")).to_be_hidden()
+        expect(mpage.locator("#preview-pane")).to_be_hidden()
+        self.assertGreater(mpage.locator("#site-sidebar").bounding_box()["height"], 500)
+        self.assertLessEqual(mpage.evaluate("document.documentElement.scrollWidth"), 390)
+
+        mpage.locator('#mobile-nav [data-mobile-tab="write"]').click()
+        expect(mpage.locator("#editor-pane")).to_be_visible()
+        expect(mpage.locator(".CodeMirror")).to_be_visible()
+        expect(mpage.locator("#mobile-editing-toolbar")).to_be_visible()
+        expect(mpage.locator("#site-sidebar")).to_be_hidden()
+        self.assertGreater(mpage.locator("#editor-pane").bounding_box()["height"], 500)
+
+        # Mobile header command palette button opens Command Palette directly from Write
+        mpage.locator("#header-commands").click()
+        expect(mpage.locator("dialog.markdown-commands[open]")).to_be_visible()
+        mpage.keyboard.press("Escape")
+
+        # Tapping header document chip opens Page Properties on mobile
+        mpage.locator("#header-doc").click()
+        expect(mpage.locator("#frontmatter-panel")).to_be_visible()
+        mpage.locator("#frontmatter-toggle").click()
+
+        mpage.locator('#mobile-nav [data-mobile-tab="preview"]').click()
+        expect(mpage.locator("#preview-pane")).to_be_visible()
+        expect(mpage.locator("#editor-pane")).to_be_hidden()
+        self.assertGreater(mpage.locator("#preview-pane").bounding_box()["height"], 500)
+
+        mpage.locator("#mobile-new-post").click()
+        expect(mpage.locator("#template-picker")).to_be_visible()
+        self.assertEqual(merrors, [])
+
+
+    def test_cms_publish_menu_opens_changes_and_theme_surfaces_are_opaque(self):
+        context = self.browser.new_context(viewport={"width": 1366, "height": 850})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+
+        # Recoloring must settle instead of feeding the root style observer
+        # back into itself and freezing the editor.
+        page.evaluate("document.documentElement.setAttribute('data-theme', 'dark')")
+        expect(page.locator("#header-doc")).to_be_visible()
+        self.assertIn(
+            page.evaluate("document.documentElement.style.getPropertyValue('--cms-on-accent')"),
+            ("#ffffff", "#11151d"),
+        )
+
+        page.locator("#sidebar-toggle").click()
+        expect(page.locator("#workbench")).to_have_class(re.compile(r"\bsidebar-hidden\b"))
+        page.locator("#publish-menu-toggle").click()
+        menu = page.locator("#publish-menu")
+        expect(menu).to_be_visible()
+        self.assertNotEqual(
+            menu.evaluate("(node) => getComputedStyle(node).backgroundColor"),
+            "rgba(0, 0, 0, 0)",
+        )
+        menu.locator('[data-publish-action="changes"]').click()
+        expect(page.locator("#workbench")).not_to_have_class(re.compile(r"\bsidebar-hidden\b"))
+        expect(page.locator("#workspace-tab-changes")).to_have_attribute("aria-selected", "true")
+        self.assertEqual(errors, [])
+
+    def test_cms_quick_note_post_metadata_and_distinct_filenames(self):
+        context = self.browser.new_context(viewport={"width": 1280, "height": 800})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        seen_methods = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+
+        def metadata_route(route):
+            seen_methods.append(route.request.method)
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body='{"title":"Quick Capture Fixture","description":"Found from link metadata"}',
+            )
+
+        page.route("**/workspace/link-metadata", metadata_route)
+        page.goto(self.url)
+        page.locator('#cms-quick-actions [data-cms-flow="quick"]').click()
+        dialog = page.locator("#cms-quick-note-dialog")
+        expect(dialog).to_be_visible()
+        dialog.locator("#cms-qn-url").fill("https://example.org/quick-capture")
+        dialog.locator("#cms-qn-body").click()
+        expect(dialog.locator("#cms-qn-heading")).to_have_value("Quick Capture Fixture")
+        self.assertEqual(seen_methods, ["POST"])
+        dialog.locator("#cms-qn-submit").click()
+        expect(dialog).not_to_be_visible(timeout=10000)
+        expect(page.locator("#active-file")).to_contain_text("quick-capture-fixture-", timeout=10000)
+        first_path = page.locator("#active-file").inner_text()
+        self.assertIn("quick-capture-fixture-", first_path)
+
+        # Another capture with the same title should create a different file.
+        page.locator('#cms-quick-actions [data-cms-flow="quick"]').click()
+        expect(dialog).to_be_visible()
+        dialog.locator("#cms-qn-heading").fill("Quick Capture Fixture")
+        dialog.locator("#cms-qn-body").fill("Second independent note")
+        dialog.locator("#cms-qn-submit").click()
+        expect(dialog).not_to_be_visible(timeout=10000)
+        # The editor reloads when a newly created source enters the tree.
+        # Ignore the temporary scratch selection during that reload.
+        page.wait_for_function(
+            """(previous) => {
+                const current = document.querySelector('#active-file')?.textContent?.trim() || '';
+                return current.includes('quick-capture-fixture-') && current !== previous;
+            }""",
+            arg=first_path,
+            timeout=10000,
+        )
+        second_path = page.locator("#active-file").inner_text()
+        self.assertNotEqual(first_path, second_path)
+        self.assertTrue((self.site / first_path).exists())
+        self.assertTrue((self.site / second_path).exists())
+        self.assertEqual(errors, [])
+
+
+    def test_pwa_android_multi_photo_share_capture_and_save(self):
+        context = self.browser.new_context(viewport={"width": 390, "height": 844})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+        page.evaluate("""async () => {
+            const registration = await navigator.serviceWorker.ready;
+            if (!registration.active) throw new Error('Share service worker not active');
+            if (!navigator.serviceWorker.controller) {
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('No controller')), 10000);
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        clearTimeout(timeout); resolve();
+                    }, {once: true});
+                });
+            }
+        }""")
+        shared_url = page.evaluate("""async () => {
+            // A tiny, valid PNG sent through the same Web Share Target multipart
+            // POST that Android delivers to an installed Markata PWA.
+            const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLhqQAAAABJRU5ErkJggg==';
+            const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+            const form = new FormData();
+            form.set('share_title', 'Weekend photos');
+            form.set('share_text', 'Two images from Android');
+            form.append('images', new File([bytes], 'first.png', {type: 'image/png'}));
+            form.append('images', new File([bytes], 'second.png', {type: 'image/png'}));
+            const response = await fetch('/share-target', {method: 'POST', body: form});
+            const capture = await response.json();
+            if (!response.ok || !capture.share_id) throw new Error('Share target failed: ' + JSON.stringify(capture));
+            return location.origin + '/?share_id=' + encodeURIComponent(capture.share_id);
+        }""")
+        self.assertIn("share_id=", shared_url)
+        page.goto(shared_url)
+        dialog = page.locator("#cms-quick-note-dialog")
+        expect(dialog).to_be_visible(timeout=10000)
+        expect(dialog.locator("#cms-qn-heading")).to_have_value("Weekend photos")
+        expect(dialog.locator("#cms-qn-body")).to_have_value("Two images from Android")
+        expect(dialog.locator("#cms-qn-photo-list img")).to_have_count(2)
+        self.assertFalse(list((self.site / "static" / "images").glob("weekend-photos*"))
+                         if (self.site / "static" / "images").exists() else False)
+
+        # The share remains recoverable if the PWA is closed before saving.
+        dialog.locator(".cms-flow-close").click()
+        page.reload()
+        expect(dialog).to_be_visible(timeout=10000)
+        expect(dialog.locator("#cms-qn-photo-list img")).to_have_count(2)
+        dialog.locator("#cms-qn-submit").click()
+        expect(dialog).not_to_be_visible(timeout=15000)
+        expect(page.locator("#active-file")).to_contain_text("weekend-photos-", timeout=15000)
+        self.assertNotIn("share_id=", page.url)
+
+        post_path = page.locator("#active-file").inner_text()
+        source = (self.site / post_path).read_text(encoding="utf-8")
+        self.assertIn("![Shared photo 1](/images/", source)
+        self.assertIn("![Shared photo 2](/images/", source)
+        self.assertIn('image: "/images/', source)
+        self.assertEqual(errors, [])
+
+
+
+    def test_android_share_target_handles_real_multipart_post_navigation(self):
+        context = self.browser.new_context(viewport={"width": 390, "height": 844})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        page.goto(self.url)
+        page.evaluate("""async () => {
+            await navigator.serviceWorker.ready;
+            if (!navigator.serviceWorker.controller) {
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(Error('No controller')), 10000);
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        clearTimeout(timeout); resolve();
+                    }, {once: true});
+                });
+            }
+            const form = document.createElement('form');
+            form.action = '/share-target';
+            form.method = 'POST';
+            form.enctype = 'multipart/form-data';
+            const title = document.createElement('input');
+            title.name = 'share_title';
+            title.value = 'From Android POST navigation';
+            const file = document.createElement('input');
+            file.type = 'file';
+            file.name = 'images';
+            file.id = 'pwa-share-navigation-photo';
+            form.append(title, file);
+            document.body.append(form);
+        }""")
+        tiny_png = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLhqQAAAABJRU5ErkJggg=="
+        )
+        page.locator("#pwa-share-navigation-photo").set_input_files(
+            {"name": "nav.png", "mimeType": "image/png", "buffer": tiny_png}
+        )
+        with page.expect_navigation(wait_until="domcontentloaded"):
+            page.evaluate("document.querySelector('form[action=\\\"/share-target\\\"]').submit()")
+        self.assertIn("share_id=", page.url)
+        dialog = page.locator("#cms-quick-note-dialog")
+        expect(dialog).to_be_visible(timeout=10000)
+        expect(dialog.locator("#cms-qn-heading")).to_have_value("From Android POST navigation")
+        expect(dialog.locator("#cms-qn-photo-list img")).to_have_count(1)
+        dialog.locator("#cms-qn-discard-share").click()
+        expect(dialog).not_to_be_visible()
+        self.assertNotIn("share_id=", page.url)
+
+    def test_pwa_android_single_photo_is_visible_in_post_body(self):
+        context = self.browser.new_context(viewport={"width": 390, "height": 844})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+        page.evaluate("""async () => {
+            await navigator.serviceWorker.ready;
+            if (!navigator.serviceWorker.controller) {
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('No controller')), 10000);
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        clearTimeout(timeout); resolve();
+                    }, {once: true});
+                });
+            }
+        }""")
+        shared_url = page.evaluate("""async () => {
+            const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLhqQAAAABJRU5ErkJggg==';
+            const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+            const form = new FormData();
+            form.set('share_title', 'Single shared photo');
+            form.append('images', new File([bytes], 'picture.png', {type: 'image/png'}));
+            const response = await fetch('/share-target', {method: 'POST', body: form});
+            const capture = await response.json();
+            if (!response.ok || !capture.share_id) throw Error('Share target failed: ' + JSON.stringify(capture));
+            return location.origin + '/?share_id=' + encodeURIComponent(capture.share_id);
+        }""")
+        page.goto(shared_url)
+        dialog = page.locator("#cms-quick-note-dialog")
+        expect(dialog).to_be_visible(timeout=10000)
+        expect(dialog.locator("#cms-qn-photo-list img")).to_have_count(1)
+        dialog.locator("#cms-qn-submit").click()
+        expect(dialog).not_to_be_visible(timeout=15000)
+        expect(page.locator("#active-file")).to_contain_text("single-shared-photo-", timeout=15000)
+        source = (self.site / page.locator("#active-file").inner_text()).read_text(encoding="utf-8")
+        self.assertIn('image: "/images/', source)
+        self.assertIn("![Shared photo 1](/images/", source)
         self.assertEqual(errors, [])
 
     def test_00_review_unchanged_file_is_immediate_and_clear(self):

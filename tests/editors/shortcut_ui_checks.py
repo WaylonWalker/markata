@@ -50,7 +50,7 @@ def check_app_shortcuts(page, url):
 
     # Layout select lives in a modal; open it before interacting.
     page.locator('#settings-open').click()
-    page.get_by_role('button', name='Preview', exact=True).click()
+    page.locator('#settings-dialog [data-category="preview"]').click()
     page.locator('#setting-layout').select_option('editor')
     page.locator('#settings-close').click()
     page.set_viewport_size({'width': 960, 'height': 800})
@@ -58,7 +58,7 @@ def check_app_shortcuts(page, url):
     assert len(page.locator('#workbench').evaluate("e => getComputedStyle(e).gridTemplateColumns.split(' ')")) == 2
     page.keyboard.press('Control+B')
     page.locator('#settings-open').click()
-    page.get_by_role('button', name='Preview', exact=True).click()
+    page.locator('#settings-dialog [data-category="preview"]').click()
     page.locator('#setting-layout').select_option('split')
     page.locator('#settings-close').click()
     page.set_viewport_size({'width': 1280, 'height': 720})

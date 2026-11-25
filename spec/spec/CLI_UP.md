@@ -18,8 +18,28 @@ It reuses the existing browser editor and `serve` watcher/builder unchanged.
   `127.0.0.1:8000`. Override via `--editor-port` and
   `--preview-port`. Both services must bind loopback and use distinct ports.
 - `--editor-only` and `--builder-only` are mutually exclusive.
-- Verify ports are unoccupied before launching; an unexpected port collision
-  must fail rather than silently choosing a new/public interface.
+- Check default ports before launch. If occupied, choose the first available
+  loopback port in the next 20 candidates and tell the user exactly what
+  changed; never bind a different interface, kill or attach to unknown
+  listeners. The editor and builder ports remain independent.
+- An explicitly supplied `--editor-port` or `--preview-port` must not be
+  changed. `--strict-ports` enforces that rule on defaults too. Report
+  actionable conflicts and candidate-range exhaustion without hiding errors.
+- Local editor and preview expose a **read-only, GET-only** identity at
+  `/_markata/up-identity` on loopback, containing a protocol marker,
+  service role, SHA-256 of the canonical workspace directory, and a
+  separate SHA-256 of selected config/merge-config/output paths (never the
+  raw paths). This endpoint rejects non-loopback peers and hosts. Hosted
+  authenticated editor instances do not expose it.
+- Before starting children, `up` checks the bounded local port range for
+  recognized same-workspace editor/preview services. It reuses matching
+  configuration and output scopes for each role; it must not adopt a
+  mismatched session. It reports their actual URLs; if both already run, return success
+  without starting duplicate processes.
+- Reusing means **observation only**. Ctrl+C stops exclusively children
+  launched by the current command. A local identity marker is not remote
+  authentication or permission to stop or control an existing process.
+  Older, unrelated and wrong-workspace listeners are never reused.
 - The command prints **starting URLs**, never claims ready until the individual
   service reports readiness. A builder failure is reported and the editor
   remains usable; an editor failure ends the foreground workspace.

@@ -12,8 +12,11 @@ runs at a time per handler; queue admission observes request cancellation.
 
 Responses contain `document`, `html`, `feature_head_html`, `body_end_html`,
 `source_lines`, `source_anchors`, `render_ms`, `input_bytes`, `html_bytes`,
-`document_bytes`, and `cached`. `source_lines` maps top-level rendered blocks;
+`document_bytes`, `cached`, and `renderer_fingerprint`. `source_lines` maps top-level rendered blocks;
 `source_anchors` maps nested container starts and ends to editor lines.
+`renderer_fingerprint` identifies a Go/WASM-compatible default renderer only
+when no site configuration is active and the matching WASM bundle is present.
+Otherwise it is empty, and the hosted editor MUST keep preview rendering on Go.
 The optional `include_document` boolean defaults to true for API compatibility.
 With false, `document` is null and `document_bytes` is zero. Fragment responses
 contain no shared appearance CSS or document shell.

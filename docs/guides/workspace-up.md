@@ -34,10 +34,42 @@ markata up --editor-only
 markata up --builder-only
 ```
 
-The editor and builder bind to **loopback only**. A port conflict stops startup
-rather than exposing a service on another interface. The parent forwards
-Ctrl+C to its child processes, gives them an opportunity to shut down
-gracefully on platforms that support interrupt delivery, and forcibly stops\nremaining children when needed (including Windows).
+The editor and builder bind to **loopback only**. If a **default** port is
+already in use, `markata up` searches the next 20 local ports, tells you
+which port changed, and prints the **actual** editor and preview URLs. It
+does not kill or attach to whatever is listening on the original port.
+For example, if an existing process owns 8766, the editor may run at
+`http://127.0.0.1:8767/` while the preview stays on 8000.
+
+Explicit `--editor-port` and `--preview-port` values are **strict**: Markata
+stops with an actionable conflict instead of silently moving the service.
+Use `markata up --strict-ports` if you also want fixed defaults for scripts,
+reverse proxies, bookmarks, or agent integrations.
+
+```sh
+markata up                       # recover default ports automatically
+markata up --editor-port 8767    # require exactly 8767
+markata up --strict-ports        # never change 8766 / 8000
+```
+
+If a local Markata editor or preview already serves **the same workspace**,
+`up` recognizes its read-only loopback workspace **and configuration** identity
+and **reuses the existing service**. That means running `markata up` twice won't silently start two
+editors when both instances can speak this protocol. It can also reuse a
+separately started local `markata editor` or `markata serve` from the same
+version. A matched service is not taken over; Ctrl+C only stops processes
+started by the current invocation. If both are already running, `up`
+reports the URLs and exits successfully.
+
+Older Markata versions and unrelated listeners do not have this identity
+endpoint. Those remain untouched; with default ports, `up` can start a new
+service on a free loopback port. This is a local discovery hint, **not a
+network authentication or permission mechanism**.
+
+
+The parent forwards Ctrl+C to its child processes, gives them an opportunity
+to shut down gracefully where supported, and forcibly stops remaining
+children when needed (including Windows).
 
 For separate processes and advanced options, you can still run
 `markata editor` and `markata serve` independently.

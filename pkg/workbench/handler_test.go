@@ -6,9 +6,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image/png"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -44,6 +47,131 @@ func TestHandler_FirstPreviewDoesNotWaitForSiteIndex(t *testing.T) {
 	}
 	if workspace.filesCalled {
 		t.Fatal("preview synchronously loaded site metadata")
+	}
+}
+
+func TestHandler_InlineGalleryImagesServeContainedWorkspaceFiles(t *testing.T) {
+	h := newHandler(t)
+	root := t.TempDir()
+	imageDir := filepath.Join(root, "static", "images")
+	if err := os.MkdirAll(imageDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(imageDir, "shared.png"), testPastePNG, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := editorworkspace.New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.workspace = workspace
+	for _, tc := range []struct {
+		path string
+		want int
+	}{
+		{"/images/shared.png", http.StatusOK},
+		{"/images/unknown.png", http.StatusNotFound},
+		{"/images/../secret.png", http.StatusNotFound},
+	} {
+		response := httptest.NewRecorder()
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+tc.path, http.NoBody)
+		h.ServeHTTP(response, req)
+		if response.Code != tc.want {
+			t.Fatalf("GET %s returned %d (want %d)", tc.path, response.Code, tc.want)
+		}
+		if tc.want == http.StatusOK {
+			if response.Header().Get("Content-Type") != pwaImageType || !bytes.Equal(response.Body.Bytes(), testPastePNG) {
+				t.Fatalf("inline gallery image was not served intact")
+			}
+		}
+	}
+}
+
+func TestHandler_CMSShellAssetsServed(t *testing.T) {
+	h := newHandler(t)
+	page := httptest.NewRecorder()
+	h.ServeHTTP(page, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/", http.NoBody))
+	if page.Code != http.StatusOK {
+		t.Fatalf("GET / returned %d", page.Code)
+	}
+	body := page.Body.String()
+	for _, want := range []string{
+		`/editor/cms-shell.css`,
+		`/editor/cms-shell.js`,
+		`id="mobile-nav"`,
+		`id="mobile-editing-toolbar"`,
+		`id="header-commands"`,
+		`class="header-modes"`,
+		`id="header-new-post"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("workbench index missing %q", want)
+		}
+	}
+	for _, asset := range []string{"/editor/cms-shell.css", "/editor/cms-shell.js", "/editor/cms-flows.js"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+asset, http.NoBody))
+		if rec.Code != http.StatusOK || rec.Body.Len() == 0 {
+			t.Fatalf("GET %s returned %d (%d bytes)", asset, rec.Code, rec.Body.Len())
+		}
+	}
+}
+
+func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
+	h := newHandler(t)
+	manifestRec := httptest.NewRecorder()
+	h.ServeHTTP(manifestRec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/manifest.webmanifest", http.NoBody))
+	if manifestRec.Code != http.StatusOK {
+		t.Fatalf("GET /manifest.webmanifest returned %d", manifestRec.Code)
+	}
+	var manifest map[string]any
+	if err := json.Unmarshal(manifestRec.Body.Bytes(), &manifest); err != nil {
+		t.Fatalf("invalid manifest JSON: %v", err)
+	}
+	if manifest["display"] != "standalone" {
+		t.Fatalf("manifest display = %v, want standalone", manifest["display"])
+	}
+	target, ok := manifest["share_target"].(map[string]any)
+	if !ok {
+		t.Fatal("manifest missing share_target")
+	}
+	if target["action"] != "/share-target" || target["method"] != "POST" || target["enctype"] != "multipart/form-data" {
+		t.Fatalf("share target must be a multipart POST: %#v", target)
+	}
+	files, ok := target["files"].([]any)
+	if !ok || len(files) != 1 {
+		t.Fatalf("share target must accept one image collection: %#v", target["files"])
+	}
+	fields, isMap := files[0].(map[string]any)
+	if !isMap {
+		t.Fatalf("share target file entry must be an object: %#v", files[0])
+	}
+	if fields["name"] != pwaSharePhotosField {
+		t.Fatalf("wrong share field: %#v", fields)
+	}
+	for _, route := range []string{"/sw.js", "/pwa-icon.svg", "/pwa-icon-192.png", rasterLargeIconPath} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+route, http.NoBody))
+		if rec.Code != http.StatusOK || rec.Body.Len() == 0 {
+			t.Fatalf("GET %s returned %d (%d bytes)", route, rec.Code, rec.Body.Len())
+		}
+	}
+	for _, tc := range []struct {
+		path string
+		size int
+	}{
+		{"/pwa-icon-192.png", 192},
+		{rasterLargeIconPath, 512},
+	} {
+		response := httptest.NewRecorder()
+		h.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+tc.path, http.NoBody))
+		if response.Code != http.StatusOK || response.Header().Get("Content-Type") != pwaImageType {
+			t.Fatalf("raster icon %s returned HTTP %d", tc.path, response.Code)
+		}
+		icon, err := png.DecodeConfig(bytes.NewReader(response.Body.Bytes()))
+		if err != nil || icon.Width != tc.size || icon.Height != tc.size {
+			t.Fatalf("raster icon %s dimensions: %+v, %v", tc.path, icon, err)
+		}
 	}
 }
 

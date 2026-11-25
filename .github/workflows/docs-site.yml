@@ -11,6 +11,7 @@ on:
       - 'pkg/**'
       - 'templates/**'
       - 'static/**'
+      - 'install.sh'
       - 'go.mod'
       - 'go.sum'
       - '.github/workflows/docs-site.yml'
@@ -24,6 +25,7 @@ on:
       - 'pkg/**'
       - 'templates/**'
       - 'static/**'
+      - 'install.sh'
       - 'go.mod'
       - 'go.sum'
       - '.github/workflows/docs-site.yml'
@@ -60,8 +62,7 @@ jobs:
           test -s docs-site/_site/docs/guides/authoring/index.html
           test -s docs-site/_site/docs/guides/deployment/index.html
           test -s docs-site/_site/docs/guides/deployment-guide/index.html
-          # The public curl installer must be a raw shell file, not HTML,
-          # and must exactly match the reviewed root installer.
+          # Verify the generated branded installer before advertising its URL.
           test -s docs-site/_site/install.sh
           cmp install.sh static/install.sh
           cmp static/install.sh docs-site/_site/install.sh

@@ -61,6 +61,22 @@ var manifestPattern = regexp.MustCompile(`--(palette|aesthetic|fontpack)-manifes
 var stylesheetLinkPattern = regexp.MustCompile(`(?i)<link\b[^>]*\brel\s*=\s*(?:"stylesheet"|'stylesheet')[^>]*>`)
 var stylesheetHrefPattern = regexp.MustCompile(`(?i)\bhref\s*=\s*"([^"]+)"|\bhref\s*=\s*'([^']+)'`)
 
+func wasmBundleVersion() string {
+	wasm, err := web.ReadFile("web/wasm/markata.wasm")
+	if err != nil {
+		return ""
+	}
+	hash := sha256.Sum256(wasm)
+	return fmt.Sprintf("%x", hash[:])
+}
+
+func wasmPreviewFingerprint(wasmVersion string, siteConfig *models.Config) string {
+	if siteConfig != nil {
+		return ""
+	}
+	return wasmVersion
+}
+
 type workspaceSource interface {
 	Config() (*models.Config, error)
 	Paths() ([]editorworkspace.File, error)
@@ -70,6 +86,10 @@ type workspaceSource interface {
 	Create(string, string) error
 	CreateWithImage(string, string, string, string, []byte) (string, error)
 	ReadImage(string) ([]byte, error)
+}
+
+type workspaceMultiImageCreator interface {
+	CreateWithImages(string, string, string, []editorworkspace.UploadedImage) ([]string, error)
 }
 
 type contentTemplateDefaultsWriter interface {
@@ -84,26 +104,28 @@ type workspaceCreateChecker interface {
 // Mount it at the root of an origin. Authored HTML is enabled for trusted local
 // editing; isolate its preview using an opaque-origin iframe sandbox.
 type Handler struct {
-	store            *editorworkspace.Store
-	root             string
-	configRevision   uint64
-	renderer         *plugins.StandaloneRenderer
-	siteConfig       *models.Config
-	workspace        workspaceSource
-	language         http.Handler
-	languageConfig   lsp.BrowserConfig
-	appearance       *plugins.StandaloneAppearance
-	choices          map[string][]string
-	assets           map[string][]byte
-	index            []byte
-	bridge           string
-	gate             chan struct{}
-	workspaceWriteMu sync.Mutex
-	lastSource       string
-	lastResult       *plugins.StandaloneResult
-	hostedAuth       *hostedAuth
-	gitPublisher     GitPublisher
-	dropperUploader  DropperUploader
+	store              *editorworkspace.Store
+	root               string
+	configRevision     uint64
+	renderer           *plugins.StandaloneRenderer
+	siteConfig         *models.Config
+	workspace          workspaceSource
+	language           http.Handler
+	languageConfig     lsp.BrowserConfig
+	appearance         *plugins.StandaloneAppearance
+	choices            map[string][]string
+	assets             map[string][]byte
+	index              []byte
+	bridge             string
+	gate               chan struct{}
+	workspaceWriteMu   sync.Mutex
+	lastSource         string
+	lastResult         *plugins.StandaloneResult
+	wasmVersion        string
+	previewFingerprint string
+	hostedAuth         *hostedAuth
+	gitPublisher       GitPublisher
+	dropperUploader    DropperUploader
 }
 
 // New builds immutable appearance assets once. Reuse the handler for all requests.
@@ -188,7 +210,9 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	if siteConfig != nil && siteConfig.Theme.FallbackMode == "light" {
 		excalidrawTheme = "light"
 	}
-	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{workbenchThemeAttribute: {workbenchLightMode, workbenchDarkMode}, workbenchTextSizeAttribute: {"small", "medium", "large", "x-large"}}}
+	wasmVersion := wasmBundleVersion()
+	previewFingerprint := wasmPreviewFingerprint(wasmVersion, siteConfig)
+	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), wasmVersion: wasmVersion, previewFingerprint: previewFingerprint, choices: map[string][]string{workbenchThemeAttribute: {workbenchLightMode, workbenchDarkMode}, workbenchTextSizeAttribute: {"small", "medium", "large", "x-large"}}}
 	h.assets["css/fonts.css"] = bytes.ReplaceAll(h.assets["css/fonts.css"], []byte("/assets/fonts/"), []byte("/appearance/assets/fonts/"))
 	for _, name := range []string{"palette", "aesthetic", "fonts"} {
 		match := manifestPattern.FindSubmatch(h.assets["css/"+name+".css"])
@@ -219,8 +243,10 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	if err != nil {
 		return nil, err
 	}
+	// Only Docker (or another packaging step) supplies the version-matched
+	// WASM bytes. Bare Go builds must remain fully functional without them.
 	// Editor CSS precedes theme overrides. Site article layout belongs in the iframe.
-	editorHead := fmt.Sprintf(`<script>window.MARKATA_EXCALIDRAW_RENDERER_VERSION=%q;window.MARKATA_EXCALIDRAW_EXPORT_THEME=%q;</script><link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css"><link rel="stylesheet" href="/editor/codemirror/addon/hint/show-hint.css"><link rel="stylesheet" href="/editor/codemirror/addon/dialog/dialog.css"><link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>`, excalidrawVersion, excalidrawTheme)
+	editorHead := fmt.Sprintf(`<script>window.MARKATA_EXCALIDRAW_RENDERER_VERSION=%q;window.MARKATA_EXCALIDRAW_EXPORT_THEME=%q;window.MARKATA_WASM_VERSION=%q;window.MARKATA_PREVIEW_FINGERPRINT=%q;</script><link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css"><link rel="stylesheet" href="/editor/codemirror/addon/hint/show-hint.css"><link rel="stylesheet" href="/editor/codemirror/addon/dialog/dialog.css"><link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>`, excalidrawVersion, excalidrawTheme, wasmVersion, previewFingerprint)
 	for _, name := range []string{"lib/codemirror", "mode/xml/xml", "mode/markdown/markdown", "mode/gfm/gfm", "mode/javascript/javascript", "mode/python/python", "mode/css/css", "mode/htmlmixed/htmlmixed", "addon/mode/overlay", "addon/edit/matchbrackets", "addon/hint/show-hint", "addon/search/searchcursor", "addon/dialog/dialog", "keymap/vim", "keymap/emacs", "keymap/sublime"} {
 		editorHead += `<script src="/editor/codemirror/` + name + `.js"></script>`
 	}
@@ -309,6 +335,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	case r.URL.Path == "/":
 		h.serveIndex(w, r)
+	case r.URL.Path == "/manifest.webmanifest":
+		h.handlePWAManifest(w, r)
+	case r.URL.Path == "/sw.js":
+		h.handlePWAServiceWorker(w, r)
+	case r.URL.Path == "/pwa-icon.svg":
+		h.handlePWAIcon(w, r)
+	case r.URL.Path == "/pwa-icon-192.png" || r.URL.Path == rasterLargeIconPath:
+		h.handlePWARasterIcon(w, r)
 	case r.URL.Path == "/favicon.ico":
 		data, err := web.ReadFile("web/favicon.ico")
 		if err != nil {
@@ -316,6 +350,22 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		serve(w, r, "favicon.ico", data)
+	case strings.HasPrefix(r.URL.Path, "/images/"):
+		// Inline gallery Markdown uses /images/... while the cover image is
+		// rendered through /workspace/image. Both must use the same contained
+		// workspace reader, never a raw filesystem path.
+		if h.workspace == nil {
+			http.NotFound(w, r)
+			return
+		}
+		name := strings.TrimPrefix(r.URL.Path, "/")
+		data, err := h.workspace.ReadImage(name)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		serve(w, r, name, data)
 	case strings.HasPrefix(r.URL.Path, "/appearance/"):
 		w.Header().Set("Cache-Control", "no-cache")
 		// The only mutation occurs under the render gate. Copy the slice header while
@@ -355,6 +405,22 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
+		if name == "wasm/markata.wasm" {
+			if h.wasmVersion != "" {
+				w.Header().Set("X-Markata-Wasm-Version", h.wasmVersion)
+			}
+			// The authenticated worker is served with the same authorization
+			// boundary as /editor/. Content-encoding saves the large cold
+			// download without compressing at runtime or caching private data.
+			w.Header().Set("Vary", "Accept-Encoding")
+			if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+				if compressed, err := web.ReadFile("web/wasm/markata.wasm.gz"); err == nil {
+					w.Header().Set("Content-Encoding", "gzip")
+					serve(w, r, name, compressed)
+					return
+				}
+			}
+		}
 		serve(w, r, name, data)
 	default:
 		http.NotFound(w, r)
@@ -384,6 +450,8 @@ func serve(w http.ResponseWriter, r *http.Request, name string, data []byte) {
 	contentType := mime.TypeByExtension(path.Ext(name))
 	if strings.EqualFold(path.Ext(name), ".woff2") {
 		contentType = "font/woff2"
+	} else if strings.EqualFold(path.Ext(name), ".wasm") {
+		contentType = "application/wasm"
 	}
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("ETag", fmt.Sprintf(`"%x"`, sha256.Sum256(data)))
@@ -495,7 +563,7 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	if fontpack == "" {
 		fontpack = h.appearance.Defaults[workbenchFontpackAttribute]
 	}
-	response := &renderResponse{HTML: previewResult.HTML, SourceLines: h.renderer.SourceLines(markdown), SourceAnchors: sourceAnchors, FeatureHeadHTML: h.featureHead(result, fontpack), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(previewResult.HTML), Cached: cached}
+	response := &renderResponse{SchemaVersion: 1, RendererFingerprint: h.previewFingerprint, HTML: previewResult.HTML, SourceLines: h.renderer.SourceLines(markdown), SourceAnchors: sourceAnchors, FeatureHeadHTML: h.featureHead(result, fontpack), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(previewResult.HTML), Cached: cached}
 	if req.IncludeDocument == nil || *req.IncludeDocument {
 		document := h.document(&previewResult, req.Appearance)
 		response.Document, response.DocumentBytes = &document, len(document)
@@ -519,18 +587,20 @@ type renderRequest struct {
 
 // renderResponse matches the Python reference's full-document/fragment contract.
 type renderResponse struct {
-	Document        *string `json:"document"`
-	HTML            string  `json:"html"`
-	SourceLines     []int   `json:"source_lines"`
-	SourceAnchors   []int   `json:"source_anchors"`
-	FeatureHeadHTML string  `json:"feature_head_html"`
-	BodyEndHTML     string  `json:"body_end_html"`
-	RenderMS        float64 `json:"render_ms"`
-	QueueMS         float64 `json:"queue_ms"`
-	InputBytes      int     `json:"input_bytes"`
-	HTMLBytes       int     `json:"html_bytes"`
-	DocumentBytes   int     `json:"document_bytes"`
-	Cached          bool    `json:"cached"`
+	SchemaVersion       int     `json:"schema_version"`
+	RendererFingerprint string  `json:"renderer_fingerprint"`
+	Document            *string `json:"document"`
+	HTML                string  `json:"html"`
+	SourceLines         []int   `json:"source_lines"`
+	SourceAnchors       []int   `json:"source_anchors"`
+	FeatureHeadHTML     string  `json:"feature_head_html"`
+	BodyEndHTML         string  `json:"body_end_html"`
+	RenderMS            float64 `json:"render_ms"`
+	QueueMS             float64 `json:"queue_ms"`
+	InputBytes          int     `json:"input_bytes"`
+	HTMLBytes           int     `json:"html_bytes"`
+	DocumentBytes       int     `json:"document_bytes"`
+	Cached              bool    `json:"cached"`
 }
 
 // featureHead omits styles already owned by the persistent appearance shell.
@@ -893,7 +963,7 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		const maxImageBytes = 15 << 20
-		r.Body = http.MaxBytesReader(w, r.Body, maxSource+maxImageBytes+(1<<20))
+		r.Body = http.MaxBytesReader(w, r.Body, maxSource+(48<<20)+(1<<20))
 		if err := r.ParseMultipartForm(1 << 20); err != nil {
 			fail(w, http.StatusBadRequest, "cannot read new post upload")
 			return
@@ -910,34 +980,55 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 			fail(w, http.StatusRequestEntityTooLarge, "document exceeds 200,000 bytes")
 			return
 		}
-		image, header, err := r.FormFile("image")
-		if err != nil {
-			fail(w, http.StatusBadRequest, "image upload is missing")
+		headers := r.MultipartForm.File["image"]
+		if len(headers) == 0 || len(headers) > 8 || len(r.MultipartForm.File) != 1 {
+			fail(w, http.StatusBadRequest, "provide 1 to 8 photos under the image field")
 			return
 		}
-		defer image.Close()
-		data, err := io.ReadAll(io.LimitReader(image, maxImageBytes+1))
-		if err != nil {
-			fail(w, http.StatusBadRequest, "cannot read image upload")
-			return
-		}
-		if len(data) > maxImageBytes {
-			fail(w, http.StatusRequestEntityTooLarge, "image exceeds 15 MiB")
-			return
-		}
-		if _, err := editorworkspace.ImageExtension(header.Header.Get("Content-Type"), data); err != nil {
-			fail(w, http.StatusUnprocessableEntity, err.Error())
-			return
+		uploads := make([]editorworkspace.UploadedImage, 0, len(headers))
+		total := 0
+		for _, header := range headers {
+			image, err := header.Open()
+			if err != nil {
+				fail(w, http.StatusBadRequest, "cannot open image")
+				return
+			}
+			data, readErr := io.ReadAll(io.LimitReader(image, maxImageBytes+1))
+			closeErr := image.Close()
+			if readErr != nil || closeErr != nil {
+				fail(w, http.StatusBadRequest, "cannot read image")
+				return
+			}
+			total += len(data)
+			if len(data) == 0 || len(data) > maxImageBytes || total > 48<<20 {
+				fail(w, http.StatusRequestEntityTooLarge, "photos must be 15 MiB each and 48 MiB total")
+				return
+			}
+			if _, err := editorworkspace.ImageExtension(header.Header.Get("Content-Type"), data); err != nil {
+				fail(w, http.StatusUnprocessableEntity, err.Error())
+				return
+			}
+			uploads = append(uploads, editorworkspace.UploadedImage{
+				ContentType: header.Header.Get("Content-Type"), Data: data,
+			})
 		}
 		h.workspaceWriteMu.Lock()
 		defer h.workspaceWriteMu.Unlock()
 		postPath := r.FormValue("path")
 		imageName := r.FormValue("image_name")
 		provider := h.imageUploadProvider()
-		var imageURL string
+		includeGallery := r.FormValue("include_gallery") == pwaGalleryFlagTrue
+		var images []string
 		var createErr error
+		storedSource := source
 		switch provider {
 		case imageUploadModeDropper:
+			// Dropper has no transactional delete API. Do not leak previous
+			// uploads when a later photo fails or the post is rejected.
+			if len(uploads) > 1 {
+				fail(w, http.StatusConflict, "multi-photo Dropper uploads require cleanup support; use local image storage")
+				return
+			}
 			checker, ok := h.workspace.(workspaceCreateChecker)
 			if !ok {
 				fail(w, http.StatusNotImplemented, "workspace cannot validate a new post path")
@@ -947,22 +1038,64 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 				fail(w, http.StatusBadRequest, "image name must be a lowercase slug")
 				return
 			}
-			extension, extensionErr := editorworkspace.ImageExtension(header.Header.Get("Content-Type"), data)
-			if extensionErr != nil {
-				fail(w, http.StatusUnprocessableEntity, extensionErr.Error())
-				return
-			}
 			if checkErr := checker.CheckCreate(postPath); checkErr != nil {
 				fail(w, http.StatusUnprocessableEntity, checkErr.Error())
 				return
 			}
-			imageURL, createErr = h.uploadImageToDropper(r.Context(), imageName+"."+extension, header.Header.Get("Content-Type"), data)
+			for i, photo := range uploads {
+				extension, extensionErr := editorworkspace.ImageExtension(photo.ContentType, photo.Data)
+				if extensionErr != nil {
+					createErr = extensionErr
+					break
+				}
+				name := imageName
+				if len(uploads) > 1 {
+					name = fmt.Sprintf("%s-%d", imageName, i+1)
+				}
+				imageURL, err := h.uploadImageToDropper(r.Context(), name+"."+extension, photo.ContentType, photo.Data)
+				if err != nil {
+					createErr = err
+					break
+				}
+				images = append(images, imageURL)
+			}
 			if createErr == nil {
-				source = sourceWithImage(source, imageURL)
-				createErr = h.workspace.Create(postPath, source)
+				if len(images) > 1 || includeGallery {
+					storedSource = editorworkspace.SourceWithUploadedImages(source, images)
+				} else {
+					storedSource = sourceWithImage(source, images[0])
+				}
+				createErr = h.workspace.Create(postPath, storedSource)
 			}
 		case imageUploadModeLocal:
-			imageURL, createErr = h.workspace.CreateWithImage(postPath, source, imageName, header.Header.Get("Content-Type"), data)
+			if len(uploads) == 1 {
+				var uploadedURL string
+				singleSource := source
+				if includeGallery {
+					extension, extensionErr := editorworkspace.ImageExtension(uploads[0].ContentType, uploads[0].Data)
+					if extensionErr != nil {
+						fail(w, http.StatusUnprocessableEntity, extensionErr.Error())
+						return
+					}
+					localURL := "/images/" + imageName + "." + extension
+					singleSource = editorworkspace.SourceWithUploadedImages(source, []string{localURL})
+				}
+				uploadedURL, createErr = h.workspace.CreateWithImage(postPath, singleSource, imageName, uploads[0].ContentType, uploads[0].Data)
+				if createErr == nil {
+					images = []string{uploadedURL}
+					storedSource = sourceWithImage(singleSource, uploadedURL)
+				}
+			} else {
+				creator, ok := h.workspace.(workspaceMultiImageCreator)
+				if !ok {
+					fail(w, http.StatusNotImplemented, "workspace cannot create a multi-image post")
+					return
+				}
+				images, createErr = creator.CreateWithImages(postPath, source, imageName, uploads)
+				if createErr == nil {
+					storedSource = editorworkspace.SourceWithUploadedImages(source, images)
+				}
+			}
 		default:
 			createErr = fmt.Errorf("unsupported image upload provider %q", provider)
 		}
@@ -971,9 +1104,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(map[string]string{
-			workspaceVersionKey: editorworkspace.SourceVersion(sourceWithImage(source, imageURL)),
-			"image":             imageURL,
+		if err := json.NewEncoder(w).Encode(map[string]any{
+			workspaceVersionKey: editorworkspace.SourceVersion(storedSource),
+			"image":             images[0],
+			pwaSharePhotosField: images,
 			"provider":          provider,
 		}); err != nil {
 			return
@@ -1537,6 +1671,8 @@ func (h *Handler) refreshPresentation() error {
 	h.index = next.index
 	h.bridge = next.bridge
 	h.renderer = next.renderer
+	h.wasmVersion = next.wasmVersion
+	h.previewFingerprint = next.previewFingerprint
 	h.lastResult = nil
 	h.lastSource = ""
 	h.configRevision = revision

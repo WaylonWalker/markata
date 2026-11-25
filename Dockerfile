@@ -7,7 +7,7 @@
 FROM golang:1.27.3-alpine AS builder
 
 # Install ca-certificates for HTTPS support in final image
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates gzip
 
 WORKDIR /app
 
@@ -22,6 +22,15 @@ COPY . .
 ARG VERSION=dev
 ARG COMMIT=none
 ARG BUILD_DATE=unknown
+
+# Compile the browser renderer from this same commit and Go toolchain.
+# It is embedded as an optional asset by pkg/workbench when the Docker image
+# is built; bare Go development builds continue using the native fallback.
+RUN mkdir -p pkg/workbench/web/wasm \
+    && CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -trimpath -ldflags="-s -w" \
+       -o pkg/workbench/web/wasm/markata.wasm ./cmd/markata-wasm \
+    && cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" pkg/workbench/web/wasm/wasm_exec.js \
+    && gzip -n -9 -c pkg/workbench/web/wasm/markata.wasm > pkg/workbench/web/wasm/markata.wasm.gz
 
 # Build static binary with version information
 # CGO_ENABLED=0 ensures fully static binary
