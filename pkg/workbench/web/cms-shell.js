@@ -345,12 +345,14 @@
   function syncVisualViewport() {
     if (!isMobile()) {
       document.documentElement.style.removeProperty('--cms-viewport-height');
+      document.documentElement.style.removeProperty('--cms-viewport-top');
       document.body.classList.remove('mobile-writing-active');
       return;
     }
     const vv = window.visualViewport;
     if (vv) {
       document.documentElement.style.setProperty('--cms-viewport-height', `${Math.floor(vv.height)}px`);
+      document.documentElement.style.setProperty('--cms-viewport-top', `${Math.max(0, Math.floor(vv.offsetTop))}px`);
       const keyboardLikelyOpen = window.innerHeight - vv.height > 120;
       const cmFocused = Boolean(document.activeElement?.closest?.('.CodeMirror'));
       document.body.classList.toggle('mobile-writing-active', keyboardLikelyOpen && cmFocused);
@@ -359,9 +361,11 @@
   }
 
   window.visualViewport?.addEventListener('resize', syncVisualViewport);
+  window.visualViewport?.addEventListener('scroll', syncVisualViewport);
   document.addEventListener('focusin', (event) => {
-    if (isMobile() && event.target?.closest?.('.CodeMirror')) {
+    if (isMobile() && (event.target?.closest?.('.CodeMirror') || event.target?.closest?.('dialog'))) {
       syncVisualViewport();
+      setTimeout(syncVisualViewport, 120);
     }
   });
   document.addEventListener('focusout', () => {

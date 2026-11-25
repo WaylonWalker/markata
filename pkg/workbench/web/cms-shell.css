@@ -873,18 +873,47 @@ body > header h1 {
     outline-offset: -2px;
   }
 
-  /* Clean mobile bottom-sheet polish for New Post, Create, Command Palette, and File Picker */
+  /* Keyboard-safe top-anchored sheets on mobile for search/input modals (like Spotlight/Linear):
+     pins to the top of the visual viewport and caps height to --cms-viewport-height so the
+     mobile virtual keyboard never covers the input or results list. */
   #template-picker,
   #create-dialog,
   .markdown-commands,
-  .file-picker {
-    width: 100vw;
-    max-width: 100vw;
-    max-height: 90dvh;
-    margin: auto 0 0;
-    border-radius: 16px 16px 0 0;
-    border-bottom: 0;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+  .file-picker,
+  .file-finder {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    max-height: calc(var(--cms-viewport-height, 100dvh) - env(safe-area-inset-top, 0px) - 16px);
+    margin: calc(var(--cms-viewport-top, 0px) + env(safe-area-inset-top, 0px) + 8px) auto auto;
+    border-radius: 14px;
+    border-bottom: 1px solid var(--cms-hairline);
+    padding-bottom: 12px;
+    overflow: hidden;
+  }
+
+  #template-picker[open],
+  #create-dialog[open],
+  .markdown-commands[open],
+  .file-picker[open],
+  .file-finder[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  #commands-results,
+  #files-results,
+  #file-finder-results {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  #create-dialog form {
+    overflow: auto;
+    min-height: 0;
+    flex: 1 1 auto;
   }
 
   #template-picker-query,
@@ -1531,14 +1560,24 @@ body > header h1 {
 
 @media (max-width: 768px) {
   .cms-flow-dialog {
-    margin: auto 0 0;
-    width: 100vw;
-    max-width: 100vw;
-    max-height: 92dvh;
-    border-radius: 16px 16px 0 0;
-    border-left: 0;
-    border-right: 0;
-    border-bottom: 0;
+    margin: calc(var(--cms-viewport-top, 0px) + env(safe-area-inset-top, 0px) + 8px) auto auto;
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    max-height: calc(var(--cms-viewport-height, 100dvh) - env(safe-area-inset-top, 0px) - 16px);
+    border-radius: 14px;
+    border: 1px solid var(--cms-hairline);
+  }
+
+  .cms-flow-dialog[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cms-flow-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
   }
 
   .cms-flow-field input,
