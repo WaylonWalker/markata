@@ -248,6 +248,7 @@ type pwaShareTarget struct {
 }
 
 type pwaManifest struct {
+	ID              string         `json:"id"`
 	Name            string         `json:"name"`
 	ShortName       string         `json:"short_name"`
 	Description     string         `json:"description"`
@@ -276,6 +277,7 @@ func (h *Handler) handlePWAManifest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	manifest := pwaManifest{
+		ID:              "/",
 		Name:            siteName,
 		ShortName:       shortName,
 		Description:     "Mobile-first Markdown CMS and live editor for Markata sites",
@@ -286,8 +288,9 @@ func (h *Handler) handlePWAManifest(w http.ResponseWriter, r *http.Request) {
 		ThemeColor:      "#0f172a",
 		Icons: []pwaIcon{
 			{Src: "/pwa-icon-192.png", Sizes: "192x192", Type: pwaImageType, Purpose: "any"},
-			{Src: rasterLargeIconPath, Sizes: "512x512", Type: pwaImageType, Purpose: "any maskable"},
-			{Src: "/pwa-icon.svg", Sizes: "any", Type: "image/svg+xml", Purpose: "any maskable"},
+			{Src: rasterLargeIconPath, Sizes: "512x512", Type: pwaImageType, Purpose: "any"},
+			{Src: rasterLargeIconPath, Sizes: "512x512", Type: pwaImageType, Purpose: "maskable"},
+			{Src: "/pwa-icon.svg", Sizes: "any", Type: "image/svg+xml", Purpose: "any"},
 		},
 		Shortcuts: []pwaShortcut{
 			{

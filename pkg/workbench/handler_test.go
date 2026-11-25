@@ -103,6 +103,7 @@ func TestHandler_CMSShellAssetsServed(t *testing.T) {
 		`id="header-commands"`,
 		`class="header-modes"`,
 		`id="header-new-post"`,
+		`<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("workbench index missing %q", want)
@@ -127,6 +128,9 @@ func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
 	var manifest map[string]any
 	if err := json.Unmarshal(manifestRec.Body.Bytes(), &manifest); err != nil {
 		t.Fatalf("invalid manifest JSON: %v", err)
+	}
+	if manifest["id"] != "/" {
+		t.Fatalf("manifest id = %v, want /", manifest["id"])
 	}
 	if manifest["display"] != "standalone" {
 		t.Fatalf("manifest display = %v, want standalone", manifest["display"])
