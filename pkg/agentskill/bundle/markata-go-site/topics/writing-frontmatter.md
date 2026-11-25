@@ -43,7 +43,9 @@ Keep visible headings alongside icons for accessibility.
 
 - files without frontmatter are still valid
 - `published` defaults to `false` if omitted in raw content
-- the `new` command creates content with `published: true` and `draft: false`
+- every `new` file includes a date and defaults to `published: true`, including links and custom starters
+- `new` preserves explicit starter dates, drafts, and unpublished settings
+- `--draft` overrides publication settings without a separate editing step
 - new starter content does not add a default H1 in the body because templates usually render the title as the page H1
 
 ## Behavior Rules Agents Should Remember
@@ -206,6 +208,7 @@ Use `markata-go new` when possible because it knows current built-in content tem
 - `docs`
 - `article`
 - `note`
+- `ping`
 - `photo`
 - `video`
 - `link`
@@ -214,6 +217,24 @@ Use `markata-go new` when possible because it knows current built-in content tem
 - `inline`
 - `contact`
 - `author`
+
+Ping is a separate type from Note and defaults to `pages/ping/`; Note defaults
+to `pages/note/`. Shot and Photo use the same `pages/photo/` folder. A site can
+set its defaults for `markata-go new` and the editor in TOML:
+
+```toml
+[content_templates.placement]
+ping = "pages/ping"
+note = "pages/note"
+
+[content_templates.filename_mode]
+ping = "numbered"
+note = "title"
+```
+
+The editor's new-post form lets an author override the folder and choose
+numbered or title-slug filenames. Keep its remember option selected to save
+changed defaults for that type. The CLI uses saved folder and filename defaults.
 
 ## Common Site Patterns
 

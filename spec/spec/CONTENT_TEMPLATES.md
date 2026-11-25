@@ -60,6 +60,15 @@ description. `starter.aliases` MUST be a list of strings.
 All editors MUST:
 
 1. Discover configured Markdown starters and merge them with built-in starters.
+   The web workbench MUST include every canonical built-in type exposed by
+   `markata-go new`: `post`, `page`, `docs`, `article`, `note`, `ping`, `photo`,
+   `video`, `link`, `quote`, `guide`, `inline`, `contact`, and `author`.
+   Existing editor-specific starters MAY remain available in addition to these.
+   The web workbench MUST also offer `ping`, `shot`, and `gratitude` as
+   selectable variants. Each variant MUST preserve its own `template` and
+   `templateKey` values so a site can filter it separately from `note`,
+   `photo`, or `inline` while using the corresponding card layout.
+   Ping MUST use `pages/ping` by default, separate from Note's `pages/note`.
 2. Resolve CLI/TUI selections by canonical name or alias. In the web workbench,
    show aliases as searchable terms and select by the visible canonical starter.
 3. Ask for or accept a title when the starter requires one.
@@ -68,8 +77,65 @@ All editors MUST:
 6. Omit starter metadata from generated frontmatter.
 7. Preserve all other starter frontmatter values and body content.
 8. Serialize only fields already present in the selected starter or values
-   explicitly overridden during creation; do not inject implicit defaults.
+   explicitly overridden during creation, except for the CLI creation defaults below.
 9. Reject paths that escape the site root and report invalid starter metadata.
+
+The built-in Link starter MUST include a title variable, the current date,
+`published: false`, `url`, and `image` fields. The web workbench MUST require a
+valid HTTP(S) URL and store it in `url` exactly as entered.
+When a Link post uses a title-derived filename and the selected starter does
+not define `slug`, the CLI and web workbench MUST write `slug: link/<title-slug>`
+to frontmatter. The Markdown filename MUST keep the unprefixed title slug in
+the selected directory. An explicit starter slug or a filename entered by the
+user MUST NOT receive the automatic prefix.
+When the source URL contains a stable post identifier in a recognized path
+such as `/status/<id>`, `/post/<id>`, `/p/<id>`, or similar social post paths,
+the CLI and web workbench MUST append that identifier to the generated Link
+filename slug and generated `link/` URL slug. An explicitly entered filename
+MUST remain unchanged.
+When a Link URL is entered, the workbench MUST resolve metadata with the same
+configured providers and resolution strategy used by external embeds. It MUST
+fill empty supported frontmatter fields for title, description, image,
+site name, media type, provider name, author name, and author URL. Users MUST be
+able to edit these values, and metadata MUST NOT replace a value they entered.
+Metadata lookup failure MUST leave the URL intact and allow manual entry.
+
+The web workbench MUST support an optional date override when creating a post.
+When empty, it preserves a starter date or applies the current local date.
+When set, the selected date overrides the starter date.
+
+Photo and shot starters MUST accept an image URL or a pasted/dropped PNG, JPEG,
+GIF, or WebP image. Image URLs MUST be stored as authored; the workbench MUST
+NOT fetch them on the server. When image upload uses local storage, uploaded
+images MUST be saved under `static/images/` with the post filename as their
+basename. Creating the post and its image MUST fail without replacing an
+existing source or image file.
+When an uploaded image URL is added to the source, the workbench MUST replace
+the starter's top-level `image` field or add one when it is absent. It MUST
+preserve both frontmatter delimiters, every other starter field, and valid YAML.
+
+Sites MAY set `content_templates.image_upload` to `local`, `dropper`, or
+`auto`. In `auto`, the workbench MUST use Dropper when a credential-bearing
+Dropper uploader is configured or `DROPPER_TOKEN` is available to a local
+server, and local storage otherwise. Dropper credentials MUST remain outside
+the browser and the hosted workbench process. A hosted uploader broker MUST
+accept only validated image uploads and MUST use one configured Dropper upload
+endpoint. The workbench MUST preview valid remote image URLs without uploading
+them.
+
+A starter MAY define `starter.number_prefix` and
+`starter.numbered_by_default`. The prefix MUST be a lowercase slug. When the
+user enables numbering, the editor uses the next available
+`{prefix}-{number}` filename in the starter's output directory. The user MUST
+be able to disable numbering for that post. Numbering MUST NOT replace an
+existing file.
+
+Sites MAY configure per-template defaults with
+`content_templates.placement` and `content_templates.filename_mode`. Filename
+mode MUST be `title` or `numbered`. The editor MUST present the selected
+folder and filename mode as editable defaults and allow a one-post override.
+When the user chooses to remember changed defaults, the editor MUST persist
+them in site configuration. `markata-go new` MUST honor those saved defaults.
 
 Site-authored starters override a config starter or built-in starter with
 the same canonical name. Canonical names MUST remain selectable even when a
@@ -105,16 +171,23 @@ private, and authors. The precedence order is:
 3. Site-configured template and site-level defaults.
 4. Markata built-in defaults.
 
-An editor MAY show inherited or computed defaults in its controls, but MUST NOT
-serialize them into new content unless the user explicitly selects an override.
-Unselected fields preserve the starter's values or remain absent. For example,
-when a starter specifies only `title: "{{title}}"`, creating a page should
-write that title but MUST NOT insert `slug`, `date`, `published`, `draft`,
-`tags`, or `description` keys. The title supplied for a file path does not
-require an absent `title` frontmatter field to be created. A missing date
-resolves to the current local date at runtime; missing publication fields use
-the site's effective defaults without being written into the new file.
-Explicit CLI flags and TUI/web changes override starter values.
+Except for the creation defaults below, an editor MUST NOT serialize inherited
+defaults unless the user explicitly selects an override. An editor MAY show
+those defaults in its controls.
+
+The CLI and web workbench MUST apply the same two creation defaults to every
+starter and interaction mode. They write the current local `date` when the
+starter date is absent, null, or blank, and preserve an explicit starter date.
+They write `published: true` when no publication setting exists. They preserve
+an explicit publication value and supply `published: false` for an explicit
+`draft: true` when `published` is absent. Other absent fields remain absent.
+
+For example, when a starter specifies only `title: "{{title}}"`, creating a
+page writes the title, current local date, and `published: true`. It MUST NOT
+insert `slug`, `draft`, `tags`, or `description` keys. The title supplied for a
+file path does not require an absent `title` frontmatter field to be created.
+Explicit CLI flags, including publication flags, and user-selected editor
+values override starter values.
 
 ## Editor extensions
 

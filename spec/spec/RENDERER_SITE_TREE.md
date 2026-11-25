@@ -8,7 +8,7 @@ Selecting a Markdown file MUST update the editor and preview. Switching files
 MUST preserve edits in memory and attempt to save drafts per source path in
 browser storage. Storage failures MUST leave navigation usable and show a warning.
 The existing single-document draft MUST remain available as `draft.md`.
-Markdown previews MUST omit the leading YAML frontmatter block.
+Markdown previews MUST omit the leading YAML frontmatter block as source text.
 When frontmatter supplies a root-relative `image` path, the standalone preview
 MUST show that image above the Markdown body. Both servers MUST serve only
 regular image files contained by the workspace `static/` directory, including

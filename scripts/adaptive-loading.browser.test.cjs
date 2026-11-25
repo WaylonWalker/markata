@@ -5,8 +5,7 @@ const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const {execFileSync} = require('node:child_process');
-const playwright = require(process.env.PLAYWRIGHT_MODULE || path.join(execFileSync('npm', ['root', '-g'], {encoding:'utf8'}).trim(), 'agent-browser/node_modules/playwright-core'));
+const playwright = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const controller = fs.readFileSync(path.join(__dirname, '../pkg/themes/default/static/js/adaptive-loading.js'));
 // Loading controls now live in a shared partial, included either in the
 // appearance dialog or directly in the header when the picker is disabled.
@@ -34,8 +33,10 @@ function serve() {
     }
     res.setHeader('Content-Type','text/html');
     res.end('<!doctype html><html><body>' + control + '<div id="view-transition-page"><main><p>Useful content</p>' +
-      '<video width="160" height="90" muted controls preload="none" data-authored-autoplay="true"><source src="/clip.webm" type="video/webm"></video>' +
+      (req.url.includes('below-fold') ? '<div style="height:1200px"></div>' : '') +
+       '<video width="160" height="90" muted loop playsinline controls preload="none" data-authored-autoplay="true"><source src="/clip.webm" type="video/webm"></video>' +
       '<video width="160" height="90" muted controls preload="none" id="no-intent"><source src="/clip.webm" type="video/webm"></video>' +
+       '<video width="160" height="90" muted loop playsinline preload="none" data-adaptive-preview id="preview"><source src="/clip.webm" type="video/webm"></video>' +
       [0,1,2,3].map(i => '<img width="160" height="90" src="/sample/' + (req.url.includes('good') ? 'good' : 'poor') + i + '">').join('') +
       '<a id="next-route" href="/good-native-next">Next route</a></main></div><script src="/startup.js" defer></script><script src="/adaptive.js" defer></script><script src="/view.js" defer></script></body></html>');
   });
@@ -51,11 +52,16 @@ async function recommendation(page, value) {
   await page.waitForFunction(value => document.documentElement.dataset.loadingRecommendation === value, value);
 }
 
-for (const engine of (process.env.ADAPTIVE_BROWSERS || 'chromium,firefox,brave').split(',')) {
+for (const engine of (process.env.ADAPTIVE_BROWSERS || 'chromium').split(',')) {
   test(engine + ': deferred startup, actual timing, recovery, manual modes and UI', {timeout:90000}, async () => {
     const server = serve(); await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-    const browser = await (engine === 'firefox' ? playwright.firefox : playwright.chromium).launch({headless:true,
-      ...(engine === 'firefox' ? (process.env.ADAPTIVE_FIREFOX_EXECUTABLE ? {executablePath:process.env.ADAPTIVE_FIREFOX_EXECUTABLE} : {}) : {executablePath:engine === 'brave' ? '/usr/bin/brave' : '/usr/bin/chromium', args:['--no-sandbox']})}).catch(async error => {await new Promise(resolve => server.close(resolve)); throw error;});
+    const executablePath = engine === 'firefox'
+      ? process.env.ADAPTIVE_FIREFOX_EXECUTABLE
+      : process.env.ADAPTIVE_CHROMIUM_EXECUTABLE;
+    const browserType = engine === 'firefox' ? playwright.firefox : playwright.chromium;
+    const browser = await browserType.launch({headless:true,
+      ...(executablePath ? {executablePath} : {}),
+      ...(engine === 'firefox' ? {} : {args:['--no-sandbox']})}).catch(async error => {await new Promise(resolve => server.close(resolve)); throw error;});
     try {
       const context = await browser.newContext({viewport:{width:390,height:844}});
       await context.addInitScript(() => Object.defineProperty(navigator,'connection',{value:undefined, configurable:true}));
@@ -68,6 +74,7 @@ for (const engine of (process.env.ADAPTIVE_BROWSERS || 'chromium,firefox,brave')
       assert.ok(evidence.poor >= 4);
       assert.equal(await page.evaluate(() => localStorage.length), 0);
       assert.equal(await page.getAttribute('html','data-loading-policy'),'constrained');
+      assert.equal(await page.locator('video').first().getAttribute('data-autoplay-started'), null);
       assert.equal(await page.locator('video').first().getAttribute('autoplay'),null);
       // A cache hit is not evidence that the network improved. Preload via
       // fetch (not a measured media initiator), then request cached images.
@@ -104,6 +111,7 @@ for (const engine of (process.env.ADAPTIVE_BROWSERS || 'chromium,firefox,brave')
       assert.equal(await page.getAttribute('html','data-loading-policy'),'full-quality');
       assert.equal(await page.evaluate(() => JSON.parse(sessionStorage.getItem('markata-loading-auto-v1')).samples),12);
       await page.goto(origin + '/good-again');
+      await page.waitForFunction(() => document.querySelector('video').dataset.autoplayStarted === 'true');
       assert.equal(await page.locator('video').first().getAttribute('data-autoplay-started'),'true');
       await page.waitForFunction(() => !document.querySelector('video').paused);
       // Exhausting one page's budget cannot freeze session confidence forever.
@@ -120,6 +128,10 @@ for (const engine of (process.env.ADAPTIVE_BROWSERS || 'chromium,firefox,brave')
         if (mode === 'save-data') await more(p,'good',1);
         await p.waitForFunction(() => !document.querySelector('[data-loading-actions]').hidden);
         assert.equal(await p.getAttribute('html','data-loading-policy'), mode === 'save-data' ? 'constrained' : 'full-quality');
+        if (mode === 'save-data') {
+          assert.equal(await p.locator('video').first().getAttribute('data-autoplay-started'), null);
+          assert.equal(await p.locator('video').first().evaluate(v => v.paused), true);
+        }
         await p.locator('[data-adaptive-loading] summary').click();
         await p.locator('[data-loading-keep]').click();
         assert.equal(await p.evaluate(() => localStorage.getItem('markata-loading-mode-v1')),mode);
@@ -141,7 +153,72 @@ for (const engine of (process.env.ADAPTIVE_BROWSERS || 'chromium,firefox,brave')
       await intentPage.goto(origin + '/good'); await more(intentPage,'good',1);
       assert.equal(await intentPage.getAttribute('html','data-loading-recommendation'),'constrained');
       assert.ok(await intentPage.locator('[data-loading-actions]').isHidden());
+      assert.equal(await intentPage.locator('video').first().getAttribute('data-autoplay-started'), null);
       await intent.close();
+
+      const motion = await browser.newContext();
+      await motion.addInitScript(() => Object.defineProperty(navigator,'connection',{value:undefined}));
+      const motionPage = await motion.newPage();
+      await motionPage.emulateMedia({reducedMotion:'reduce'});
+      await motionPage.goto(origin + '/good');
+      assert.equal(await motionPage.locator('video').first().getAttribute('data-autoplay-started'), null);
+      await motionPage.emulateMedia({reducedMotion:'no-preference'});
+      await motionPage.waitForFunction(() => document.querySelector('video').dataset.autoplayStarted === 'true' && !document.querySelector('video').paused);
+      await motion.close();
+
+      const offline = await browser.newContext();
+      await offline.addInitScript(() => Object.defineProperty(navigator,'connection',{value:undefined}));
+      const offlinePage = await offline.newPage();
+      await offlinePage.goto(origin + '/good');
+      await offlinePage.waitForFunction(() => !document.querySelector('video').paused);
+      await offline.setOffline(true);
+      await offlinePage.waitForFunction(() => document.querySelector('video').paused);
+      assert.equal(await offlinePage.getAttribute('html','data-loading-policy'), 'constrained');
+      await offline.close();
+
+      // Authored videos stay poster-only below the fold, start in view, pause
+      // offscreen, and resume on return. Feed previews never gain autoplay.
+      const viewportCtx = await browser.newContext({viewport:{width:390,height:844}});
+      await viewportCtx.addInitScript(() => Object.defineProperty(navigator, 'connection', {value:undefined}));
+      const viewportPage = await viewportCtx.newPage();
+      await viewportPage.goto(origin + '/below-fold-good');
+      assert.equal(await viewportPage.locator('video').first().getAttribute('data-autoplay-started'), null);
+      assert.equal(await viewportPage.locator('#preview').getAttribute('data-autoplay-started'), null);
+      assert.deepEqual(await viewportPage.locator('video').first().evaluate(v => ({muted:v.muted, loop:v.loop, playsInline:v.playsInline, controls:v.controls})),
+        {muted:true, loop:true, playsInline:true, controls:true});
+      assert.equal(await viewportPage.locator('#preview').evaluate(v => v.readyState), 0);
+      await viewportPage.locator('video').first().scrollIntoViewIfNeeded();
+      await viewportPage.waitForFunction(() => !document.querySelector('video').paused);
+      await viewportPage.waitForFunction(() => Number.isFinite(document.querySelector('video').duration));
+      await viewportPage.locator('video').first().evaluate(v => {v.currentTime = v.duration - 0.1;});
+      await viewportPage.waitForFunction(() => {
+        const video = document.querySelector('video');
+        return video.currentTime < 0.25 && !video.paused;
+      });
+      await viewportPage.evaluate(() => window.scrollTo(0, 0));
+      await viewportPage.waitForFunction(() => document.querySelector('video').paused);
+      await viewportPage.locator('video').first().scrollIntoViewIfNeeded();
+      await viewportPage.waitForFunction(() => !document.querySelector('video').paused);
+      // Simulate the browser's visibilitychange lifecycle because headless
+      // Chromium does not switch document visibility when Playwright focuses tabs.
+      await viewportPage.evaluate(() => {
+        Object.defineProperty(document, 'hidden', {configurable:true, value:true});
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      await viewportPage.waitForFunction(() => document.querySelector('video').paused);
+      await viewportPage.evaluate(() => {
+        Object.defineProperty(document, 'hidden', {configurable:true, value:false});
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      await viewportPage.waitForFunction(() => !document.querySelector('video').paused);
+      await viewportPage.locator('video').first().evaluate(v => v.pause());
+      await viewportPage.waitForFunction(() => document.querySelector('video').paused);
+      await viewportPage.evaluate(() => window.scrollTo(0, 0));
+      await viewportPage.locator('video').first().scrollIntoViewIfNeeded();
+      await viewportPage.waitForTimeout(250);
+      assert.equal(await viewportPage.locator('video').first().evaluate(v => v.paused), true, 'a manually paused video must stay paused');
+      assert.equal(await viewportPage.locator('#preview').getAttribute('data-autoplay-started'), null);
+      await viewportCtx.close();
 
       if (engine === 'chromium') {
         for (const mode of ['auto','save-data','full-quality']) {
@@ -169,6 +246,7 @@ for (const engine of (process.env.ADAPTIVE_BROWSERS || 'chromium,firefox,brave')
             assert.equal(await n.locator('video').first().getAttribute('data-autoplay-started'),atEntry === 'full-quality' ? 'true' : null);
             await n.evaluate(() => window.navigateWithViewTransition('/good-native-last'));
             await n.waitForFunction(() => routeSwaps >= 2);
+            await n.waitForFunction(() => document.querySelector('video').dataset.autoplayStarted === 'true');
             assert.equal(await n.locator('video').first().getAttribute('data-autoplay-started'),'true');
           }
           await nav.close();

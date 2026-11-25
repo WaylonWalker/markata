@@ -239,6 +239,10 @@ Optional flags:
 - `--dry-run` MUST report what would be written without modifying the filesystem.
 - Primary results MUST be written to `stdout`.
 - Errors MUST suggest `--force` when overwrite conflicts are the only blocker.
+- `--all-installed-tools` MUST install globally for every supported agent
+  executable found on `PATH`, without prompting. It MUST ignore shared skill
+  directories when identifying tools, and MUST succeed with a clear message if
+  no supported executable is found.
 
 ---
 
@@ -261,10 +265,35 @@ Optional flags:
 - `site-path` defaults to the current directory.
 - The command MUST update the installed skill in place using the currently bundled files.
 - `update` MUST behave like `install --force` with the same agent and scope resolution.
-- `--global` MUST require an explicit `--agent`.
 - `site-path` MUST be rejected when `--global` is set.
 - `--dry-run` MUST report what would be updated without modifying the filesystem.
 - Primary results MUST be written to `stdout`.
+
+When `--global` is set without `--agent`, `update` MUST update every detected
+agent that already has the bundled skill installed in its global skill
+directory. Detection MUST use agent-specific executables on `PATH` and
+agent-specific user configuration directories. The command MUST skip detected
+agents without an existing skill installation and report them as skipped.
+
+### `doctor` global detection
+
+When `--global` is set without `--agent`, `doctor` MUST check every detected
+agent that has the bundled skill installed in its global skill directory. It
+MUST use the same detection rules as `update`, report each agent independently,
+and return drift if any checked installation has drift. Missing installations
+MUST be reported as skipped rather than treated as errors.
+
+### `just install` integration
+
+The repository's `just install` recipe MUST install the `markata` binary and
+then update and doctor all detected global agent skill installations. It MUST
+run without interactive input.
+
+`just install --all-installed-tools` MUST install the bundled skill globally
+for each supported agent executable found on `PATH`, then run doctor for those
+installations. This option MUST NOT infer tools from shared configuration
+directories. If no supported executable is found, it MUST report that no tools
+were installed and exit successfully after installing the binary.
 
 ---
 
@@ -344,7 +373,6 @@ The `doctor` command detects drift between installed skill files and the bundled
 
 - `site-path` defaults to the current directory.
 - The command MUST locate the installed skill directory using the same agent/scope/name resolution as `install`.
-- `--global` MUST require an explicit `--agent`.
 - `site-path` MUST be rejected when `--global` is set.
 - If no manifest file exists, the command MUST report that the skill was installed without a manifest and recommend re-installing with the current binary.
 - If the manifest exists, the command MUST compare:

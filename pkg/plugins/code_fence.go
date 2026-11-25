@@ -105,6 +105,7 @@ type codeFenceTransformer struct{}
 // Transform implements parser.ASTTransformer.
 func (t *codeFenceTransformer) Transform(node *ast.Document, reader text.Reader, _ parser.Context) {
 	source := reader.Source()
+	var replacements []*ast.FencedCodeBlock
 	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) { //nolint:errcheck // callback always returns a nil error
 		if !entering {
 			return ast.WalkContinue, nil
@@ -115,15 +116,21 @@ func (t *codeFenceTransformer) Transform(node *ast.Document, reader text.Reader,
 		}
 		info := strings.TrimSpace(string(fence.Info.Segment.Value(source)))
 		if lang := strings.ToLower(string(fence.Language(source))); pluginFenceLanguages[lang] {
-			replacement := &pluginFence{lang: []byte(lang), lines: fence.Lines()}
-			if parent := fence.Parent(); parent != nil {
-				parent.ReplaceChild(parent, fence, replacement)
-			}
-			return ast.WalkSkipChildren, nil
+			replacements = append(replacements, fence)
+			return ast.WalkContinue, nil
 		}
 		applyCodeFenceInfo(fence, info)
 		return ast.WalkContinue, nil
 	})
+	// Replacing a node while ast.Walk iterates siblings detaches that node from
+	// the iterator. Its former next sibling is then skipped. Defer replacements
+	// until the walk has visited every fence in the document.
+	for _, fence := range replacements {
+		if parent := fence.Parent(); parent != nil {
+			lang := strings.ToLower(string(fence.Language(source)))
+			parent.ReplaceChild(parent, fence, &pluginFence{lang: []byte(lang), lines: fence.Lines()})
+		}
+	}
 }
 
 // applyCodeFenceInfo parses the extras after the language token and sets

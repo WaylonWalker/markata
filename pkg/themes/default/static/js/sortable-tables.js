@@ -57,6 +57,7 @@
     });
   }
 
+  window.markataInitSortableTables = initializeTables;
   initializeTables(document);
   window.addEventListener('view-transition-complete', () => initializeTables(document));
   document.addEventListener('markata:content-decrypted', (event) => {

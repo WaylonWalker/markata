@@ -1,0 +1,161 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://excalidraw.com",
+  "elements": [
+    {
+      "angle": 0,
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "groupIds": [],
+      "isDeleted": false,
+      "locked": false,
+      "opacity": 100,
+      "roughness": 1,
+      "seed": 67,
+      "strokeColor": "#4263eb",
+      "strokeStyle": "solid",
+      "strokeWidth": 2,
+      "updated": 1,
+      "version": 1,
+      "versionNonce": 11,
+      "id": "frame",
+      "type": "frame",
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 220,
+      "name": "Group frame",
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "angle": 0,
+      "backgroundColor": "#fff3bf",
+      "fillStyle": "solid",
+      "groupIds": [
+        "group-a"
+      ],
+      "isDeleted": false,
+      "locked": false,
+      "opacity": 100,
+      "roughness": 1,
+      "seed": 71,
+      "strokeColor": "#1e1e1e",
+      "strokeStyle": "solid",
+      "strokeWidth": 2,
+      "updated": 1,
+      "version": 1,
+      "versionNonce": 11,
+      "id": "frame-rect",
+      "type": "rectangle",
+      "x": 30,
+      "y": 48,
+      "width": 240,
+      "height": 115,
+      "frameId": "frame",
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "angle": 0,
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "groupIds": [
+        "group-a"
+      ],
+      "isDeleted": false,
+      "locked": false,
+      "opacity": 100,
+      "roughness": 1,
+      "seed": 11,
+      "strokeColor": "#1e1e1e",
+      "strokeStyle": "solid",
+      "strokeWidth": 2,
+      "updated": 1,
+      "version": 1,
+      "versionNonce": 11,
+      "id": "frame-text",
+      "type": "text",
+      "x": 60,
+      "y": 85,
+      "width": 180,
+      "height": 50,
+      "frameId": "frame",
+      "text": "Bound in a frame",
+      "originalText": "Bound in a frame",
+      "fontSize": 20,
+      "fontFamily": 6,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "lineHeight": 1.25,
+      "containerId": "frame-rect",
+      "autoResize": false
+    },
+    {
+      "angle": 0,
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "groupIds": [],
+      "isDeleted": false,
+      "locked": false,
+      "opacity": 100,
+      "roughness": 1,
+      "seed": 83,
+      "strokeColor": "#e03131",
+      "strokeStyle": "solid",
+      "strokeWidth": 3,
+      "updated": 1,
+      "version": 1,
+      "versionNonce": 11,
+      "id": "stroke",
+      "type": "freedraw",
+      "x": 25,
+      "y": 180,
+      "width": 260,
+      "height": 58,
+      "frameId": "frame",
+      "points": [
+        [
+          0,
+          40
+        ],
+        [
+          35,
+          6
+        ],
+        [
+          70,
+          44
+        ],
+        [
+          110,
+          12
+        ],
+        [
+          160,
+          50
+        ],
+        [
+          220,
+          4
+        ],
+        [
+          260,
+          32
+        ]
+      ],
+      "pressures": [],
+      "simulatePressure": true,
+      "lastCommittedPoint": null
+    }
+  ],
+  "appState": {
+    "viewBackgroundColor": "#ffffff",
+    "gridSize": null
+  },
+  "files": {}
+}

@@ -14,14 +14,14 @@ jobs:
   sqlite-schema:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify editor SQLite schema with standard-library sqlite3
         run: python3 -m unittest discover -s pkg/editorsync -p 'test_schema.py' -v
   sqlite-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true

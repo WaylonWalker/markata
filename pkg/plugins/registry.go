@@ -62,6 +62,7 @@ func registerBuiltinPluginsLocked() {
 	pluginRegistry.constructors["redirects"] = func() lifecycle.Plugin { return NewRedirectsPlugin() }
 	pluginRegistry.constructors["csv_fence"] = func() lifecycle.Plugin { return NewCSVFencePlugin() }
 	pluginRegistry.constructors["mermaid"] = func() lifecycle.Plugin { return NewMermaidPlugin() }
+	pluginRegistry.constructors["excalidraw"] = func() lifecycle.Plugin { return NewExcalidrawPlugin() }
 	pluginRegistry.constructors["link_collector"] = func() lifecycle.Plugin { return NewLinkCollectorPlugin() }
 	pluginRegistry.constructors["glossary"] = func() lifecycle.Plugin { return NewGlossaryPlugin() }
 	pluginRegistry.constructors["md_video"] = func() lifecycle.Plugin { return NewMDVideoPlugin() }
@@ -203,6 +204,7 @@ func DefaultPlugins() []lifecycle.Plugin {
 		NewChartJSPlugin(),           // Convert Chart.js code blocks to charts
 		NewCSVFencePlugin(),          // Convert CSV code blocks to tables
 		NewMermaidPlugin(),           // Convert Mermaid code blocks to diagrams
+		NewExcalidrawPlugin(),        // Convert Excalidraw scene blocks to static SVG
 		NewGlossaryPlugin(),          // Auto-link glossary terms (Render + Write stages)
 		NewWikilinkHoverPlugin(),     // Add hover data to wikilinks (runs after wikilinks)
 		NewExternalLinkHoverPlugin(), // Add hover data to external links (opt-in)

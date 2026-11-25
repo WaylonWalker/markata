@@ -44,6 +44,28 @@ func waitStore(t *testing.T, condition func() bool) {
 	}
 }
 
+func TestStore_IndexStatusDoesNotTriggerMetadataLoad(t *testing.T) {
+	store, _ := storeFixture(t)
+	before := store.Stats()
+	status := store.IndexStatus()
+	if status.Ready || status.Phase != "queued" || status.Files != 2 {
+		t.Fatalf("unloaded workspace status = %+v", status)
+	}
+	if after := store.Stats(); after.MetadataLoads != before.MetadataLoads {
+		t.Fatalf("read-only status unexpectedly loaded metadata: %+v -> %+v", before, after)
+	}
+	if _, err := store.Files(); err != nil {
+		t.Fatal(err)
+	}
+	ready := store.IndexStatus()
+	if !ready.Ready || ready.Phase != "ready" || ready.Files != 2 || ready.Indexed != 2 || ready.Pending != 0 {
+		t.Fatalf("loaded workspace status = %+v", ready)
+	}
+	if ready.GlobScans == 0 || ready.MetadataLoads != 2 || ready.ElapsedMS < 0 || ready.LastLoadMS < 0 {
+		t.Fatalf("missing measured index telemetry: %+v", ready)
+	}
+}
+
 func TestStore_ReusesDiscoveryAndMetadata(t *testing.T) {
 	store, _ := storeFixture(t)
 	if _, err := store.Files(); err != nil {
@@ -173,4 +195,87 @@ func TestStore_WatchesNestedAppearanceAndConfig(t *testing.T) {
 		cfg, err := store.Config()
 		return err == nil && store.ConfigRevision() > revision && cfg != nil && cfg.Theme.TextSize == "large"
 	})
+}
+
+func TestWorkspaceWatchDirectories_RespectsConfiguredGitignore(t *testing.T) {
+	root := t.TempDir()
+	writeStoreFile(t, root, "markata-go.toml", "[markata-go.glob]\npatterns=['pages/**/*.md']\nuse_gitignore=true\n")
+	writeStoreFile(t, root, ".gitignore", "public/\n")
+	if err := os.MkdirAll(filepath.Join(root, "pages", "blog"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	writeStoreFile(t, root, "pages/blog/post.md", "# Post")
+	for _, dir := range []string{".git/objects", "public/.build-work/components/sidebar/index.md"} {
+		if err := os.MkdirAll(filepath.Join(root, dir), 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, isIgnoredPath, err := workspace.managerWithIgnoreRules()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, ignored, err := workspaceWatchDirectories(root, isIgnoredPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]bool{
+		root:                                 false,
+		filepath.Join(root, "pages"):         false,
+		filepath.Join(root, "pages", "blog"): false,
+	}
+	for _, dir := range got {
+		if dir == filepath.Join(root, "public") || strings.HasPrefix(dir, filepath.Join(root, "public")+string(filepath.Separator)) {
+			t.Fatalf("watch directories include gitignored path %q: %v", dir, got)
+		}
+		if _, ok := want[dir]; !ok {
+			t.Fatalf("unexpected watch directory %q: %v", dir, got)
+		}
+		want[dir] = true
+	}
+	if len(ignored) != 2 || ignored[0] != filepath.Join(root, ".git") || ignored[1] != filepath.Join(root, "public") {
+		t.Fatalf("ignored watcher directories = %v, want .git and public", ignored)
+	}
+	for dir, found := range want {
+		if !found {
+			t.Fatalf("expected watcher for %q; got %v", dir, got)
+		}
+	}
+	if isIgnoredPath("public") != true {
+		t.Fatal("configured .gitignore rule was not applied to public")
+	}
+}
+
+func TestStore_DeleteRefreshesPathsImmediately(t *testing.T) {
+	store, root := storeFixture(t)
+	source := "# New source"
+	if err := store.Create("new.md", source); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Delete("new.md", SourceVersion("stale")); err == nil {
+		t.Fatal("accepted a stale source version")
+	}
+	if err := store.Delete("new.md", SourceVersion(source)); err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range func() []File {
+		paths, err := store.Paths()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return paths
+	}() {
+		if file.Path == "new.md" {
+			t.Fatal("deleted file remained in cached paths")
+		}
+	}
+	if _, err := os.Stat(filepath.Join(root, "new.md")); !os.IsNotExist(err) {
+		t.Fatalf("deleted file still on disk: %v", err)
+	}
+	if _, err := store.Read("new.md"); err == nil {
+		t.Fatal("deleted file remains readable")
+	}
 }

@@ -11,6 +11,7 @@ import (
 
 func TestBuildDAGMatchesLegacyInBuildLab(t *testing.T) {
 	requireLinuxBuildLab(t)
+	parallelBuildLab(t)
 	fixture := filepath.Join(moduleRoot(t), "cmd", "markata-go", "cmd", "testdata", "buildlab-site")
 	binary := buildTestBinary(t)
 	result, runErr := buildlab.RunScenario(context.Background(), buildlab.ScenarioRunConfig{

@@ -1,8 +1,8 @@
-# Static SVG visualization foundation
+# Static SVG visualization pipeline
 
-This package starts Markata's **backend-rendered visualization** roadmap. It
-does not add D2/Vega-Lite/Mermaid dependencies and does not change existing
-Chart.js or Mermaid behavior. It is not yet wired to Markata's site builder.
+This package provides Markata's **backend-rendered visualization** pipeline.
+It powers Excalidraw static SVG output and does not change existing Chart.js or
+Mermaid behavior. D2 and Vega-Lite adapters are not available.
 
 The normative description is [the static visualization specification](../../spec/spec/STATIC_VISUALIZATIONS.md);
 the published [developer guide](../../docs/guides/static-visualizations.md)
@@ -20,6 +20,7 @@ uses its viewBox, and names the output using the SHA-256 of exact SVG bytes.
 `Publish` writes that content-addressed file under
 `assets/visualizations/` in the site output tree. `FigureHTML` generates
 script-free figure markup with explicit width/height and an accessible alt.
+`FigureHTMLWithBasePath` adds the site URL's path prefix when needed.
 
 The XML restrictions reject active and external-resource constructs from
 **trusted renderer outputs**. They are intentionally conservative, and they
@@ -33,8 +34,8 @@ diagrams rather than silently fall back to browser JavaScript.
 1. Connect an optional Go D2 engine adapter. Verify theme/font layout and
    inspect actual output against SVG constraints. Compare build-size, render
    latency, memory, cold/warm cache, and compressed SVG bytes.
-2. Integrate published SVG paths with the site-builder and the **additive**
-   standalone renderer asset manifest. Preserve schema-v1 clients.
+2. Extend explicit backend capability reporting to further renderer
+   interfaces; preserve standalone schema-v1 clients.
 3. Add an optional Vega-Lite adapter using pinned `vl-convert`, with data
    fallbacks and offline output auditing.
 4. Reuse this publisher from the separately tested Mermaid backend after

@@ -6,6 +6,15 @@ on:
       - "pkg/plugins/publish_feed_shorts.go"
       - "pkg/themes/default/static/js/feed-shorts.js"
       - "pkg/themes/default/static/css/feed-shorts.css"
+      - "pkg/models/config.go"
+      - "pkg/plugins/md_video.go"
+      - "pkg/plugins/md_video_test.go"
+      - "pkg/themes/default/static/js/adaptive-loading.js"
+      - "pkg/themes/default/templates/partials/adaptive-loading.html"
+      - "templates/partials/adaptive-loading.html"
+      - "scripts/adaptive-loading.test.cjs"
+      - "scripts/adaptive-loading.browser.test.cjs"
+      - "scripts/fixtures/adaptive-video.webm"
       - "scripts/shorts-image-loading.browser.test.cjs"
       - ".github/workflows/shorts-image-loading.yml"
   workflow_dispatch:
@@ -42,8 +51,11 @@ jobs:
         env:
           SHORTS_EVIDENCE_DIR: ${{ runner.temp }}/shorts-evidence
         run: |
+          node --check pkg/themes/default/static/js/adaptive-loading.js
+          node --check scripts/adaptive-loading.test.cjs
+          node --check scripts/adaptive-loading.browser.test.cjs
           node --check pkg/themes/default/static/js/feed-shorts.js
-          node --test scripts/shorts-image-loading.browser.test.cjs
+          node --test scripts/shorts-image-loading.browser.test.cjs scripts/adaptive-loading.test.cjs scripts/adaptive-loading.browser.test.cjs
       - name: Upload browser evidence
         if: always()
         uses: actions/upload-artifact@v7

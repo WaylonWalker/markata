@@ -224,6 +224,8 @@ lists them.
 
 The `filter` field uses a Python-like expression syntax to select which posts appear in a feed.
 
+In the workbench Feed view, `path` filters use paths relative to the workspace root, with `/` separators. For example, `path.startswith('pages/blog/')` matches posts under `pages/blog/`.
+
 For template-based filters, `template` and `templateKey` are interchangeable. Equality checks also respect built-in template aliases, so `templateKey == "shots"` matches posts using `shot`, `shots`, or `photo`.
 
 ### Filter Operators

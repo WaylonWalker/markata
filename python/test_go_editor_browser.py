@@ -1,6 +1,12 @@
 """Run against a Go workbench with MARKATA_GO_WORKBENCH_URL set."""
 import os
+import json
+import hashlib
+import re
+import threading
 import unittest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 from playwright.sync_api import expect, sync_playwright
 
@@ -39,6 +45,106 @@ class GoEditorBrowserTest(unittest.TestCase):
     def edit(self, markdown):
         self.page.evaluate("s => document.querySelector('.CodeMirror').CodeMirror.setValue(s)", markdown)
 
+    def defer_dropper_upload(self):
+        self.page.evaluate("""() => {
+          const originalFetch = window.fetch.bind(window);
+          window.__resolveDropperUpload = null;
+          window.fetch = (url, options) => {
+            if (String(url) !== '/workspace/dropper-upload') return originalFetch(url, options);
+            return new Promise(resolve => {
+              window.__resolveDropperUpload = (status, payload) => resolve(new Response(JSON.stringify(payload), {
+                status, headers: {'Content-Type': 'application/json'}
+              }));
+            });
+          };
+        }""")
+
+    def paste_test_image(self):
+        return self.page.evaluate("""() => {
+          const cm = document.querySelector('.CodeMirror').CodeMirror;
+          cm.setValue('before selected after');
+          cm.setSelection({line: 0, ch: 7}, {line: 0, ch: 15});
+          const clipboard = new DataTransfer();
+          clipboard.items.add(new File([new Uint8Array([137, 80, 78, 71])], 'pasted-photo.png', {type: 'image/png'}));
+          const event = new ClipboardEvent('paste', {bubbles: true, cancelable: true, clipboardData: clipboard});
+          cm.getWrapperElement().dispatchEvent(event);
+          return {prevented: event.defaultPrevented, source: cm.getValue()};
+        }""")
+
+    def test_pasted_image_shows_placeholder_then_inserts_markdown(self):
+        self.defer_dropper_upload()
+        pasted = self.paste_test_image()
+        self.assertTrue(pasted['prevented'])
+        self.assertIn('data-markata-upload-id=', pasted['source'])
+        self.assertIn('aria-busy="true"', pasted['source'])
+        self.assertIn('⏳ Uploading image…', pasted['source'])
+        self.assertNotIn('https://dropper.example.com/file/pasted.png', pasted['source'])
+
+        self.page.evaluate("""() => window.__resolveDropperUpload(201, {
+          provider: 'dropper', url: 'https://dropper.example.com/file/pasted.png'
+        })""")
+        self.page.wait_for_function("""() => document.querySelector('.CodeMirror').CodeMirror.getValue()
+          === 'before ![pasted-photo](<https://dropper.example.com/file/pasted.png>) after'""")
+        self.assertEqual(self.page.locator('#image-upload-status').text_content(), 'pasted-photo.png uploaded to Dropper.')
+
+    def test_failed_pasted_image_restores_selected_text(self):
+        self.defer_dropper_upload()
+        pasted = self.paste_test_image()
+        self.assertIn('Uploading image…', pasted['source'])
+        self.page.evaluate("""() => window.__resolveDropperUpload(502, {error: 'Dropper is unavailable'})""")
+        self.page.wait_for_function("""() => document.querySelector('.CodeMirror').CodeMirror.getValue()
+          === 'before selected after'""")
+        self.assertIn('Could not upload pasted-photo.png to Dropper: Dropper is unavailable.', self.page.locator('#image-upload-status').text_content())
+        self.assertEqual(self.page.locator('#image-upload-status').get_attribute('data-state'), 'error')
+
+    def test_vim_paste_uses_browser_clipboard_image_before_register_paste(self):
+        self.defer_dropper_upload()
+        self.page.evaluate("""() => {
+          const cm = document.querySelector('.CodeMirror').CodeMirror;
+          const keymap = document.querySelector('#keymap');
+          keymap.value = 'vim';
+          keymap.dispatchEvent(new Event('change'));
+          cm.setValue('before after');
+          cm.setCursor({line: 0, ch: 6});
+          window.CodeMirror.Vim.exitInsertMode(cm);
+          Object.defineProperty(navigator.clipboard, 'read', {configurable: true, value: async () => [{
+            types: ['image/png'],
+            getType: async type => new Blob([new Uint8Array([137, 80, 78, 71])], {type})
+          }]});
+          cm.getInputField().dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true, cancelable: true, key: 'p'
+          }));
+        }""")
+        self.page.wait_for_function("""() => window.__resolveDropperUpload
+          && document.querySelector('.CodeMirror').CodeMirror.getValue().includes('⏳ Uploading image…')""")
+        source = self.page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
+        self.assertTrue(source.startswith('before<span class="markata-image-upload"'))
+        self.assertIn('aria-busy="true"', source)
+        self.assertTrue(source.endswith('</span> after'))
+        self.page.evaluate("""() => window.__resolveDropperUpload(201, {
+          provider: 'dropper', url: 'https://dropper.example.com/file/pasted-image.png'
+        })""")
+        self.page.wait_for_function("""() => document.querySelector('.CodeMirror').CodeMirror.getValue()
+          === 'before![pasted-image](<https://dropper.example.com/file/pasted-image.png>) after'""")
+
+    def test_vim_paste_without_clipboard_image_uses_vim_register(self):
+        self.page.evaluate("""() => {
+          const cm = document.querySelector('.CodeMirror').CodeMirror;
+          const keymap = document.querySelector('#keymap');
+          keymap.value = 'vim';
+          keymap.dispatchEvent(new Event('change'));
+          cm.setValue('before after');
+          cm.setCursor({line: 0, ch: 6});
+          window.CodeMirror.Vim.exitInsertMode(cm);
+          window.CodeMirror.Vim.getRegisterController().getRegister('"').setText('from register', false);
+          Object.defineProperty(navigator.clipboard, 'read', {configurable: true, value: async () => [{types: ['text/plain']}]});
+          cm.getInputField().dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true, cancelable: true, key: 'p'
+          }));
+        }""")
+        self.page.wait_for_function("""() => document.querySelector('.CodeMirror').CodeMirror.getValue()
+          === 'beforefrom register after'""")
+
     def test_fragments_retain_frame_and_styles(self):
         self.edit("# Plain")
         expect(self.preview.locator("h1")).to_have_text("Plain")
@@ -56,6 +162,54 @@ class GoEditorBrowserTest(unittest.TestCase):
           const links=[...document.querySelectorAll('link[rel=stylesheet]')].map(n=>n.href);
           return links.length===new Set(links).size;
         }"""), True)
+
+    def test_new_edits_do_not_wait_for_initial_image_load(self):
+        requested = threading.Event()
+        release = threading.Event()
+
+        class SlowImage(BaseHTTPRequestHandler):
+            def do_GET(self):
+                requested.set()
+                release.wait(10)
+                self.send_response(200)
+                self.send_header("Content-Type", "image/svg+xml")
+                self.end_headers()
+                self.wfile.write(b'<svg xmlns="http://www.w3.org/2000/svg"/>')
+
+            def log_message(self, *_args):
+                pass
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), SlowImage)
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        try:
+            context = self.browser.new_context()
+            self.addCleanup(context.close)
+            page = context.new_page()
+
+            def slow_initial_document(route):
+                response = route.fetch()
+                data = response.json()
+                if data.get("document"):
+                    image = f'<img src="http://127.0.0.1:{server.server_port}/slow.svg">'
+                    data["document"] = data["document"].replace("</body>", image + "</body>")
+                route.fulfill(response=response, body=json.dumps(data))
+
+            page.route("**/render", slow_initial_document)
+            page.goto(os.environ["MARKATA_GO_WORKBENCH_URL"])
+            for _ in range(50):
+                if requested.is_set():
+                    break
+                page.wait_for_timeout(100)
+            self.assertTrue(requested.is_set(), "initial preview did not request the slow image")
+            page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setValue('# Fresh before image')")
+            expect(page.frame_locator("#preview").locator("h1")).to_have_text(
+                "Fresh before image", timeout=3000)
+            self.assertFalse(release.is_set())
+        finally:
+            release.set()
+            server.shutdown()
+            worker.join(timeout=2)
 
     def test_conditional_styles_are_added_reused_and_removed(self):
         self.edit("# Code\n\n```go\nfmt.Println(1)\n```")
@@ -107,6 +261,34 @@ class GoEditorBrowserTest(unittest.TestCase):
             expect(self.preview.locator(".mermaid svg")).to_contain_text(label)
         self.assertEqual(self.frame.evaluate("window.__persistentPreview"), "retained")
 
+    def test_unrelated_edit_preserves_rendered_mermaid(self):
+        diagram = "```mermaid\ngraph LR\nStart-->End\n```"
+        self.edit(f"# Mermaid\n\n{diagram}\n\nBefore")
+        expect(self.preview.locator("pre.mermaid svg")).to_be_visible()
+        self.frame.evaluate("window.__mermaidSvg = document.querySelector('pre.mermaid svg')")
+
+        self.edit(f"# Mermaid\n\n{diagram}\n\nAfter")
+        expect(self.preview.locator(".post-content p").last).to_have_text("After")
+        self.assertTrue(self.frame.evaluate(
+            "window.__mermaidSvg === document.querySelector('pre.mermaid svg')"))
+
+        self.edit("# Mermaid\n\n```mermaid\ngraph LR\nChanged-->End\n```\n\nAfter")
+        expect(self.preview.locator("pre.mermaid svg")).to_contain_text("Changed")
+        self.assertFalse(self.frame.evaluate(
+            "window.__mermaidSvg === document.querySelector('pre.mermaid svg')"))
+
+    def test_offscreen_mermaid_renders_when_scrolled_into_view(self):
+        paragraphs = "\n\n".join(f"Paragraph {number}. " + "Read this text. " * 20
+                                  for number in range(30))
+        self.edit("# Long page\n\n" + paragraphs +
+                  "\n\n```mermaid\ngraph LR\nLazy-->Visible\n```")
+        expect(self.preview.locator("pre.mermaid")).to_have_count(1)
+        self.page.wait_for_timeout(500)
+        expect(self.preview.locator("pre.mermaid svg")).to_have_count(0)
+
+        self.frame.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        expect(self.preview.locator("pre.mermaid svg")).to_contain_text("Lazy")
+
 
     def test_publish_rich_diff_marks_prose_and_safely_escapes_text(self):
         result = self.page.evaluate("""() => window.MarkataRichPublishDiff.richHTML(
@@ -122,6 +304,162 @@ class GoEditorBrowserTest(unittest.TestCase):
         )""")
         self.assertNotIn('<script>', risky)
         self.assertIn('&lt;script&gt;', risky)
+
+    def test_continuous_typing_still_updates_preview(self):
+        self.page.evaluate("""() => {
+          window.__typingProbe={done:false,updates:0};
+          window.addEventListener('message', event => {
+            if(event.data?.type==='preview-updated' && !window.__typingProbe.done)
+              window.__typingProbe.updates++;
+          });
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          let count=0;
+          const interval=setInterval(() => {
+            editor.replaceRange(`\\nLive typing ${count}`, {line:editor.lastLine(),ch:editor.getLine(editor.lastLine()).length}, null, '+input');
+            count++;
+            if(count===40) {clearInterval(interval);window.__typingProbe.done=true;}
+          },40);
+        }""")
+        self.page.wait_for_function('window.__typingProbe.done', timeout=10000)
+        self.assertGreater(self.page.evaluate('window.__typingProbe.updates'), 0)
+        expect(self.preview.locator('.post-content')).to_contain_text('Live typing 39', timeout=10000)
+
+    def test_stale_autosave_pauses_and_keeps_conflict_draft(self):
+        paths = self.page.evaluate("""() => window.MarkataSiteTree.files()
+          .map(file => file.path).filter(path => /\\.(md|markdown|mdown|mkd)$/i.test(path))""")
+        if not paths:
+            self.skipTest("the attached workbench has no Markdown files")
+        path = paths[0]
+        self.page.evaluate("path => window.MarkataSiteTree.openFile(path)", path)
+        self.page.wait_for_function("path => window.MarkataSiteTree.activeFile() === path", arg=path)
+
+        writes = []
+
+        def conflict_on_put(route):
+            if route.request.method == "PUT":
+                writes.append(route.request.post_data)
+                route.fulfill(status=409, content_type="application/json", body=json.dumps({
+                    "error": "file changed on disk; browser recovery copy kept; compare copies to resolve conflict"
+                }))
+            else:
+                route.continue_()
+
+        self.page.route(re.compile(r".*/workspace/file\?.*"), conflict_on_put)
+        self.page.evaluate("""() => {
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          const line=editor.lastLine();
+          editor.replaceRange('\\n<!-- first local edit -->',
+            {line,ch:editor.getLine(line).length},null,'+input');
+        }""")
+        expect(self.page.locator("#saved")).to_contain_text("Site save failed", timeout=5000)
+        expect(self.page.get_by_role("button", name="Compare copies…")).to_be_visible()
+
+        self.page.evaluate("""() => {
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          const line=editor.lastLine();
+          editor.replaceRange('\\n<!-- second local edit -->',
+            {line,ch:editor.getLine(line).length},null,'+input');
+        }""")
+        self.page.wait_for_timeout(700)
+        self.assertEqual(len(writes), 1, "autosave retried after the version conflict")
+        self.assertIn("second local edit", self.page.evaluate(
+            "() => document.querySelector('.CodeMirror').CodeMirror.getValue()"))
+        self.assertTrue(self.page.evaluate("""() => Object.keys(localStorage).some(key =>
+          localStorage.getItem(key)?.includes('second local edit'))"""),
+            "the browser recovery copy did not retain the latest edit")
+
+        self.page.get_by_role("button", name="Compare copies…").click()
+        dialog = self.page.locator("#workspace-conflict-dialog")
+        expect(dialog).to_be_visible()
+        expect(dialog.locator("#workspace-conflict-browser")).to_contain_text("second local edit")
+        dialog.locator("#workspace-conflict-done").click()
+
+    def test_excalidraw_loads_local_fonts_and_uses_its_worker_chunk(self):
+        paths = self.page.evaluate("""() => window.MarkataSiteTree.files()
+          .map(file => file.path).filter(path => /\\.(md|markdown|mdown|mkd)$/i.test(path))""")
+        if not paths:
+            self.skipTest("the attached workbench has no Markdown files")
+        path = paths[0]
+        self.page.evaluate("path => window.MarkataSiteTree.openFile(path)", path)
+        self.page.wait_for_function("path => window.MarkataSiteTree.activeFile() === path", arg=path)
+
+        writes = []
+
+        def acknowledge_browser_save(route):
+            if route.request.method == "PUT":
+                source = route.request.post_data or ""
+                writes.append(source)
+                route.fulfill(status=200, content_type="application/json", body=json.dumps({
+                    "version": hashlib.sha256(source.encode()).hexdigest()
+                }))
+            else:
+                route.continue_()
+
+        self.page.route(re.compile(r".*/workspace/file\?.*"), acknowledge_browser_save)
+        fixture = Path(__file__).resolve().parents[1] / "pkg/plugins/testdata/excalidraw/renderer-corpus/text-fonts.excalidraw"
+        scene = json.loads(fixture.read_text(encoding="utf-8"))
+        scene["x_markata_future_field"] = {"preserve": "roundtrip"}
+        scene["_markata"] = {"user_note": "keep me", "excalidraw_svg": {"stale": True}}
+        self.assertTrue(scene["elements"], "fixture must contain a scene element")
+        scene["elements"][0]["x_future_element_field"] = "preserve this too"
+        source = "# Excalidraw fonts\n\n```excalidraw\n" + json.dumps(scene) + "\n```\n"
+        font_responses, worker_warnings = [], []
+        self.page.on("response", lambda response: font_responses.append((response.status, response.url))
+                     if "/editor/excalidraw-fonts/fonts/" in response.url else None)
+        self.page.on("console", lambda message: worker_warnings.append(message.text)
+                     if "WorkerInTheMainChunkError" in message.text or "Failed to use workers for subsetting" in message.text else None)
+        self.page.evaluate("""source => {
+          const editor=document.querySelector('.CodeMirror').CodeMirror;
+          editor.setValue(source);
+          editor.setCursor({line:2,ch:0});
+        }""", source)
+        expect(self.page.locator("#drawing-open")).to_have_text("Edit drawing")
+        self.page.locator("#drawing-open").click()
+        expect(self.page.locator("#excalidraw-canvas")).to_be_visible(timeout=10000)
+        self.page.locator("#excalidraw-apply").click()
+        expect(self.page.locator("#excalidraw-dialog")).not_to_be_visible(timeout=20000)
+        self.assertTrue(font_responses, "Excalidraw did not request its bundled font files")
+        self.assertTrue(all(status == 200 for status, _ in font_responses), font_responses)
+        self.assertFalse(worker_warnings, worker_warnings)
+        expect(self.page.locator("#saved")).to_have_text("Saved to site", timeout=5000)
+        self.assertEqual(len(writes), 1, "applying the drawing should autosave one updated source")
+        serialized = writes[0].split("```excalidraw\n", 1)[1].split("\n```", 1)[0]
+        saved_scene = json.loads(serialized)
+        self.assertEqual(saved_scene["x_markata_future_field"], {"preserve": "roundtrip"})
+        self.assertEqual(saved_scene["elements"][0]["x_future_element_field"], "preserve this too")
+        self.assertEqual(saved_scene["_markata"]["user_note"], "keep me")
+        self.assertNotEqual(saved_scene["_markata"].get("excalidraw_svg"), {"stale": True})
+
+    def test_preview_discards_obsolete_inflight_frame_render(self):
+        self.edit("# Latest edit")
+        expect(self.preview.locator("h1")).to_have_text("Latest edit")
+        self.page.evaluate("""() => {
+          const preview=document.querySelector('#preview').contentWindow;
+          // Simulate an older completed render arriving after the editor
+          // announced a newer source revision.
+          preview.postMessage({type:'preview-invalidate',version:900000},'*');
+          preview.postMessage({
+            type:'markdown-render',version:899999,
+            html:'<h1>Obsolete rendering</h1>',
+            source_lines:[0],source_anchors:[],source_offset:0,line_count:1,
+            feature_head_html:'',body_end_html:'',attributes:{}
+          },'*');
+        }""")
+        self.page.wait_for_timeout(150)
+        expect(self.preview.locator("h1")).to_have_text("Latest edit")
+        self.assertEqual(self.frame.evaluate("window.__persistentPreview"), "retained")
+
+    def test_publish_rich_diff_one_edit_in_large_page(self):
+        result = self.page.evaluate("""() => {
+          const old=Array.from({length:600},(_,i)=>'<p>Paragraph '+i+'</p>');
+          const next=[...old];
+          next[300]='<p>Paragraph 300 with one small edit</p>';
+          return window.MarkataRichPublishDiff.richHTML(old.join(''),next.join(''));
+        }""")
+        self.assertIn('mk-rich-insert', result)
+        self.assertIn('one', result)
+        self.assertIn('Paragraph 599', result)
+        self.assertNotIn('too complex', result)
 
     def test_publish_rich_diff_keeps_complex_blocks_as_before_after(self):
         result = self.page.evaluate("""() => window.MarkataRichPublishDiff.richHTML(

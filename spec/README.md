@@ -54,6 +54,8 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 | `CI.md` | `docs/guides/maintainer-ci.md` |
 | `ROADS.md` | `docs/guides/roads.md` |
 | `STATIC_VISUALIZATIONS.md` | `docs/guides/static-visualizations.md` |
+| `EXCALIDRAW.md` | `docs/guides/excalidraw-editor.md` |
+| `EXCALIDRAW_RENDERING.md` | `docs/reports/excalidraw-renderer-comparison.md` |
 
 **Documentation lives in `docs/` and is built as part of the site itself.**
 
@@ -66,6 +68,9 @@ The docs explain *why* and *usage* - user-friendly guides, examples, tutorials.
 | [SPEC.md](./spec/SPEC.md) | Core architecture, CLI, concurrency |
 | [EDITORIAL_HISTORY.md](./spec/EDITORIAL_HISTORY.md) | Editorial history, lazy source comparisons, and editor credits |
 | [EDITORIAL_AUTHORING.md](./spec/EDITORIAL_AUTHORING.md) | Isolated attributed commits for humans and agents |
+| [EXCALIDRAW.md](./spec/EXCALIDRAW.md) | Excalidraw scene format and workbench authoring behavior |
+| [EDITOR_WORKSPACE.md](./spec/EDITOR_WORKSPACE.md) | Editor workspace, local access, hosted ForwardAuth boundary, and mutations |
+| [EXCALIDRAW_RENDERING.md](./spec/EXCALIDRAW_RENDERING.md) | Browserless static rendering contract and renderer comparison |
 | [CLI_LIST.md](./spec/CLI_LIST.md) | CLI list command and output formats |
 | [CLI_SITE_DIR.md](./spec/CLI_SITE_DIR.md) | Cross-directory site selection and agent workflows |
 | [CLI_UX.md](./spec/CLI_UX.md) | Shared CLI UX rules for streams, color, and prompts |

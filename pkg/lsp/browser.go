@@ -131,12 +131,22 @@ func NewWebSocketHandler(ctx context.Context, root string, logger *log.Logger) (
 
 // NewWebSocketHandlerWithIndex shares workspace parsing while isolating draft state.
 func NewWebSocketHandlerWithIndex(ctx context.Context, root string, logger *log.Logger, index IndexProvider) (http.Handler, error) {
+	return NewWebSocketHandlerWithIndexAndOriginCheck(ctx, root, logger, index, validBrowserOrigin)
+}
+
+// NewWebSocketHandlerWithIndexAndOriginCheck creates a browser LSP handler with
+// a caller-supplied origin policy. Callers that use this for hosted access must
+// enforce their trusted-proxy and authentication boundary before dispatch.
+func NewWebSocketHandlerWithIndexAndOriginCheck(ctx context.Context, root string, logger *log.Logger, index IndexProvider, originCheck func(*http.Request) bool) (http.Handler, error) {
+	if originCheck == nil {
+		return nil, fmt.Errorf("browser LSP origin check is required")
+	}
 	config, err := BrowserWorkspace(root)
 	if err != nil {
 		return nil, err
 	}
 	root = uriToPath(config.RootURI)
-	upgrader := websocket.Upgrader{HandshakeTimeout: 5 * time.Second, CheckOrigin: validBrowserOrigin}
+	upgrader := websocket.Upgrader{HandshakeTimeout: 5 * time.Second, CheckOrigin: originCheck}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		server, err := NewBrowserSession(logger, root)
 		if err != nil {
@@ -170,6 +180,11 @@ func NewWebSocketHandlerWithIndex(ctx context.Context, root string, logger *log.
 			return
 		}
 	}), nil
+}
+
+// ValidBrowserOrigin checks the default loopback-only browser origin policy.
+func ValidBrowserOrigin(r *http.Request) bool {
+	return validBrowserOrigin(r)
 }
 
 func validBrowserOrigin(r *http.Request) bool {

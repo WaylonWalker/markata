@@ -110,6 +110,14 @@ Each card type has different visual elements:
 - Domain indicator
 - Title and description
 - External link styling
+- Small supporting thumbnail when `image` is set, even in editorial archives
+
+An editor-authored link with an `image` field uses a compact, cropped thumbnail
+beside its title in editorial feeds, including on phones. The original image
+is unchanged on the full post page. Photo and article posts retain their
+larger media layouts. If your site overrides `partials/cards/link-card.html`,
+use thumbnail-sized `srcset` candidates and `sizes` instead of lead-story
+image sizes.
 
 ### Contact Card
 - Avatar (from `avatar`, `image`, or `icon` frontmatter fields)

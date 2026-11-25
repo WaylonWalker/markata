@@ -431,6 +431,15 @@ exclude_fingerprint = ["robots.txt", "favicon.ico"]  # Files to skip
 - Only re-fingerprint assets that changed
 - Support CDN prefix: `{{ 'css/style.css' | asset_url(cdn=True) }}`
 
+After minification and CSS purging, local versioned stylesheet links MUST
+resolve to assets named by their final bytes. A build MAY reuse verification
+for existing HTML if the complete replacement rule set and the file's trusted
+identity and change timestamps match a previous successful reconciliation.
+New, replaced, or modified files, changed rules, unreliable file identity,
+and missing or invalid verification data MUST use normal reconciliation. The
+verification cache MUST stay outside published output.
+
+
 ### RSS/Atom Generation
 
 RSS/Atom feeds are generated through the **feeds** plugin, not a separate plugin. Any feed can output RSS, Atom, JSON, or other formats by enabling them in the feed configuration.

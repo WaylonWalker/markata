@@ -29,3 +29,7 @@ helper does not turn plaintext IndexedDB into secure multi-user local storage.
 Do not integrate this with a public editor origin or share a browser profile
 among different family accounts until cache encryption/locking and logout
 recovery UX are independently verified.
+
+Site grants reflect the active registry snapshot, not a live external ACL.
+Hosted integration must prove atomic registry reload or a live ACL provider
+before claiming immediate grant revocation. See the server composition README.

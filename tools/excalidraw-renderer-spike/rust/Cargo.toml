@@ -1,0 +1,8 @@
+[package]
+name = "markata-excalidraw-renderer-spike"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"
+
+[dependencies]
+excalidraw-render = { version = "=0.1.0", default-features = false, features = ["cjk"] }

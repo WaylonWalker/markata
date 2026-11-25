@@ -1,7 +1,7 @@
 # Static visualization foundation specification
 
-**Status:** implemented as an internal Go-only foundation in PR #1892.
-**Scope:** `pkg/visualizations` (no Markdown fenced-block registration or user-facing config).
+**Status:** implemented foundation with an Excalidraw static-SVG adapter.
+**Scope:** shared SVG validation/publication and the Excalidraw Markdown adapter.
 **Related:** [Renderer contract](RENDERER_CONTRACT.md), [Mermaid prerendering](MERMAID_PRERENDER.md), [renderer presets and offline policy #1854](https://github.com/WaylonWalker/markata/issues/1854).
 
 ## Goals and non-goals
@@ -10,11 +10,15 @@ Markata should be able to publish backend-rendered SVG as ordinary immutable
 static assets, with intrinsic dimensions so browsers reserve layout space.
 The authoring engine must not be downloaded to a visitor's browser.
 
-The foundation **does not** yet render D2 or Vega-Lite, change Mermaid/Chart.js
-behavior, register Markdown fences, expose site settings, or add an asset kind
-to the standalone renderer's schema-v1 `assets` list. Those are separate,
-compatible follow-ups. A build cannot claim `offline-static` solely because
-this package exists.
+The shared foundation currently powers the `excalidraw` Markdown fence. It
+does not render D2 or Vega-Lite, change Mermaid/Chart.js behavior, or add an
+asset kind to the standalone renderer's schema-v1 `assets` list. A build cannot
+claim `offline-static` solely because this package exists.
+
+The Excalidraw Chromium renderer serves the editor and bundled fonts from its
+local asset server. It MUST resolve Excalidraw's upstream
+`/excalidraw-fonts/fonts/<path>` requests to the corresponding embedded font;
+rendering must not fetch font files from a remote service.
 
 ## Go interface and render identity
 
@@ -86,27 +90,26 @@ reuses existing identical bytes. A conflicting existing asset is an error.
 The output directory must be trusted. Asset garbage collection and
 cross-process publication coordination are outside this slice.
 
-`FigureHTML(asset, alt, caption, aboveFold)` requires a nonblank descriptive
-alternative text, validates asset identity/dimensions, and produces escaped
-`figure`/`img` markup. `width` and `height` reserve layout space;
+`FigureHTML(asset, alt, caption, aboveFold)` and
+`FigureHTMLWithBasePath(asset, alt, caption, aboveFold, basePath)` require
+nonblank descriptive alternative text, validate asset identity/dimensions,
+and produce escaped `figure`/`img` markup. The latter projects the URL below a
+site URL path prefix. `width` and `height` reserve layout space;
 `loading="lazy"` is the default, with eager loading for critical above-fold
 images. It emits no JavaScript. Site CSS should make images responsive.
 
-The generated path is rooted at `/`, suitable for a root-hosted site.
-Base-path-aware URL projection must be provided by the site-builder adapter;
-it is **not** already supported by this internal helper.
+The default generated URL is rooted at `/`, suitable for a root-hosted site.
+The site-builder adapter MUST pass the path component of the configured site
+URL to `FigureHTMLWithBasePath` when the site is hosted below a path prefix.
 
 ## Integration contract for follow-up PRs
 
 1. Add D2 and then Vega-Lite adapters without duplicating Markdown parsing.
 2. Add explicit backend capabilities, failures, and resource limits to
-   standalone/CLI/Python/HTTP as they are implemented; preserve schema v1.
-3. Attach generated SVG assets to Markata's existing publication lifecycle
-   and site-base-path handling, instead of assuming root URLs.
-4. Derive light/dark palettes and font loading from Markata's final theme.
-5. Measure actual engine SVGs (including embedded fonts), compressed bytes,
+   CLI/Python/HTTP as they are implemented; preserve schema v1.
+3. Measure actual engine SVGs (including embedded fonts), compressed bytes,
    warm/cold throughput, memory, CLS, and offline browser requests.
-6. Update the bundled authoring skill and chart/diagram guides only when the
+4. Update the bundled authoring skill and chart/diagram guides only when the
    corresponding Markdown syntax works.
 
 ## Conformance tests
@@ -116,5 +119,5 @@ coalescing, error retry, cache size, copied bytes, SVG size/dimensions, active
 resource restrictions, idempotent publication, and escaping.
 
 Full real-engine fixtures, cross-interface result parity, browser layout
-measurements, and external resource audits are **outstanding requirements**
-for the first user-facing backend.
+measurements, and external resource audits remain **outstanding requirements**
+before the Excalidraw adapter can claim complete conformance or offline output.

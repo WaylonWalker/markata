@@ -135,6 +135,7 @@ func DefaultMarkdownExtensionConfig() MarkdownExtensionConfig {
 
 // createMarkdownRenderer creates a goldmark instance with the specified highlighting options.
 func createMarkdownRenderer(chromaTheme string, lineNumbers bool, extConfig MarkdownExtensionConfig, unsafeOptions ...bool) goldmark.Markdown {
+	registerFeatureFenceLexers()
 	unsafeHTML := true
 	if len(unsafeOptions) > 0 {
 		unsafeHTML = unsafeOptions[0]

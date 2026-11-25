@@ -11,6 +11,16 @@ Let's be honest: a lot of websites get built alongside coding agents. **Give the
 
 The skill is bundled with the **Go binary**; you don't need a separate installer or a proprietary cloud service.
 
+## Start without installing an agent integration
+
+```sh
+markata --skill
+```
+
+This prints the **self-contained, release-matched first-run guide** bundled with the CLI. Paste its output into Amp, Codex, Claude Code, or any agent of your choice. The guide asks the agent to inspect your existing site, clarify where you want to publish, prefer native config and templates before plugins, then verify a full build before deployment. No files are written and no provider is selected automatically.
+
+To give your agent the complete topic-based skill (custom templates, plugins, builds, performance, deployments), continue below.
+
 ## 1. Open your site repository
 
 ```bash
@@ -80,6 +90,36 @@ markata agent install --agent github-copilot --global
 The picker requires interactive input and output terminals. With `--no-input` or `TERM=dumb`, an explicit `--agent` is required.
 Unknown names show suggestions, such as `Did you mean --agent github-copilot?` for `--agent copilot`.
 Suggestions do not select an agent automatically.
+
+## Install or update global skills for detected agents
+
+The repository's `just install` recipe installs the `markata` binary, updates
+global skills for detected agents that already have one, and checks those
+installations:
+
+```bash
+just install
+```
+
+To install or refresh the skill for every supported agent executable found on
+`PATH`, use:
+
+```bash
+just install --all-installed-tools
+```
+
+This installs globally for detected executables such as `claude`, `codex`, or
+`opencode`. The recipe then runs `agent doctor` for the detected global
+installations. It does not infer additional tools from generic shared skill
+directories.
+
+You can run the global update and check steps directly after installing a new
+binary:
+
+```bash
+markata agent update --global
+markata agent doctor --global
+```
 
 ## 3. Check it
 

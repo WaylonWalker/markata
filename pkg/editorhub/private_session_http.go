@@ -5,7 +5,10 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strings"
 )
+
+const privateSessionHTTPS = "https"
 
 // PrivateSessionHTTP returns the current verified subject and authorized sites.
 // It never returns cookies, tokens, proxy assertions or Git credentials.
@@ -18,9 +21,10 @@ type PrivateSessionHTTP struct {
 
 func NewPrivateSessionHandler(registry *Registry, authenticate Authenticator, allowedOrigin string) (http.Handler, error) {
 	origin, err := url.Parse(allowedOrigin)
-	if err != nil || origin == nil || origin.Scheme != "https" || origin.Host == "" ||
+	if err != nil || origin == nil || origin.Scheme != privateSessionHTTPS || origin.Host == "" ||
 		origin.User != nil || origin.Path != "" || origin.RawQuery != "" || origin.Fragment != "" ||
-		registry == nil || authenticate == nil {
+		origin.Opaque != "" || origin.ForceQuery || origin.Hostname() == "" || strings.HasSuffix(origin.Host, ":") ||
+		origin.String() != allowedOrigin || registry == nil || authenticate == nil {
 		return nil, errors.New("private session needs a registry, trusted authenticator and exact HTTPS origin")
 	}
 	h := &PrivateSessionHTTP{registry: registry, authenticate: authenticate, origin: allowedOrigin}
@@ -33,10 +37,19 @@ func (h *PrivateSessionHTTP) serve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "private, no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
-	w.Header().Set("Vary", "Origin, Cookie, Authorization")
-	if r.Header.Get("Sec-Fetch-Site") == privateWriteCrossSite ||
-		r.Header.Get("Sec-Fetch-Site") == privateCrossOrigin {
-		http.Error(w, "cross-site session request forbidden", http.StatusForbidden)
+	w.Header().Set("Vary", "Origin, Cookie, Authorization, Sec-Fetch-Site")
+	// Go's GET ServeMux pattern also matches HEAD; this bootstrap is GET-only.
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	// A sibling subdomain is same-site but not same-origin. Only a same-origin
+	// browser fetch (or a direct navigation) may read this session bootstrap.
+	fetchSites := r.Header.Values("Sec-Fetch-Site")
+	if len(fetchSites) > 1 || (len(fetchSites) == 1 &&
+		fetchSites[0] != "same-origin" && fetchSites[0] != "none") {
+		http.Error(w, "cross-origin session request forbidden", http.StatusForbidden)
 		return
 	}
 	origins := r.Header.Values("Origin")

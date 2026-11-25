@@ -21,8 +21,8 @@ func TestMDVideoPlugin_DefaultConfig(t *testing.T) {
 	if !cfg.Enabled {
 		t.Error("Expected Enabled to be true by default")
 	}
-	if cfg.Autoplay {
-		t.Error("Expected Autoplay to be false by default")
+	if !cfg.Autoplay {
+		t.Error("Expected Markdown autoplay intent to be true by default")
 	}
 	if !cfg.Loop {
 		t.Error("Expected Loop to be true by default")
@@ -66,8 +66,11 @@ func TestMDVideoPlugin_ProcessPost_BasicVideo(t *testing.T) {
 	if !contains(post.ArticleHTML, `type="video/mp4"`) {
 		t.Error("Expected video/mp4 MIME type")
 	}
-	if contains(post.ArticleHTML, "autoplay") {
-		t.Error("Expected video to wait for reader playback")
+	if !contains(post.ArticleHTML, `data-authored-autoplay="true"`) {
+		t.Error("Expected default Markdown autoplay intent")
+	}
+	if videoAutoplayAttrRegex.MatchString(videoTagRegex.FindString(post.ArticleHTML)) {
+		t.Error("Native autoplay must not download offscreen media")
 	}
 	if !contains(post.ArticleHTML, "loop") {
 		t.Error("Expected loop attribute")
@@ -90,6 +93,23 @@ func TestMDVideoPlugin_ProcessPost_BasicVideo(t *testing.T) {
 	// Should NOT contain img tag anymore
 	if contains(post.ArticleHTML, "<img") {
 		t.Error("Should not contain img tag after processing")
+	}
+}
+
+func TestMDVideoPlugin_MarkdownAutoplayCanBeDisabled(t *testing.T) {
+	p := NewMDVideoPlugin()
+	cfg := p.Config()
+	cfg.Autoplay = false
+	p.SetConfig(cfg)
+	post := &models.Post{ArticleHTML: `<p><img src="clip.mp4" alt="clip"></p>`}
+	if err := p.processPost(post); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(post.ArticleHTML, "data-authored-autoplay") {
+		t.Fatalf("site opt-out must keep the video manual: %s", post.ArticleHTML)
+	}
+	if !strings.Contains(post.ArticleHTML, `preload="none"`) {
+		t.Fatalf("manual video should retain lazy load: %s", post.ArticleHTML)
 	}
 }
 

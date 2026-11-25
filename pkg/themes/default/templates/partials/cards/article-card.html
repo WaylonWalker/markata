@@ -18,7 +18,7 @@
 <h2 class="card-title p-name"><a class="u-url" href="{{ post.href }}">{{ post.title | default:post.slug }}</a></h2>
 </header>
 <div class="card-body">
-    <div class="card-excerpt p-summary">{{ post.article_html|summary:1000 | default:post.description }}</div>
+    <div class="card-excerpt p-summary">{% if feed_presentation == "editorial" %}{{ post.article_html|summary:320 | default:post.description }}{% else %}{{ post.article_html|summary:1000 | default:post.description }}{% endif %}</div>
 </div>
 <footer class="card-meta">
 {% if post.date %}<time class="dt-published" datetime="{{ post.date | atom_date }}">{{ post.date | human_date }}</time>{% endif %}

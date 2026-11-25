@@ -24,9 +24,34 @@ Use `just ci-diagnose RUN_ID` for read-only failed-job log classification; compl
 
 CI runs on pushes and pull requests targeting `main`/`master`, daily at 08:23 UTC,
 and through **Actions → CI → Run workflow**. Lint, all three Linux race/coverage
-shards, their aggregate `Test (ubuntu-latest, 1.27)` check, and macOS/Windows tests
-remain active. The CLI/search shard smoke-tests its existing binary with
-`version` and `--help`; there is no separate duplicate build.
+shards, their aggregate `Test (ubuntu-latest, 1.27)` check, and macOS/Windows
+test jobs remain active. The CLI/search shard smoke-tests its existing binary
+with `version` and `--help`; there is no separate duplicate build.
+
+### Native platform cadence
+
+| Trigger | macOS | Windows |
+| --- | --- | --- |
+| Ordinary PR | Full Go short suite | Build both CLI binaries; version/help smoke; focused `testbinary`, config and source-git Go tests |
+| Windows-sensitive PR | Full Go short suite | Full Go short suite |
+| Push to `main`/`master` | Full Go short suite | Full Go suite |
+| Scheduled/manual CI | Full Go suite | Full Go suite |
+| Version-tag release | Full Go suite on exact tag | Full Go suite on exact tag |
+
+Windows-sensitive PRs include Windows implementation/test files, PowerShell,
+installation/release workflows, Go dependencies and platform-sensitive process
+or filesystem packages. The Windows job uses the PR changed-files API (including
+forks) and **fails closed** if detection fails. It keeps the required check name
+`Test (windows-latest, 1.27)`, preserving branch rules and Dependabot auto-merge.
+
+The `Release` workflow must wait for its Linux race suite **and** full native
+macOS/Windows suites on the tagged revision before publishing. A successful
+nightly or main-branch run alone is not release approval. No Windows job or
+check is removed from branch protection.
+
+These changes affect product maintainer CI, not the `markata-go-site`
+authoring skill. Track actual end-to-end PR duration, not only individual job
+durations, before claiming a latency improvement.
 
 Specialized checks use job-level changed-file filters on PRs and pushes:
 
@@ -85,6 +110,37 @@ publish to GHCR with branch and `sha-` tags; feature previews do not receive
 `latest`. Use the SHA tag when a stable preview reference is needed. Manual
 dispatch on `main` follows the existing default-branch tagging policy, and
 dispatch on a version tag follows the existing semver/multiarch policy.
+
+## CI timing baselines and optimization results
+
+The Go test timing wrapper introduced in [PR #1995](https://github.com/WaylonWalker/markata/pull/1995)
+records per-package and test timing in job summaries and downloadable JSON
+artifacts. Use these measurements to prioritize bottlenecks before removing
+test coverage or modifying required checks.
+
+The first bounded-parallel Build Lab test change
+([PR #2007](https://github.com/WaylonWalker/markata/pull/2007)) produced these
+**single-run** measurements on GitHub Actions:
+
+| Measurement | Before (#1995) | After (#2007) | Change |
+| --- | ---: | ---: | ---: |
+| Fast PR Go short test command | 212.91 s | 122.25 s | 42.6% lower |
+| CLI Go test package | 188.92 s | 106.28 s | 43.7% lower |
+| Entire Fast PR Gate job (log timestamps) | ~245 s | ~180 s | ~27% lower |
+
+The first two values are emitted by the timing wrapper. Job duration includes
+checkout, Go setup, dependency restore, reporting and artifact upload. **These
+are not p50/p90 or an end-to-end cross-workflow PR latency claim.** Cache state,
+runner load, and concurrent changes can affect single samples.
+
+For follow-up PRs, compare multiple successful, non-cancelled runs of the
+**same job/check and trigger**. Record p50/p90 of job wall time separately from
+individual Go package and test durations; record failures/cancellations instead
+of discarding them as slow successful samples. For the Windows policy
+([PR #2008](https://github.com/WaylonWalker/markata/pull/2008)), confirm
+ordinary PRs run the version/help and focused-test smoke step rather than the
+full Windows short suite. Track main/nightly/release Windows full-suite results
+independently so faster PRs do not hide cross-platform regressions.
 
 ## Performance comparisons
 

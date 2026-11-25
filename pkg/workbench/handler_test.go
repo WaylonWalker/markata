@@ -3,17 +3,245 @@ package workbench
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image/png"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/WaylonWalker/markata/pkg/editorworkspace"
+	"github.com/WaylonWalker/markata/pkg/lsp"
+	"github.com/WaylonWalker/markata/pkg/visualizations"
+
 	"golang.org/x/net/html"
 )
+
+type previewWithoutIndexWorkspace struct {
+	workspaceSource
+	filesCalled bool
+}
+
+func (w *previewWithoutIndexWorkspace) Snapshot() (index *lsp.Index, revision uint64) {
+	return nil, 0
+}
+func (w *previewWithoutIndexWorkspace) Files() ([]editorworkspace.File, error) {
+	w.filesCalled = true
+	return nil, nil
+}
+
+func TestHandler_FirstPreviewDoesNotWaitForSiteIndex(t *testing.T) {
+	h := newHandler(t)
+	workspace := &previewWithoutIndexWorkspace{workspaceSource: h.workspace}
+	h.workspace = workspace
+	response := request(h, `{"markdown":"# Write now","include_document":true}`)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "Write now") {
+		t.Fatalf("preview before index: %d %s", response.Code, response.Body.String())
+	}
+	if workspace.filesCalled {
+		t.Fatal("preview synchronously loaded site metadata")
+	}
+}
+
+func TestHandler_InlineGalleryImagesServeContainedWorkspaceFiles(t *testing.T) {
+	h := newHandler(t)
+	root := t.TempDir()
+	imageDir := filepath.Join(root, "static", "images")
+	if err := os.MkdirAll(imageDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(imageDir, "shared.png"), testPastePNG, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := editorworkspace.New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.workspace = workspace
+	for _, tc := range []struct {
+		path string
+		want int
+	}{
+		{"/images/shared.png", http.StatusOK},
+		{"/images/unknown.png", http.StatusNotFound},
+		{"/images/../secret.png", http.StatusNotFound},
+	} {
+		response := httptest.NewRecorder()
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+tc.path, http.NoBody)
+		h.ServeHTTP(response, req)
+		if response.Code != tc.want {
+			t.Fatalf("GET %s returned %d (want %d)", tc.path, response.Code, tc.want)
+		}
+		if tc.want == http.StatusOK {
+			if response.Header().Get("Content-Type") != pwaImageType || !bytes.Equal(response.Body.Bytes(), testPastePNG) {
+				t.Fatalf("inline gallery image was not served intact")
+			}
+		}
+	}
+}
+
+func TestHandler_CMSShellAssetsServed(t *testing.T) {
+	h := newHandler(t)
+	page := httptest.NewRecorder()
+	h.ServeHTTP(page, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/", http.NoBody))
+	if page.Code != http.StatusOK {
+		t.Fatalf("GET / returned %d", page.Code)
+	}
+	body := page.Body.String()
+	for _, want := range []string{
+		`/editor/cms-shell.css`,
+		`/editor/cms-shell.js`,
+		`id="mobile-nav"`,
+		`id="mobile-editing-toolbar"`,
+		`id="header-commands"`,
+		`class="header-modes"`,
+		`id="header-new-post"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("workbench index missing %q", want)
+		}
+	}
+	for _, asset := range []string{"/editor/cms-shell.css", "/editor/cms-shell.js", "/editor/cms-flows.js"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+asset, http.NoBody))
+		if rec.Code != http.StatusOK || rec.Body.Len() == 0 {
+			t.Fatalf("GET %s returned %d (%d bytes)", asset, rec.Code, rec.Body.Len())
+		}
+	}
+}
+
+func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
+	h := newHandler(t)
+	manifestRec := httptest.NewRecorder()
+	h.ServeHTTP(manifestRec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/manifest.webmanifest", http.NoBody))
+	if manifestRec.Code != http.StatusOK {
+		t.Fatalf("GET /manifest.webmanifest returned %d", manifestRec.Code)
+	}
+	var manifest map[string]any
+	if err := json.Unmarshal(manifestRec.Body.Bytes(), &manifest); err != nil {
+		t.Fatalf("invalid manifest JSON: %v", err)
+	}
+	if manifest["display"] != "standalone" {
+		t.Fatalf("manifest display = %v, want standalone", manifest["display"])
+	}
+	target, ok := manifest["share_target"].(map[string]any)
+	if !ok {
+		t.Fatal("manifest missing share_target")
+	}
+	if target["action"] != "/share-target" || target["method"] != "POST" || target["enctype"] != "multipart/form-data" {
+		t.Fatalf("share target must be a multipart POST: %#v", target)
+	}
+	files, ok := target["files"].([]any)
+	if !ok || len(files) != 1 {
+		t.Fatalf("share target must accept one image collection: %#v", target["files"])
+	}
+	fields, isMap := files[0].(map[string]any)
+	if !isMap {
+		t.Fatalf("share target file entry must be an object: %#v", files[0])
+	}
+	if fields["name"] != pwaSharePhotosField {
+		t.Fatalf("wrong share field: %#v", fields)
+	}
+	for _, route := range []string{"/sw.js", "/pwa-icon.svg", "/pwa-icon-192.png", rasterLargeIconPath} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+route, http.NoBody))
+		if rec.Code != http.StatusOK || rec.Body.Len() == 0 {
+			t.Fatalf("GET %s returned %d (%d bytes)", route, rec.Code, rec.Body.Len())
+		}
+	}
+	for _, tc := range []struct {
+		path string
+		size int
+	}{
+		{"/pwa-icon-192.png", 192},
+		{rasterLargeIconPath, 512},
+	} {
+		response := httptest.NewRecorder()
+		h.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+tc.path, http.NoBody))
+		if response.Code != http.StatusOK || response.Header().Get("Content-Type") != pwaImageType {
+			t.Fatalf("raster icon %s returned HTTP %d", tc.path, response.Code)
+		}
+		icon, err := png.DecodeConfig(bytes.NewReader(response.Body.Bytes()))
+		if err != nil || icon.Width != tc.size || icon.Height != tc.size {
+			t.Fatalf("raster icon %s dimensions: %+v, %v", tc.path, icon, err)
+		}
+	}
+}
+
+func TestHandler_ExcalidrawArtifactsUseLocalFingerprintedFonts(t *testing.T) {
+	h := newHandler(t)
+	page := httptest.NewRecorder()
+	h.ServeHTTP(page, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/", http.NoBody))
+	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "MARKATA_EXCALIDRAW_RENDERER_VERSION") || !strings.Contains(page.Body.String(), `MARKATA_EXCALIDRAW_EXPORT_THEME="dark"`) {
+		t.Fatalf("workbench page did not provide the artifact renderer fingerprint and theme: %d", page.Code)
+	}
+	manifest := httptest.NewRecorder()
+	h.ServeHTTP(manifest, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/editor/excalidraw-fonts/manifest.json", http.NoBody))
+	if manifest.Code != http.StatusOK || !strings.Contains(manifest.Body.String(), `"renderer_version": "excalidraw-0.18.1-static-svg-v2"`) {
+		t.Fatalf("local font manifest returned %d: %s", manifest.Code, manifest.Body.String())
+	}
+}
+
+func TestHandler_ExcalidrawFontAssetsSupportUpstreamFontsPrefix(t *testing.T) {
+	h := newHandler(t)
+	font := "Excalifont/Excalifont-Regular-a88b72a24fb54c9f94e3b5fdaa7481c9.woff2"
+	want, err := visualizations.ReadExcalidrawAsset("excalidraw-fonts/" + font)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{
+		"/editor/excalidraw-fonts/" + font,
+		"/editor/excalidraw-fonts/fonts/" + font,
+	} {
+		response := httptest.NewRecorder()
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost"+path, http.NoBody)
+		h.ServeHTTP(response, request)
+		if response.Code != http.StatusOK {
+			t.Fatalf("font route %q returned %d: %s", path, response.Code, response.Body.String())
+		}
+		if response.Header().Get("Content-Type") != "font/woff2" {
+			t.Errorf("font route %q content type = %q, want font/woff2", path, response.Header().Get("Content-Type"))
+		}
+		if !bytes.Equal(response.Body.Bytes(), want) {
+			t.Errorf("font route %q did not return the bundled font bytes", path)
+		}
+	}
+}
+
+func TestHandler_ExcalidrawEditorServesSplitChunks(t *testing.T) {
+	assets, err := visualizations.ExcalidrawAssetFS()
+	if err != nil {
+		t.Fatal(err)
+	}
+	chunks, err := fs.Glob(assets, "excalidraw-editor-chunks/*.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(chunks) == 0 {
+		t.Fatal("the bundled Excalidraw editor has no split JavaScript chunks")
+	}
+	want, err := fs.ReadFile(assets, chunks[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := newHandler(t)
+	response := httptest.NewRecorder()
+	url := "http://localhost/editor/" + chunks[0]
+	h.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodGet, url, http.NoBody))
+	if response.Code != http.StatusOK {
+		t.Fatalf("editor chunk returned %d: %s", response.Code, response.Body.String())
+	}
+	if !bytes.Equal(response.Body.Bytes(), want) {
+		t.Fatal("editor chunk response does not match the embedded asset")
+	}
+}
 
 func newHandler(t testing.TB) *Handler {
 	t.Helper()
@@ -82,6 +310,14 @@ func TestHandler_RenderAndAssets(t *testing.T) {
 			}
 			for _, a := range tag.Attr {
 				if a.Key != "src" && a.Key != "href" {
+					continue
+				}
+				if strings.HasPrefix(a.Val, "data:text/css;base64,") {
+					encoded := strings.TrimPrefix(a.Val, "data:text/css;base64,")
+					css, err := base64.StdEncoding.DecodeString(encoded)
+					if err != nil || len(css) == 0 {
+						t.Fatalf("invalid embedded stylesheet: %v", err)
+					}
 					continue
 				}
 				if !strings.HasPrefix(a.Val, "/appearance/") {
@@ -321,11 +557,18 @@ func TestHandler_FragmentUpdatesOmitSharedCSS(t *testing.T) {
 			if strings.Contains(result.FeatureHeadHTML, name) {
 				t.Errorf("fragment repeats shared style %s", name)
 			}
-			if include && strings.Count(*result.Document, `href="/appearance/`+name) != 1 {
-				t.Errorf("document must include %s exactly once", name)
+			if include {
+				if name == "css/fonts.css" {
+					if strings.Count(*result.Document, `id="markata-preview-fonts"`) != 1 {
+						t.Errorf("document must include %s exactly once", name)
+					}
+				} else if strings.Count(*result.Document, dataStylesheetLink(h.assets[name])) != 1 {
+					t.Errorf("document must embed %s exactly once", name)
+				}
 			}
 		}
-		if !strings.Contains(result.FeatureHeadHTML, `data-markata-render-head="true"`) || !strings.Contains(result.FeatureHeadHTML, "css/code.css") {
+		codeCSS := "data:text/css;base64," + base64.StdEncoding.EncodeToString(h.assets["css/code.css"])
+		if !strings.Contains(result.FeatureHeadHTML, `data-markata-render-head="true"`) || !strings.Contains(result.FeatureHeadHTML, codeCSS) {
 			t.Fatal("missing marked conditional styles")
 		}
 		if include {

@@ -34,8 +34,19 @@ run *args:
     go run -ldflags '{{ldflags}}' {{main}} {{args}}
 
 # Install to $GOPATH/bin
-install:
+install *args:
     go install -ldflags '{{ldflags}}' {{main}}
+    # Use this checkout's freshly built code rather than an older markata on PATH.
+    @if [ "{{args}}" = "--all-installed-tools" ]; then \
+        go run -ldflags '{{ldflags}}' {{main}} agent install --all-installed-tools && \
+        go run -ldflags '{{ldflags}}' {{main}} agent doctor --global; \
+    elif [ -z "{{args}}" ]; then \
+        go run -ldflags '{{ldflags}}' {{main}} agent update --global && \
+        go run -ldflags '{{ldflags}}' {{main}} agent doctor --global; \
+    else \
+        echo "Usage: just install [--all-installed-tools]" >&2; \
+        exit 2; \
+    fi
 
 # Clean build artifacts
 clean:
