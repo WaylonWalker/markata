@@ -41,11 +41,11 @@ response is `private, no-store`, `nosniff`, and same-origin-only; the
 handler derives the subject freshly via the injected trusted Authenticator
 for every request and never accepts an identity from browser-supplied JSON.
 
-A future browser adapter must fetch this endpoint with same-origin credentials
-and `cache: no-store`; checking a previous subject stored in IndexedDB is
+The standalone browser helper `fetchVerifiedSyncIdentity(siteId)` fetches this
+endpoint with same-origin credentials and `cache: no-store`; checking a previous subject stored in IndexedDB is
 not proof of an active session. On logout, session expiry, account switch or
 revoked site grant, network sync must pause without discarding the outbox.
-No browser adapter, public ingress or production route is added in this PR.
+The helper is not wired into a live editor; no public ingress or production route is added.
 
 **Note:** verified identity for HTTP synchronization does not protect
 plaintext IndexedDB drafts from other people using the same browser profile.

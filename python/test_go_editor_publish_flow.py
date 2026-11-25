@@ -566,6 +566,13 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertIn("published: true", self.git(self.site, "show", "HEAD:posts/quick-publish.md"))
         self.assertEqual(self.git(self.site, "rev-parse", "HEAD"),
                          self.git(self.remote, "rev-parse", "refs/heads/main"))
+        publish_button = page.locator("#publish-open")
+        expect(publish_button).to_have_text("Up to date", timeout=15000)
+        expect(publish_button).to_be_disabled()
+        source = page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
+        self.edit_source(page, source + "\nA later edit to publish.\n")
+        expect(publish_button).to_have_text("Publish post", timeout=15000)
+        expect(publish_button).to_be_enabled()
         self.assertEqual(errors, [])
 
     def test_git_gutter_large_document(self):

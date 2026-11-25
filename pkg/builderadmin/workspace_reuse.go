@@ -11,6 +11,31 @@ func workspaceReuseMarkerPath(workDir string) string {
 	return workDir + ".base-release"
 }
 
+// reusableWorkspaceMatches checks retained workspace proof without consuming it.
+func reusableWorkspaceMatches(workDir, currentReleaseID string) (bool, error) {
+	if strings.TrimSpace(currentReleaseID) == "" {
+		return false, nil
+	}
+	info, err := os.Stat(workDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("inspect reusable workspace: %w", err)
+	}
+	if !info.IsDir() {
+		return false, nil
+	}
+	data, err := os.ReadFile(workspaceReuseMarkerPath(workDir))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("read reusable workspace marker: %w", err)
+	}
+	return strings.TrimSpace(string(data)) == currentReleaseID, nil
+}
+
 // claimReusableWorkspace returns true only when the existing workspace was
 // produced by the currently-live release. The marker is consumed before the
 // caller mutates the workspace so a failed or interrupted build can never be

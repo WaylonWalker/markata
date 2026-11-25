@@ -61,6 +61,22 @@ var manifestPattern = regexp.MustCompile(`--(palette|aesthetic|fontpack)-manifes
 var stylesheetLinkPattern = regexp.MustCompile(`(?i)<link\b[^>]*\brel\s*=\s*(?:"stylesheet"|'stylesheet')[^>]*>`)
 var stylesheetHrefPattern = regexp.MustCompile(`(?i)\bhref\s*=\s*"([^"]+)"|\bhref\s*=\s*'([^']+)'`)
 
+func wasmBundleVersion() string {
+	wasm, err := web.ReadFile("web/wasm/markata.wasm")
+	if err != nil {
+		return ""
+	}
+	hash := sha256.Sum256(wasm)
+	return fmt.Sprintf("%x", hash[:])
+}
+
+func wasmPreviewFingerprint(wasmVersion string, siteConfig *models.Config) string {
+	if siteConfig != nil {
+		return ""
+	}
+	return wasmVersion
+}
+
 type workspaceSource interface {
 	Config() (*models.Config, error)
 	Paths() ([]editorworkspace.File, error)
@@ -88,26 +104,28 @@ type workspaceCreateChecker interface {
 // Mount it at the root of an origin. Authored HTML is enabled for trusted local
 // editing; isolate its preview using an opaque-origin iframe sandbox.
 type Handler struct {
-	store            *editorworkspace.Store
-	root             string
-	configRevision   uint64
-	renderer         *plugins.StandaloneRenderer
-	siteConfig       *models.Config
-	workspace        workspaceSource
-	language         http.Handler
-	languageConfig   lsp.BrowserConfig
-	appearance       *plugins.StandaloneAppearance
-	choices          map[string][]string
-	assets           map[string][]byte
-	index            []byte
-	bridge           string
-	gate             chan struct{}
-	workspaceWriteMu sync.Mutex
-	lastSource       string
-	lastResult       *plugins.StandaloneResult
-	hostedAuth       *hostedAuth
-	gitPublisher     GitPublisher
-	dropperUploader  DropperUploader
+	store              *editorworkspace.Store
+	root               string
+	configRevision     uint64
+	renderer           *plugins.StandaloneRenderer
+	siteConfig         *models.Config
+	workspace          workspaceSource
+	language           http.Handler
+	languageConfig     lsp.BrowserConfig
+	appearance         *plugins.StandaloneAppearance
+	choices            map[string][]string
+	assets             map[string][]byte
+	index              []byte
+	bridge             string
+	gate               chan struct{}
+	workspaceWriteMu   sync.Mutex
+	lastSource         string
+	lastResult         *plugins.StandaloneResult
+	wasmVersion        string
+	previewFingerprint string
+	hostedAuth         *hostedAuth
+	gitPublisher       GitPublisher
+	dropperUploader    DropperUploader
 }
 
 // New builds immutable appearance assets once. Reuse the handler for all requests.
@@ -192,7 +210,9 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	if siteConfig != nil && siteConfig.Theme.FallbackMode == "light" {
 		excalidrawTheme = "light"
 	}
-	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), choices: map[string][]string{workbenchThemeAttribute: {workbenchLightMode, workbenchDarkMode}, workbenchTextSizeAttribute: {"small", "medium", "large", "x-large"}}}
+	wasmVersion := wasmBundleVersion()
+	previewFingerprint := wasmPreviewFingerprint(wasmVersion, siteConfig)
+	h := &Handler{root: root, renderer: plugins.NewStandaloneRenderer(plugins.StandaloneOptions{Config: siteConfig, Unsafe: true, AssetBase: "/appearance", MermaidMode: "client"}), siteConfig: siteConfig, workspace: workspace, language: language, languageConfig: config, appearance: a, assets: a.Assets, gate: make(chan struct{}, 1), wasmVersion: wasmVersion, previewFingerprint: previewFingerprint, choices: map[string][]string{workbenchThemeAttribute: {workbenchLightMode, workbenchDarkMode}, workbenchTextSizeAttribute: {"small", "medium", "large", "x-large"}}}
 	h.assets["css/fonts.css"] = bytes.ReplaceAll(h.assets["css/fonts.css"], []byte("/assets/fonts/"), []byte("/appearance/assets/fonts/"))
 	for _, name := range []string{"palette", "aesthetic", "fonts"} {
 		match := manifestPattern.FindSubmatch(h.assets["css/"+name+".css"])
@@ -223,8 +243,10 @@ func buildPresentation(root string, workspace workspaceSource, config lsp.Browse
 	if err != nil {
 		return nil, err
 	}
+	// Only Docker (or another packaging step) supplies the version-matched
+	// WASM bytes. Bare Go builds must remain fully functional without them.
 	// Editor CSS precedes theme overrides. Site article layout belongs in the iframe.
-	editorHead := fmt.Sprintf(`<script>window.MARKATA_EXCALIDRAW_RENDERER_VERSION=%q;window.MARKATA_EXCALIDRAW_EXPORT_THEME=%q;</script><link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css"><link rel="stylesheet" href="/editor/codemirror/addon/hint/show-hint.css"><link rel="stylesheet" href="/editor/codemirror/addon/dialog/dialog.css"><link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>`, excalidrawVersion, excalidrawTheme)
+	editorHead := fmt.Sprintf(`<script>window.MARKATA_EXCALIDRAW_RENDERER_VERSION=%q;window.MARKATA_EXCALIDRAW_EXPORT_THEME=%q;window.MARKATA_WASM_VERSION=%q;window.MARKATA_PREVIEW_FINGERPRINT=%q;</script><link rel="stylesheet" href="/editor/codemirror/lib/codemirror.css"><link rel="stylesheet" href="/editor/codemirror/addon/hint/show-hint.css"><link rel="stylesheet" href="/editor/codemirror/addon/dialog/dialog.css"><link rel="stylesheet" href="/editor/lsp.css"><script src="/editor/lsp.js"></script>`, excalidrawVersion, excalidrawTheme, wasmVersion, previewFingerprint)
 	for _, name := range []string{"lib/codemirror", "mode/xml/xml", "mode/markdown/markdown", "mode/gfm/gfm", "mode/javascript/javascript", "mode/python/python", "mode/css/css", "mode/htmlmixed/htmlmixed", "addon/mode/overlay", "addon/edit/matchbrackets", "addon/hint/show-hint", "addon/search/searchcursor", "addon/dialog/dialog", "keymap/vim", "keymap/emacs", "keymap/sublime"} {
 		editorHead += `<script src="/editor/codemirror/` + name + `.js"></script>`
 	}
@@ -383,6 +405,22 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
+		if name == "wasm/markata.wasm" {
+			if h.wasmVersion != "" {
+				w.Header().Set("X-Markata-Wasm-Version", h.wasmVersion)
+			}
+			// The authenticated worker is served with the same authorization
+			// boundary as /editor/. Content-encoding saves the large cold
+			// download without compressing at runtime or caching private data.
+			w.Header().Set("Vary", "Accept-Encoding")
+			if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+				if compressed, err := web.ReadFile("web/wasm/markata.wasm.gz"); err == nil {
+					w.Header().Set("Content-Encoding", "gzip")
+					serve(w, r, name, compressed)
+					return
+				}
+			}
+		}
 		serve(w, r, name, data)
 	default:
 		http.NotFound(w, r)
@@ -412,6 +450,8 @@ func serve(w http.ResponseWriter, r *http.Request, name string, data []byte) {
 	contentType := mime.TypeByExtension(path.Ext(name))
 	if strings.EqualFold(path.Ext(name), ".woff2") {
 		contentType = "font/woff2"
+	} else if strings.EqualFold(path.Ext(name), ".wasm") {
+		contentType = "application/wasm"
 	}
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("ETag", fmt.Sprintf(`"%x"`, sha256.Sum256(data)))
@@ -523,7 +563,7 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	if fontpack == "" {
 		fontpack = h.appearance.Defaults[workbenchFontpackAttribute]
 	}
-	response := &renderResponse{SchemaVersion: 1, HTML: previewResult.HTML, SourceLines: h.renderer.SourceLines(markdown), SourceAnchors: sourceAnchors, FeatureHeadHTML: h.featureHead(result, fontpack), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(previewResult.HTML), Cached: cached}
+	response := &renderResponse{SchemaVersion: 1, RendererFingerprint: h.previewFingerprint, HTML: previewResult.HTML, SourceLines: h.renderer.SourceLines(markdown), SourceAnchors: sourceAnchors, FeatureHeadHTML: h.featureHead(result, fontpack), BodyEndHTML: result.BodyEndHTML, InputBytes: len(*req.Markdown), HTMLBytes: len(previewResult.HTML), Cached: cached}
 	if req.IncludeDocument == nil || *req.IncludeDocument {
 		document := h.document(&previewResult, req.Appearance)
 		response.Document, response.DocumentBytes = &document, len(document)
@@ -547,19 +587,20 @@ type renderRequest struct {
 
 // renderResponse matches the Python reference's full-document/fragment contract.
 type renderResponse struct {
-	SchemaVersion   int     `json:"schema_version"`
-	Document        *string `json:"document"`
-	HTML            string  `json:"html"`
-	SourceLines     []int   `json:"source_lines"`
-	SourceAnchors   []int   `json:"source_anchors"`
-	FeatureHeadHTML string  `json:"feature_head_html"`
-	BodyEndHTML     string  `json:"body_end_html"`
-	RenderMS        float64 `json:"render_ms"`
-	QueueMS         float64 `json:"queue_ms"`
-	InputBytes      int     `json:"input_bytes"`
-	HTMLBytes       int     `json:"html_bytes"`
-	DocumentBytes   int     `json:"document_bytes"`
-	Cached          bool    `json:"cached"`
+	SchemaVersion       int     `json:"schema_version"`
+	RendererFingerprint string  `json:"renderer_fingerprint"`
+	Document            *string `json:"document"`
+	HTML                string  `json:"html"`
+	SourceLines         []int   `json:"source_lines"`
+	SourceAnchors       []int   `json:"source_anchors"`
+	FeatureHeadHTML     string  `json:"feature_head_html"`
+	BodyEndHTML         string  `json:"body_end_html"`
+	RenderMS            float64 `json:"render_ms"`
+	QueueMS             float64 `json:"queue_ms"`
+	InputBytes          int     `json:"input_bytes"`
+	HTMLBytes           int     `json:"html_bytes"`
+	DocumentBytes       int     `json:"document_bytes"`
+	Cached              bool    `json:"cached"`
 }
 
 // featureHead omits styles already owned by the persistent appearance shell.
@@ -1630,6 +1671,8 @@ func (h *Handler) refreshPresentation() error {
 	h.index = next.index
 	h.bridge = next.bridge
 	h.renderer = next.renderer
+	h.wasmVersion = next.wasmVersion
+	h.previewFingerprint = next.previewFingerprint
 	h.lastResult = nil
 	h.lastSource = ""
 	h.configRevision = revision

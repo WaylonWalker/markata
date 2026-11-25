@@ -324,6 +324,38 @@ func embedsCacheSignature(config models.EmbedsConfig, extra map[string]interface
 	return buildcache.ContentHash(string(payload))
 }
 
+// HasCachedEmbedTransform reports whether the persistent build cache contains
+// the transform result for post under the effective embeds configuration.
+// Builder Admin uses this before skipping a build so expired remote metadata
+// cannot be hidden by an absent or stale per-post transform result.
+func HasCachedEmbedTransform(cache *buildcache.Cache, post *models.Post, extra map[string]interface{}) bool {
+	if cache == nil || post == nil {
+		return false
+	}
+	plugin := NewEmbedsPlugin()
+	if extra != nil {
+		if raw, ok := extra["embeds"].(map[string]interface{}); ok {
+			plugin.applyEmbedsConfig(raw)
+		}
+	}
+	signature := embedsCacheSignature(plugin.config, extra)
+	_, ok := cache.GetCachedEmbedsContent(post.Path, linkPostEmbedCacheHash(post, signature))
+	return ok
+}
+
+// HasExternalEmbedCandidate reports whether a post can make the embed
+// transform resolve remote metadata.
+func HasExternalEmbedCandidate(post *models.Post) bool {
+	if linkPostDestination(post) != "" {
+		return true
+	}
+	if post == nil || post.Content == "" {
+		return false
+	}
+	content := embedsCodeBlockRegex.ReplaceAllString(post.Content, "")
+	return externalEmbedRegex.MatchString(content) || embedBracketRegex.MatchString(content) || externalObsidianEmbedRegex.MatchString(content)
+}
+
 func (p *EmbedsPlugin) enableLiteYouTubeAssets(m *lifecycle.Manager) {
 	if m == nil {
 		return

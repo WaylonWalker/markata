@@ -166,7 +166,9 @@ clean/repeat/incremental timings. A separate standard-library parser checks
 that all repeated clean builds actually executed, succeeded, and matched;
 it appends a concise table to the GitHub run summary.
 
-This manual workflow adds **no time to ordinary PR CI**. It measures one
+Ordinary PRs do not run this workflow. Changes to its evidence tooling or
+workflow definition run the production-output check automatically; the broad
+mutation characterization remains manual. It measures one
 representative fixture, not every site's plugins or network inputs, and its
 runtime numbers are observations on that runner rather than speed promises.
 If any output changes unexpectedly, investigate the diff and input identity;
