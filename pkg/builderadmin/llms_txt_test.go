@@ -47,7 +47,7 @@ func TestBuilderAdminLLMsTXT_AuthenticatedRoutes(t *testing.T) {
 	bodies := make(map[string]string)
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			req := httptest.NewRequest(tc.method, tc.path, nil)
+			req := httptest.NewRequestWithContext(t.Context(), tc.method, tc.path, nil)
 			req.RemoteAddr = tc.remoteAddr
 			if tc.userID != "" {
 				req.Header.Set(DefaultAuthHeaders().UserID, tc.userID)
