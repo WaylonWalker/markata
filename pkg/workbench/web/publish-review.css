@@ -1,9 +1,7 @@
 /* Shared theme tokens; publishing is a dialog, not a second editor. */
 #publish-open{margin-left:auto}
 #publish-open:hover{filter:brightness(1.08)}
-#publish-open.btn-primary:disabled[data-publish-state="up-to-date"]{opacity:1;cursor:default;background:color-mix(in srgb,var(--color-success,#388463) 14%,var(--color-surface,#fff));border-color:color-mix(in srgb,var(--color-success,#388463) 38%,var(--btn-border,#c8d5e2));color:var(--color-success,#388463);filter:none}
-#publish-open[data-publish-state="checking"]{cursor:wait}
-#publish-review-open{white-space:nowrap}
+#publish-open:disabled[data-publish-state="up-to-date"]{opacity:1;cursor:default;background:color-mix(in srgb,var(--color-success,#388463) 14%,var(--color-surface,#fff));border-color:color-mix(in srgb,var(--color-success,#388463) 38%,var(--color-border,#c8d5e2));color:var(--color-success,#388463);filter:none}
 #publish-review{padding:0;border:1px solid var(--editor-divider,#bbb);border-radius:14px;background:var(--color-background,#fff);color:var(--color-text,#20232a);box-shadow:0 28px 90px #0005;width:min(1180px,calc(100vw - 28px));max-width:1180px;height:min(92dvh,980px);max-height:calc(100dvh - 28px);overflow:hidden;font:14px system-ui,sans-serif}
 #publish-review::backdrop{background:#0d1222ad;backdrop-filter:blur(4px)}
 #publish-review[open]{display:flex;flex-direction:column}

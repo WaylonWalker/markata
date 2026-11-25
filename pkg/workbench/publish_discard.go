@@ -24,7 +24,7 @@ type discardRequest struct {
 
 func (h *Handler) servePublishDiscard(w http.ResponseWriter, r *http.Request) {
 	var req discardRequest
-	if !readPublishInput(w, r, &req) {
+	if !h.readPublishInput(w, r, &req) {
 		return
 	}
 	// Protect the source/version check and write from other requests to this editor.

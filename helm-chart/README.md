@@ -24,6 +24,7 @@ This chart deploys a reusable markata-go notes workload that:
 - If your new namespace does not already have `aws-default`, enable `aws.sealedSecret` and provide sealed credentials in values.
 - By default the chart reuses a shared `markata-go-encryption` Secret name for `MARKATA_GO_ENCRYPTION_KEY_DEFAULT`; override `markataEncryption.secretName` only if your established secret uses a different name.
 - If your notes contain private content, provide that Secret externally in the namespace or enable `markataEncryption.sealedSecret`.
+- Hosted editor deployments can enable `builderAdmin.editor.dropperUploader` to add Dropper image uploads. The chart mounts its token Secret only into a restricted uploader sidecar; the editor receives access to that sidecar over a Unix socket.
 - The nginx site adds `Access-Control-Allow-Origin: *` to all public file responses by default. Set `site.cors.enabled` to `false` to disable this header. Protected release previews never receive it.
 - Public HTML is `no-cache` by default. Set `site.cacheHtmlAtEdge: true` for a 60-second shared-cache TTL while browsers continue to revalidate each visit. Protected release previews never receive this policy.
 - `site.contentIndexPath` keeps the Content Index on an exact nginx location. This location returns `404` instead of the HTML fallback when the artifact is missing.

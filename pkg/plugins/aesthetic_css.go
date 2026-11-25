@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/WaylonWalker/markata/pkg/aesthetic"
@@ -409,12 +410,17 @@ func compileMotifBundle(config *lifecycle.Config) (renderingrecipe.Bundle, error
 		return renderingrecipe.Bundle{}, nil
 	}
 	theme := configured.Theme
-	// Recipe v1 is the canonical brush projection. Existing bundled fontpacks
-	// keep their legacy CSS projection until their recipes are compiled.
+	// Non-brush fontpacks keep legacy CSS projection unless the configured
+	// dials form a recipe-v1-supported motif/texture combination; unsupported
+	// combinations (such as motif.kind="letter") stay on legacy projection.
 	if theme.Fontpack != "" && theme.Fontpack != renderingFontpackBrush {
-		return renderingrecipe.Bundle{}, nil
-	}
-	if theme.Fontpack == "" {
+		texKind := strings.TrimSpace(theme.Texture.Kind)
+		texSupported := texKind == "" || texKind == renderingTextureNone || texKind == renderingTextureScreenprint
+		headingSupported := theme.HeadingTexture.Kind == renderingHeadingSplatter || theme.HeadingTexture.Kind == renderingHeadingInherit
+		motifSupported := theme.Motif.Kind == renderingMotifBlockW && (theme.Motif.URL == "" || theme.Motif.URL == "https://waylonwalker.com/w.svg")
+		if !texSupported || !headingSupported || !motifSupported {
+			return renderingrecipe.Bundle{}, nil
+		}
 		theme.Fontpack = renderingFontpackBrush
 	}
 	// Site-local palettes (./palettes) are not part of the rendering contract,
@@ -447,11 +453,18 @@ func compileMotifBundle(config *lifecycle.Config) (renderingrecipe.Bundle, error
 	if theme.Motif.URL != "" && theme.Motif.URL != "https://waylonwalker.com/w.svg" {
 		return renderingrecipe.Bundle{}, fmt.Errorf("motif block-w custom URL is unsupported by the compiler")
 	}
+	// Surface texture, heading wear, and motif SVG assets do not depend on
+	// fontpack; normalize to the recipe v1 fontpack so any configured fontpack
+	// (such as handwritten) still receives compiled textures and motifs.
+	bundleFontpack := theme.Fontpack
+	if bundleFontpack == "" || bundleFontpack != "brush" {
+		bundleFontpack = "brush"
+	}
 	bundleTheme := renderingrecipe.Theme{
 		ContractVersion: theme.ContractVersion,
 		Palette:         theme.Palette,
 		Aesthetic:       theme.Aesthetic,
-		Fontpack:        theme.Fontpack,
+		Fontpack:        bundleFontpack,
 		Texture:         renderingcontract.Dial{Kind: theme.Texture.Kind, ColorMix: theme.Texture.ColorMix, Scale: theme.Texture.Scale, Scope: theme.Texture.Scope},
 		HeadingTexture:  renderingcontract.Dial{Kind: theme.HeadingTexture.Kind, ColorMix: theme.HeadingTexture.ColorMix, Scale: theme.HeadingTexture.Scale},
 		Motif:           renderingcontract.MotifState{Kind: theme.Motif.Kind, ColorMix: theme.Motif.ColorMix, Glyph: theme.Motif.Glyph, Size: theme.Motif.Size, Gap: theme.Motif.Gap, RowOffset: theme.Motif.RowOffset, Wobble: theme.Motif.Wobble, Scatter: theme.Motif.Scatter, Layer: theme.Motif.Layer, Color: theme.Motif.Color, URL: theme.Motif.URL},
@@ -461,10 +474,193 @@ func compileMotifBundle(config *lifecycle.Config) (renderingrecipe.Bundle, error
 	if err != nil {
 		return renderingrecipe.Bundle{}, fmt.Errorf("compile motif bundle: %w", err)
 	}
+	if raw, ok := bundle.Assets["assets/surface-screenprint-v1.svg"]; ok && theme.Texture.Kind == renderingTextureScreenprint {
+		bundle.Assets["assets/surface-screenprint-v1.svg"] = screenprintSurfaceSVG(raw)
+	}
+	if raw, ok := bundle.Assets["assets/motif-block-w-v1.svg"]; ok {
+		bundle.Assets["assets/motif-block-w-v1.svg"] = randomizedMotifSVG(theme.Motif, raw)
+	}
 	if motifOff {
 		delete(bundle.Assets, "assets/motif-block-w-v1.svg")
 	}
 	return bundle, nil
+}
+
+// randomizedMotifSVG replaces the deterministic modulo-7 motif placement with
+// a seeded pseudo-random cell hash so marks scatter, rotate, and scale
+// organically without diagonal stripes, while keeping full-opacity solid fill
+// and preserving the exact data-index count and tile bounds.
+func randomizedMotifSVG(m models.ThemeMotifConfig, raw []byte) []byte {
+	s := string(raw)
+	// Extract viewBox, data-field, fill color, and normalized path d from the compiled SVG.
+	extractAttr := func(src, name string) string {
+		key := " " + name + `="`
+		idx := strings.Index(src, key)
+		if idx < 0 {
+			return ""
+		}
+		rest := src[idx+len(key):]
+		end := strings.IndexByte(rest, '"')
+		if end <= 0 {
+			return ""
+		}
+		return rest[:end]
+	}
+	viewBox := extractAttr(s, "viewBox")
+	dataField := extractAttr(s, "data-field")
+	fill := extractAttr(s, "fill")
+	pathD := extractAttr(s, "d")
+	if viewBox == "" || dataField == "" || fill == "" || pathD == "" {
+		return raw
+	}
+	var vbX, vbY, width, height int
+	if _, err := fmt.Sscanf(viewBox, "%d %d %d %d", &vbX, &vbY, &width, &height); err != nil || width <= 0 || height <= 0 {
+		return raw
+	}
+	var cols, rows int
+	if _, err := fmt.Sscanf(dataField, "%dx%d", &cols, &rows); err != nil || cols <= 0 || rows <= 0 {
+		return raw
+	}
+	cellW := float64(width) / float64(cols)
+	cellH := float64(height) / float64(rows)
+	markSize := 72.0
+	if sz, err := strconv.ParseFloat(strings.TrimSuffix(strings.TrimSpace(m.Size), "px"), 64); err == nil && sz > 0 {
+		markSize = sz
+	}
+	markScale := markSize / 1688.4
+	wobble := m.Wobble
+	if wobble < 0 {
+		wobble = 0
+	}
+	scatter := m.Scatter
+	if scatter < 0 {
+		scatter = 0
+	}
+	hashFloat := func(index, salt uint32) float64 {
+		x := (index+1)*0x9e3779b1 ^ (salt+1)*0x85ebca6b
+		x ^= x >> 16
+		x *= 0x7feb352d
+		x ^= x >> 15
+		x *= 0x846ca68b
+		x ^= x >> 16
+		return float64(x>>8) / float64(1<<24)
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" data-field="%dx%d">`, width, height, cols, rows)
+	for index := 0; index < cols*rows; index++ {
+		row, col := index/cols, index%cols
+		u := uint32(index)
+		rx := (hashFloat(u, 11) - 0.5) * 2.0 // [-1, 1]
+		ry := (hashFloat(u, 29) - 0.5) * 2.0
+		rr := (hashFloat(u, 53) - 0.5) * 2.0
+		rs := (hashFloat(u, 97) - 0.5) * 2.0
+
+		rowShift := 0.0
+		if row%2 == 1 {
+			rowShift = m.RowOffset * cellW
+		}
+		cx := (float64(col)+0.5)*cellW + rowShift + rx*scatter*cellW*0.36
+		cy := (float64(row)+0.5)*cellH + ry*scatter*cellH*0.36
+		cx = wrapMotifCoordinate(cx, float64(width))
+		cy = wrapMotifCoordinate(cy, float64(height))
+		deg := rr * wobble * 26.0
+		sc := (1.0 + rs*scatter*0.14) * markScale
+		fmt.Fprintf(&b, `<path data-index="%d" fill="%s" opacity="1" transform="translate(%.2f %.2f) rotate(%.2f) scale(%.5f) translate(-844.2 -452.9)" d="%s"/>`, index, fill, cx, cy, deg, sc, pathD)
+	}
+	b.WriteString(`</svg>`)
+	return []byte(b.String())
+}
+
+// wrapMotifCoordinate keeps a displaced mark's center within the repeating tile.
+func wrapMotifCoordinate(value, size float64) float64 {
+	value = math.Mod(value, size)
+	if value < 0 {
+		value += size
+	}
+	return value
+}
+
+// screenprintSurfaceSVG upgrades the placeholder 2-dot screenprint asset into
+// a seamless 384x384 fine-grained screenprint ink screen (staggered irregular
+// dots with pinholes plus micro-flecks) matching themes.waylonwalker.com,
+// using the recipe-computed fill color and 3 opacity-bucketed paths.
+func screenprintSurfaceSVG(raw []byte) []byte {
+	s := string(raw)
+	key := ` fill="`
+	idx := strings.Index(s, key)
+	if idx < 0 {
+		return raw
+	}
+	rest := s[idx+len(key):]
+	end := strings.IndexByte(rest, '"')
+	if end <= 0 {
+		return raw
+	}
+	fill := rest[:end]
+
+	var state uint32 = 0x51a7c3d9
+	nextRand := func() float64 {
+		state ^= state << 13
+		state ^= state >> 17
+		state ^= state << 5
+		return float64(state>>8) / float64(1<<24)
+	}
+
+	const size = 192.0
+	var low, mid, high strings.Builder
+	addDot := func(dst *strings.Builder, cx, cy, rx, ry float64) {
+		fmt.Fprintf(dst, "M%.1f %.1fm-%.2f 0a%.2f %.2f 0 1 0 %.2f 0a%.2f %.2f 0 1 0 -%.2f 0",
+			cx, cy, rx, rx, ry, 2*rx, rx, ry, 2*rx)
+	}
+
+	// Primary staggered irregular screen with 9% pinholes and subtle ink gain.
+	for row := 0; row < 32; row++ {
+		for col := 0; col < 16; col++ {
+			if nextRand() < 0.09 {
+				continue
+			}
+			cx := float64(col*12+(row%2)*6) + (nextRand()-0.5)*1.8
+			cy := float64(row*6) + (nextRand()-0.5)*1.8
+			wave := 0.5 + 0.25*math.Sin(cx*2*math.Pi/size*2.0) + 0.25*math.Cos(cy*2*math.Pi/size*2.0)
+			r := 0.55 + wave*0.40 + nextRand()*0.28
+			ry := r * (0.78 + nextRand()*0.35)
+			op := 0.45 + nextRand()*0.40
+			switch {
+			case op < 0.58:
+				addDot(&low, cx, cy, r, ry)
+			case op < 0.72:
+				addDot(&mid, cx, cy, r, ry)
+			default:
+				addDot(&high, cx, cy, r, ry)
+			}
+		}
+	}
+
+	// Fine dry-ink micro-flecks across the seamless 192x192 tile.
+	for i := 0; i < 420; i++ {
+		r := 0.20 + nextRand()*0.38
+		cx := nextRand() * size
+		cy := nextRand() * size
+		if nextRand() < 0.6 {
+			addDot(&low, cx, cy, r, r)
+		} else {
+			addDot(&mid, cx, cy, r, r)
+		}
+	}
+
+	var out strings.Builder
+	out.WriteString(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">`)
+	if low.Len() > 0 {
+		fmt.Fprintf(&out, `<path fill="%s" fill-opacity="0.34" d="%s"/>`, fill, low.String())
+	}
+	if mid.Len() > 0 {
+		fmt.Fprintf(&out, `<path fill="%s" fill-opacity="0.56" d="%s"/>`, fill, mid.String())
+	}
+	if high.Len() > 0 {
+		fmt.Fprintf(&out, `<path fill="%s" fill-opacity="0.80" d="%s"/>`, fill, high.String())
+	}
+	out.WriteString(`</svg>`)
+	return []byte(out.String())
 }
 
 // hashedAssetReadyInFastMode reports whether a fast (incremental) build can

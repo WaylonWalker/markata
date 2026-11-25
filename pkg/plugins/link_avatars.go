@@ -608,6 +608,14 @@ func parseLinkAvatarsConfig(cfg *lifecycle.Config) LinkAvatarsConfig {
 	return result
 }
 
+// LinkAvatarsRequiresBuildTimeRender reports whether local or hosted mode can
+// fetch or inject avatar data while rendering posts. JavaScript mode runs in
+// the browser and does not make build output depend on remote favicon state.
+func LinkAvatarsRequiresBuildTimeRender(extra map[string]interface{}) bool {
+	cfg := parseLinkAvatarsConfig(&lifecycle.Config{Extra: extra})
+	return cfg.Enabled && cfg.Mode != linkAvatarModeJS
+}
+
 // getLinkAvatarsConfigRaw retrieves the raw config from Extra.
 func getLinkAvatarsConfigRaw(extra map[string]interface{}) any {
 	if extra == nil {

@@ -194,3 +194,76 @@ func TestWorkspace_DeleteRejectsSymlinksAndStaleVersions(t *testing.T) {
 		t.Fatalf("file still exists: %v", err)
 	}
 }
+
+func TestWorkspace_CreateWithImagesCreatesGalleryAndCover(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "posts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	photos := []UploadedImage{
+		{ContentType: "image/gif", Data: []byte("GIF89a")},
+		{ContentType: "image/gif", Data: []byte("GIF89a")},
+	}
+	source := "---\ntitle: Shared album\ndraft: true\n---\n\nFrom Android.\n"
+	urls, err := workspace.CreateWithImages("posts/shared.md", source, "shared", photos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(urls) != 2 || urls[0] != "/images/shared-1.gif" || urls[1] != "/images/shared-2.gif" {
+		t.Fatalf("unexpected photo URLs: %v", urls)
+	}
+	data, err := os.ReadFile(filepath.Join(root, "posts", "shared.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(data, []byte(`image: "/images/shared-1.gif"`)) ||
+		!bytes.Contains(data, []byte("![Shared photo 1](/images/shared-1.gif)")) ||
+		!bytes.Contains(data, []byte("![Shared photo 2](/images/shared-2.gif)")) {
+		t.Fatalf("Markdown lost shared photos: %s", data)
+	}
+	for _, name := range []string{"shared-1.gif", "shared-2.gif"} {
+		if _, err := os.Stat(filepath.Join(root, "static", "images", name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestWorkspace_CreateWithImagesRejectsExistingImageWithoutWritingPost(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "posts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "static", "images"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	existing := filepath.Join(root, "static", "images", "shared-2.gif")
+	if err := os.WriteFile(existing, []byte("existing"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	workspace, err := New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	photos := []UploadedImage{
+		{ContentType: "image/gif", Data: []byte("GIF89a")},
+		{ContentType: "image/gif", Data: []byte("GIF89a")},
+	}
+	if _, err := workspace.CreateWithImages("posts/shared.md", "# Album", "shared", photos); err == nil {
+		t.Fatal("duplicate image was accepted")
+	}
+	for _, path := range []string{
+		filepath.Join(root, "posts", "shared.md"),
+		filepath.Join(root, "static", "images", "shared-1.gif"),
+	} {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Fatalf("partial write at %q: %v", path, err)
+		}
+	}
+	if data, err := os.ReadFile(existing); err != nil || string(data) != "existing" {
+		t.Fatalf("existing image changed: %q, %v", data, err)
+	}
+}

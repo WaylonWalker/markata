@@ -274,7 +274,7 @@ func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
 				if position != firstPhoto {
 					continue
 				}
-				photoMaps := templates.PostsToMaps(photos)
+				photoMaps := cloneEditorialPostMaps(templates.PostsToMaps(photos))
 				for j, photo := range photos {
 					photoMaps[j]["editorial_photo_date"] = editorialPhotoDate(photo)
 					if photo.Date != nil {
@@ -321,4 +321,19 @@ func buildEditorialFeedSections(posts []*models.Post) []EditorialFeedSection {
 		}
 	}
 	return sections
+}
+
+// cloneEditorialPostMaps gives editorial-only fields a feed-local destination.
+// PostsToMaps returns shared cached maps, which must remain immutable while
+// feeds are rendered concurrently.
+func cloneEditorialPostMaps(posts []map[string]interface{}) []map[string]interface{} {
+	cloned := make([]map[string]interface{}, len(posts))
+	for i, post := range posts {
+		postClone := make(map[string]interface{}, len(post)+2)
+		for key, value := range post {
+			postClone[key] = value
+		}
+		cloned[i] = postClone
+	}
+	return cloned
 }

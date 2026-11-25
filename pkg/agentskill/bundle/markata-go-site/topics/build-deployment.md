@@ -60,6 +60,10 @@ runs, fast or incremental development-server builds, failed builds, or incomplet
 builds do not publish a new diagnostics artifact. A normal `serve` build can
 publish it after a successful full lifecycle.
 
+Builder Admin stores this complete artifact losslessly as
+`.markata/diagnostics.json.gz` to reduce release I/O. Decompress it with `gzip -dc`
+before inspecting it with `jq`; ordinary CLI builds keep the plain JSON path.
+
 Minimal GitHub Actions shape:
 
 ```yaml
@@ -128,9 +132,12 @@ steps:
 - for Helm or ArgoCD feedback loops, inspect the chart's lock and debounce knobs (`build.lock.pollIntervalSeconds`, `search.waitForSource.pollIntervalSeconds`, `search.watchDebounce`) before chasing deeper build bugs; shorter values make manual rebuilds and search restarts feel noticeably snappier
 - for Kubernetes hostPath authoring deployments, prefer the long-lived `builder-admin` service over one-shot build Jobs when the goal is fast interactive rebuilds, release history, rollback, and scheduled remote refreshes
 - for agent-triggered builder-admin operations, use its `/api/v1/` JSON API with a bearer credential only after ForwardAuth documents and validates bearer access for that route; a browser-session scope alone does not make UI forms callable from a headless agent
+- for builder-admin operational orientation, read authenticated `/llms.txt` from a signed-in browser or `/api/v1/llms.txt` using an authorized bearer token. The embedded guide explains real SSO login, read-only state/logs, and approval before builds/refreshes/rollbacks; it is distinct from site-generated `llms.txt`
 - for Kubernetes hostPath deployments, confirm the mounted source path and served site root are the real node paths, and remember the served site root may contain release directories plus a `current` symlink rather than a flat output tree
 - builder-admin is an operator surface: expose it only through its dedicated protected Traefik/hlab-auth ingress, configure `builderAdmin.auth.trustedProxyCIDRs` for the actual Traefik sources and required builder-admin peers, and do not use Service access or `kubectl port-forward` as an authentication bypass
 - when enabling builder-admin, configure its TLS host, HTTPS ForwardAuth URL, and explicit ingress NetworkPolicy selectors for the live Traefik pods; a shared Pod CIDR is acceptable only with those selectors for peer forwarding, while universal, loopback, and link-local CIDRs are rejected; the chart derives the exact `https://<host>` CSRF origin, so do not derive an origin from forwarded request headers or change hlab-auth's primary RP/origin
+- keep `markata-go editor` on loopback unless hosted Hlab authentication is fully configured; a hosted editor needs its own app-specific writer scope, exact HTTPS public origin, trusted proxy CIDRs, stripped inbound identity headers, trusted ForwardAuth response headers, session-cookie handoff, and a Traefik-only service path; never reuse the broader builder-admin operator scope
+- keep hosted editor Git credentials in the dedicated publisher container: configure an exact repository and branch allowlist, mount the deploy key and verified `known_hosts` only in that container, and let the editor call it over the local Unix socket; never mount the private key or an SSH agent socket into the editor container
 - Validate that feed URLs, social URLs, and asset URLs use the expected domain after build.
 
 ## Markata-Go-Specific Checks Before Shipping

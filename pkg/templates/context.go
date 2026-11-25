@@ -2,6 +2,7 @@ package templates
 
 import (
 	"reflect"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -469,6 +470,38 @@ func configToMap(c *models.Config) map[string]interface{} {
 		"robots":      c.FeedsPage.Robots,
 	}
 
+	// Expose public primary/sidebar feeds for top-level surfability in default templates
+	primaryFeeds := make([]map[string]interface{}, 0, len(c.Feeds))
+	seenPrimarySlugs := make(map[string]bool)
+	for i := range c.Feeds {
+		f := &c.Feeds[i]
+		if f.Slug == "" || !f.Formats.HTML || f.IncludePrivate || strings.Contains(strings.ToLower(f.Robots), "noindex") {
+			continue
+		}
+		sidebar := f.Sidebar != nil && *f.Sidebar
+		if !f.Primary && !sidebar {
+			continue
+		}
+		if seenPrimarySlugs[f.Slug] {
+			continue
+		}
+		seenPrimarySlugs[f.Slug] = true
+		title := f.Title
+		if title == "" {
+			title = f.Slug
+		}
+		primaryFeeds = append(primaryFeeds, map[string]interface{}{
+			"slug":        f.Slug,
+			"title":       title,
+			"description": f.Description,
+			"href":        "/" + strings.Trim(f.Slug, "/") + "/",
+			"primary":     f.Primary,
+			"has_rss":     f.Formats.RSS,
+			"has_atom":    f.Formats.Atom,
+			"has_json":    f.Formats.JSON,
+		})
+	}
+
 	var licenseValue interface{}
 	if c.License.IsDisabled() {
 		licenseValue = false
@@ -507,6 +540,7 @@ func configToMap(c *models.Config) map[string]interface{} {
 		"theme":         themeMap,
 		"authors":       authorsMap,
 		"feeds_page":    feedsPageMap,
+		"primary_feeds": primaryFeeds,
 		"license":       licenseValue,
 		"templates": map[string]interface{}{
 			"media": map[string]interface{}{

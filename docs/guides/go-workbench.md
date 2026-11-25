@@ -1,7 +1,7 @@
 ---
 title: "Live Markdown editor with Go"
 description: "Run or embed a Go server with a live Markata Markdown editor"
-date: 2026-10-28
+date: 2026-11-20
 published: true
 tags:
   - documentation
@@ -23,6 +23,130 @@ The Go server calls Markata's standalone renderer directly. It starts no Python 
 It uses the same Markdown renderer as the [Python API](./python-renderer/) and [FastAPI editor](./fastapi-editor/).
 The preview does not build a site. The language service indexes Markdown and reads workspace configuration for existing mention support.
 
+### Experimental browser-local WASM preview
+
+When built using the repository's Dockerfile, the Go editor also embeds a
+release-matched browser WASM renderer and its Go JavaScript runtime. Ordinary
+local Go builds work without those assets and continue using native Go preview.
+
+The WASM fast path is **opt-in** for controlled testing. Add ?wasm-preview=1
+to the editor URL (including the authenticated HTTPS editor URL when hosted).
+Typing and the first site-aware preview still use the existing Go path while
+the worker initializes. For a plain Markdown document, the worker's HTML and
+source-line mapping must first match a native Go render exactly. Subsequent
+edits in the supported plain-Markdown subset can then render in the browser,
+without a /render request. The editor identifies these as **Quick local
+preview** in the status and diagnostics panel.
+The diagnostics report the worker's WebAssembly linear-memory high-water mark
+for the current editor session.
+
+The worker starts only when the browser reports more than 4 GiB of device
+memory and more than four logical processors. It stays off when reduced data
+use is enabled, the connection reports 2G or slow-2G, or the browser does not
+support Web Workers and WebAssembly.
+The editor also keeps this path disabled when a site configuration is active,
+because the worker does not load site-specific Markdown settings. In these
+cases, the same editor continues to use Go.
+
+Wikilinks, embeddings, code fences, tables, rich plugins, HTML and changed
+frontmatter stay on Go. Any worker error, unavailable assets, missing proof of
+parity, or unsupported dependency falls back to Go; publishing is always
+authoritative server-side. The existing opaque iframe sandbox is preserved.
+This feature does not enable offline publishing or caching of private site
+content. WASM performance and parity must be measured on the real hosted
+deployment before considering default-on behavior.
+
+### Run behind Hlab Auth
+
+The editor binds to loopback by default. Keep that setting for local work.
+Hosted mode requires an HTTPS public origin, the reverse proxy's source CIDR,
+and an app-specific Hlab writer scope:
+
+```bash
+markata editor \
+  --workspace /data/source \
+  --listen 0.0.0.0:8766 \
+  --public-origin https://edit.example.com \
+  --trusted-proxy-cidr 10.42.0.0/24 \
+  --required-scope markata-editor:admin
+```
+
+Use the exact proxy source ranges enforced by the cluster NetworkPolicy. The
+server checks the TCP peer address, public Host, stable `X-Hlab-User-Id`, and
+the exact scope on every request, including assets, workspace APIs, and LSP
+WebSockets. It does not use `X-Forwarded-For` or `X-Hlab-Auth-Method`.
+Traefik must strip client-supplied `X-Hlab-*` headers before ForwardAuth and
+forward only the identity headers returned by Hlab Auth. Restrict the editor
+service to Traefik in the NetworkPolicy.
+
+Register a dedicated Hlab app for the editor. Require its administrative scope
+at the editor so a viewer scope cannot save files, upload images, or publish.
+Do not reuse the broader Build Admin scope. The proxy route must use Hlab
+ForwardAuth and return the `__Host-hlab-app-session` cookie for browser login
+handoff. Hosted mutations also require the exact configured public Origin, and
+hosted responses are marked private and no-store.
+
+The rendered preview keeps its opaque-origin script sandbox. The workbench
+delivers its appearance styles and selected font files inside that preview, so
+they do not need a separate Hlab login handoff.
+
+Do not expose the listener directly to the internet. Non-loopback binding is
+rejected unless all hosted authentication settings are valid.
+
+The Markata Helm chart can run the editor as a sidecar beside Builder Admin. It
+shares the site's source checkout, but uses a separate authenticated ingress:
+
+```yaml
+builderAdmin:
+  editor:
+    enabled: true
+    requiredScope: markata-editor:admin
+    ingress:
+      host: edit.example.com
+      ingressClassName: traefik
+      tls:
+        secretName: edit-example-com-tls
+    gitAuth:
+      repository: https://github.com/owner/site
+      branch: main
+      existingSecretName: markata-editor-git-publish
+      privateKeyKey: ssh-privatekey
+      knownHosts: |
+        github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+```
+
+The chart reuses the Builder Admin ForwardAuth service URL and trusted proxy
+CIDRs. It creates a separate middleware, service, ingress, and NetworkPolicy
+rule for the editor port. Create the TLS secret with the cluster's certificate
+controller. Register a dedicated Hlab app for `edit.example.com`; do not add
+this host to the Build Admin app or grant its operator scope to the editor.
+The GitHub deploy key must be write-enabled for only the site's repository;
+store its private key in a namespace-scoped SealedSecret and use the verified
+GitHub host key shown above for strict SSH host checking. An init container
+copies the Secret into an ephemeral volume with owner-only file permissions;
+the Git publisher sidecar is the only long-running container that mounts that
+volume. It uses the configured repository and branch as an allowlist, and
+accepts requests only over a local Unix socket. The editor has no private-key
+mount, SSH command, or agent socket; it continues to require the authenticated
+review, commit, and push flow.
+
+Hosted deployments can enable `builderAdmin.editor.dropperUploader` and point
+it at a namespace-scoped Secret containing the Dropper token. The chart runs a
+separate uploader sidecar that exposes only validated image uploads over a Unix
+socket. Only that sidecar receives the token; the editor container and browser
+do not. The broker accepts PNG, JPEG, GIF, and WebP images up to 15 MiB and
+forwards them to its fixed Dropper upload endpoint. Configure the chart values:
+
+```yaml
+builderAdmin:
+  editor:
+    dropperUploader:
+      enabled: true
+      existingSecretName: markata-editor-dropper
+      tokenKey: token
+      endpoint: https://dropper.waylonwalker.com/api/upload?format=json
+```
+
 Use the [Excalidraw canvas](excalidraw-editor.md) to create and edit drawings
 inside a Markdown page.
 
@@ -32,8 +156,9 @@ When the site's effective `content_templates.image_upload` setting uses
 Dropper, paste a PNG, JPEG, GIF, or WebP image into the Markdown editor. The
 workbench places an **Uploading image…** marker at the cursor while it uploads,
 then replaces that marker with an image link such as `![image](https://…)`.
-The server uses `DROPPER_TOKEN`; the browser does not receive the token. The
-upload limit is 15 MiB.
+The workbench uses a server-side Dropper credential; the browser never receives
+it. In hosted deployments, the credential stays in the uploader sidecar and is
+not available to the editor process. The upload limit is 15 MiB.
 
 Paste while the Markdown editor has focus. If the browser reports image data but
 does not make the image bytes available, the workbench shows an error in the
@@ -64,6 +189,10 @@ workspace discovery/watcher setup, LSP preparation, and appearance/browser
 assets. Once the HTTP listener is ready, the browser still loads its source
 file list and lazily requests frontmatter plus the site link index; these are
 **not** part of the initial server-ready message.
+
+Filesystem watchers prune directories matched by the workspace's `.gitignore`
+rules. This keeps generated output and cache trees out of editor startup while
+preserving watches for discovered content and the workspace root.
 
 Large uncached metadata loads use a bounded worker pool. The store then reuses
 unchanged metadata while that server process stays open. A new server process
@@ -388,6 +517,9 @@ template defaults. The slug field stays empty when using the suggestion; its
 ghost text and the destination path update as the title changes. Enter a custom
 slug only when you want to override the title-derived filename. Creating the
 post opens the new file in the editor, where later edits autosave to the site.
+The Link starter opens with focus in its source URL field. Photo and Shot
+starters open with focus in the image URL field, ready for a pasted URL or
+clipboard image. Other starters open with the title selected.
 The built-in **Link** starter accepts a source URL and can fill in the title,
 description, and preview image from the same configured oEmbed and Open Graph
 providers used by [external embeds](./embeds/). It also imports available site,
@@ -442,8 +574,12 @@ fails, the panel reports an error rather than pretending there are no changes.
 The change count is loaded in the background when the editor starts and refreshed
 when a site file saves or the editor regains focus. Opening the view shows its
 last inventory immediately while a fresh Git status check runs. **Review** for
-the workspace-wide list is in the Changes panel header. **Compare** beside
-**Publish post** opens the active post's detailed review.
+the active post is in the Changes panel header.
+
+A saved public post that matches its local Git commit shows **Up to date**.
+Editing it re-enables **Publish post**. Drafts and unpublished posts remain
+publishable. This status does not verify the remote branch or a live deployment.
+The existing publishing menu provides detailed comparison and review.
 
 Use **Publish post** in the header or **Ctrl/Cmd+S** (Emacs **Ctrl-X Ctrl-S**,
 Vim `:w`) to publish *only the active site Markdown post*. This explicitly
@@ -456,16 +592,9 @@ session can retry the pending commit without creating a duplicate. If the
 editor is reloaded in that state, inspect Git and remote status before
 retrying; automatic recovery across browser restarts is not yet implemented.
 
-When the saved post is public, is not a draft, and matches its last Git commit,
-the button changes to a disabled **Up to date** state. Editing the post makes
-**Publish post** available again. Unpublished and draft posts remain publishable
-so the action can update their publication metadata. **Up to date** describes
-Git only; it does not confirm a site build or deployment. Use the compact
-**Compare** control beside the button to open the active post's saved-source
-comparison with its last Git commit.
-
-Use **Ctrl/Cmd+Shift+Enter** to open the same detailed comparison. The optional
-advanced review dialog still offers separate **Commit selected page** and
+Use the separate **Review changes** control or **Ctrl/Cmd+Shift+Enter** when
+you want a detailed comparison of the active post. The optional advanced
+review dialog still offers separate **Commit selected page** and
 **Push to origin** controls; these are not required for the primary quick
 publish path. For a Git-tracked file, **Discard changes…** requires a
 confirmation and restores exactly the last committed source in the local workbench.
@@ -584,3 +713,19 @@ This verification identifies the release's **source Git revision**, not
 its byte-for-byte rendered output, CDN cache rollout, or availability at
 every public edge. Site URL health checks and other deployment providers
 need dedicated follow-up adapters.
+
+
+### Credential-bearing Dropper uploader platform support
+
+A hosted Markata editor can delegate photo uploads to a **separate local
+Dropper uploader process**, so the editor and browser never receive the
+upstream upload token. That capability currently relies on a Unix-domain
+socket with POSIX owner/group permissions (mode `0660`). It is supported
+only on operating systems where those permission bits are enforceable.
+
+On Windows, the credential-bearing Unix-socket uploader **fails closed** with
+an unsupported-platform error. Windows may report `0666` for Unix sockets
+even after `chmod 0660`; a successful chmod call is not evidence of a
+restricted Windows ACL. Use a secure Linux/macOS uploader backend or wait for
+a Windows ACL-based transport to be implemented and tested. This restriction
+does **not** disable the standard local editor or Markdown site builder.

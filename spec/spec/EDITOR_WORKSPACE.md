@@ -20,6 +20,10 @@ Refs #1977 and #1903. The workspace includes the publishing and Changes flow in 
   reachable through the command registry. Disabled views MUST not claim success.
 - Focus MUST return sensibly after closing settings/pickers. Mobile settings MUST
   fit the viewport. Shortcut recording MUST work within the unified window.
+- Choosing a Link starter MUST focus its source URL field in the New Post details
+  dialog. Choosing a photo or shot starter MUST focus its image URL field so the
+  author can paste a URL or clipboard image immediately. Other starters MUST
+  continue to focus the title field.
 - Workspace controls MUST preserve guarded publishing, read-only conflict comparison, and Changes review.
 - The first local preview MUST NOT wait for workspace metadata indexing. It MAY show unresolved
   workspace links and embeds while the index loads, then MUST refresh from the current source
@@ -51,3 +55,50 @@ in [EXCALIDRAW.md](EXCALIDRAW.md). Editing a scene MUST update only its fenced
 JSON body in one normal editor transaction. Applying a new scene MUST insert
 its fence only after the author applies it. Canceling MUST leave the source
 unchanged.
+
+Workspace filesystem watchers MUST prune directories ignored by the configured
+Git ignore rules. They MUST retain the workspace root and watches for discovered
+content directories so new content can be discovered after filesystem events.
+Ignored build and cache trees MUST NOT delay editor startup or receive watchers.
+
+## Hosted editor access
+
+The editor MUST bind to loopback by default. A non-loopback listener MUST be
+rejected unless hosted authentication is explicitly configured with all of:
+
+- one canonical HTTPS public origin with no credentials, path, query, fragment,
+  or non-default port;
+- one or more explicit trusted proxy CIDRs, none of which is a universal
+  address range;
+- one required app-specific writer scope.
+
+Hosted authentication MUST guard every request before route dispatch, including
+the editor HTML, assets, workspace APIs, render API, language-server HTTP and
+WebSocket routes. It MUST fail closed unless the remote peer is in a configured
+trusted CIDR, the request Host matches the public origin, exactly one non-empty
+`X-Hlab-User-Id` is present, and the comma-separated `X-Hlab-Scopes` includes
+the configured writer scope as an exact member. The app MUST NOT use forwarded
+IP headers or accept alternate identity header names. It MUST NOT require
+`X-Hlab-Auth-Method`, because Hlab browser sessions do not emit that assertion.
+
+The hosted app MUST use the stable Hlab user ID as the request identity. It MUST
+not widen permissions based on username, display name, group, role, or a
+client-controlled header. Traefik MUST strip inbound `X-Hlab-*` headers before
+ForwardAuth and inject only the trusted response headers after an allow result.
+The editor service MUST be reachable only through that Traefik route.
+
+Hosted workspace mutations MUST accept only an `Origin` exactly matching the
+configured public origin. A present `Sec-Fetch-Site` MUST be `same-origin`.
+Hosted LSP WebSocket upgrades MUST also require exactly one `Origin` matching
+the configured public origin before the upgrade. Hosted responses MUST use
+private, no-store caching. Local mode MUST retain its loopback and same-origin
+behavior.
+
+The editor's route scope MUST be an app-specific administrative scope, such as
+`markata-editor:admin`. It MUST NOT reuse the broader Build Admin operator
+scope. A viewer-only scope MUST not authorize workspace writes, uploads, or
+publishing.
+
+ForwardAuth browser session handoff MUST include the host-only
+`__Host-hlab-app-session` response cookie. The editor MUST not implement a
+second login protocol or trust the browser's identity headers.

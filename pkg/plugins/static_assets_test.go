@@ -12,7 +12,78 @@ import (
 
 	"github.com/WaylonWalker/markata/pkg/buildcache"
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
+
+func TestStaticAssets_CustomThemeInheritsEmbeddedPostCopyAsset(t *testing.T) {
+	root := t.TempDir()
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.Chdir(origDir); err != nil {
+			t.Errorf("restore working directory: %v", err)
+		}
+	}()
+
+	customStaticDir := filepath.Join(root, "themes", "acme", "static", "js")
+	if err := os.MkdirAll(customStaticDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(customStaticDir, "acme.js"), []byte("window.acme = true;"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	outputDir := filepath.Join(root, "output")
+	manager := lifecycle.NewManager()
+	config := lifecycle.NewConfig()
+	config.ContentDir = root
+	config.OutputDir = outputDir
+	config.Extra = map[string]interface{}{
+		"theme": &models.ThemeConfig{Name: "acme"},
+	}
+	manager.SetConfig(config)
+
+	plugin := NewStaticAssetsPlugin()
+	if err := plugin.Configure(manager); err != nil {
+		t.Fatalf("Configure() error = %v", err)
+	}
+
+	postCopyHash := manager.GetAssetHash("js/post-copy.js")
+	if postCopyHash == "" {
+		t.Fatal("custom theme build did not register the embedded post-copy asset hash")
+	}
+	if err := plugin.Write(manager); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+
+	postCopy, err := os.ReadFile(filepath.Join(outputDir, "js", "post-copy.js"))
+	if err != nil {
+		t.Fatalf("read published post-copy asset: %v", err)
+	}
+	if len(postCopy) == 0 {
+		t.Fatal("published post-copy asset is empty")
+	}
+	if _, err := os.Stat(filepath.Join(outputDir, "js", "acme.js")); err != nil {
+		t.Fatalf("custom theme asset was not published: %v", err)
+	}
+
+	if err := plugin.Cleanup(manager); err != nil {
+		t.Fatalf("Cleanup() error = %v", err)
+	}
+	hashedCopy := filepath.Join(outputDir, "js", "post-copy."+postCopyHash+".js")
+	published, err := os.ReadFile(hashedCopy)
+	if err != nil {
+		t.Fatalf("read hashed post-copy asset: %v", err)
+	}
+	if !bytes.Equal(published, postCopy) {
+		t.Fatal("hashed post-copy asset differs from the published source")
+	}
+}
 
 func TestStaticAssets_CreateHashedCopies_UsesRegistryHash(t *testing.T) {
 	plugin := NewStaticAssetsPlugin()

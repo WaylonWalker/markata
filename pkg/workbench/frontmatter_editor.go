@@ -201,7 +201,7 @@ func replaceFrontmatterProperty(source, name string, value any, remove bool) (st
 }
 
 func (h *Handler) serveFrontmatterEditor(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost || !sameOriginWorkspaceMutation(r) {
+	if r.Method != http.MethodPost || !h.sameOriginWorkspaceMutation(r) {
 		fail(w, http.StatusForbidden, "same-origin POST required")
 		return
 	}

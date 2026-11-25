@@ -22,12 +22,14 @@ const standaloneSystemFontpack = "system"
 // StandaloneAppearance is a reusable appearance component and its ordered assets.
 // Assets contains bytes, encoded as base64 by encoding/json.
 type StandaloneAppearance struct {
-	Defaults      map[string]string `json:"defaults,omitempty"`
-	SchemaVersion int               `json:"schema_version"`
-	PickerHTML    string            `json:"picker_html"`
-	Assets        map[string][]byte `json:"assets"`
-	Styles        []string          `json:"styles"`
-	Scripts       []string          `json:"scripts"`
+	Defaults         map[string]string   `json:"defaults,omitempty"`
+	SchemaVersion    int                 `json:"schema_version"`
+	PickerHTML       string              `json:"picker_html"`
+	Assets           map[string][]byte   `json:"assets"`
+	Styles           []string            `json:"styles"`
+	Scripts          []string            `json:"scripts"`
+	FontAssetSources map[string]string   `json:"-"`
+	FontPackSources  map[string][]string `json:"-"`
 }
 
 // BuildStandaloneAppearance uses the same embedded catalogs and template as sites.
@@ -85,7 +87,7 @@ func BuildStandaloneAppearanceForSite(cfg *models.Config, root string) (*Standal
 		paletteLoader.AddPath(filepath.Join(root, "palettes"))
 		aestheticLoader.AddPath(filepath.Join(root, "aesthetics"))
 	}
-	r := &StandaloneAppearance{Defaults: map[string]string{"data-theme": mode, "data-palette": normalizePaletteName(selected), "data-aesthetic": theme.Aesthetic, "data-fontpack": fontpack, "data-text-size": theme.EffectiveTextSize()}, SchemaVersion: 1, Assets: map[string][]byte{},
+	r := &StandaloneAppearance{Defaults: map[string]string{"data-theme": mode, "data-palette": normalizePaletteName(selected), "data-aesthetic": theme.Aesthetic, "data-fontpack": fontpack, "data-text-size": theme.EffectiveTextSize()}, SchemaVersion: 1, Assets: map[string][]byte{}, FontAssetSources: map[string]string{}, FontPackSources: map[string][]string{},
 		Styles:  []string{"css/variables.css", "css/main.css", "css/components.css", "css/palette.css", "css/aesthetic.css", "css/fonts.css", "css/text-size.css", "css/palette-switcher.css", "css/standalone-appearance.css"},
 		Scripts: []string{"js/standalone-appearance.js", "js/text-size.js", "js/adaptive-loading.js", "js/palette-switcher.js"}}
 	for _, name := range append(append([]string{}, r.Styles...), r.Scripts...) {
@@ -118,6 +120,17 @@ func BuildStandaloneAppearanceForSite(cfg *models.Config, root string) (*Standal
 	if err != nil {
 		return nil, err
 	}
+	for name, pack := range fonts.Packs {
+		r.FontPackSources[name] = []string{}
+		seenSources := make(map[string]bool)
+		for _, role := range pack.Roles {
+			if role.Source == "" || seenSources[role.Source] {
+				continue
+			}
+			seenSources[role.Source] = true
+			r.FontPackSources[name] = append(r.FontPackSources[name], role.Source)
+		}
+	}
 	r.Assets["css/fonts.css"] = []byte(fonts.CSS + fontpackManifestCSS(source.Catalog, fontpack, fonts.Packs))
 	for i := range fonts.Assets {
 		asset := &fonts.Assets[i]
@@ -126,6 +139,7 @@ func BuildStandaloneAppearanceForSite(cfg *models.Config, root string) (*Standal
 			return nil, fmt.Errorf("font %s: %w", asset.File, err)
 		}
 		r.Assets[strings.TrimPrefix(asset.URL, "/")] = data
+		r.FontAssetSources[asset.URL] = asset.Source
 	}
 	engine := templates.NewEmbeddedEngine()
 	r.PickerHTML, err = engine.RenderToString("partials/palette-switcher.html", map[string]interface{}{"config": map[string]interface{}{"theme": map[string]interface{}{"switcher": map[string]interface{}{"enabled": true, "mode_toggle": true}, "show_text_size_control": true}, "header": map[string]interface{}{"show_theme_toggle": true}}})

@@ -456,6 +456,12 @@ return;
 }if(e.data?.type==='sync-scroll-lines'){sourceLines=e.data.lines||[];sourceLineCount=e.data.lineCount||0;sourceLineOffset=e.data.sourceOffset||0;requestAnimationFrame(()=>scrollState(false));return;
 }if(e.data?.type==='sync-scroll'){programmedTarget={id:e.data.id,y:Math.max(0,Math.min(e.data.y,document.documentElement.scrollHeight-innerHeight))};document.scrollingElement.scrollTop=programmedTarget.y;const id=e.data.id;setTimeout(()=>{if(programmedTarget?.id===id)programmedTarget=null;},300);return;
 }if(e.data?.type==='sync-position'){positionLine=e.data.line;positionColumn=Number.isFinite(e.data.ch)?e.data.ch:null;positionSourceText=typeof e.data.text==='string'?e.data.text:null;positionPending=e.data.pending===true;positionVimMode=['normal','insert','replace','visual'].includes(e.data.vimMode)?e.data.vimMode:null;if(positionColumn==null)lastExactPosition=null;syncPositionMarker();return;
+}if(e.data?.type==='preview-font-css'){
+if(typeof e.data.css!=='string'||e.data.fontpack!==document.documentElement.getAttribute('data-fontpack'))return;
+let style=document.getElementById('markata-preview-fonts');
+if(!style){style=document.createElement('style');style.id='markata-preview-fonts';document.head.append(style);}
+style.textContent=e.data.css;
+return;
 }if(e.data?.type==='appearance'){updates=updates.then(()=>{setAppearance(e.data.attributes);
 const nextAppearance=JSON.stringify(e.data.attributes||{});
 if(nextAppearance!==appearanceSignature){dispatchEvent(new Event('theme-change'));appearanceSignature=nextAppearance;}

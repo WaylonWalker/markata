@@ -171,7 +171,7 @@ func TestWorkspaceFileMutationRequiresSameOrigin(t *testing.T) {
 
 func TestWorkspaceSiteAppearance(t *testing.T) {
 	root := t.TempDir()
-	config := "[markata-go.theme]\npalette = 'everforest'\npalette_light = 'everforest-light'\npalette_dark = 'everforest-dark'\nfallback_mode = 'light'\naesthetic = 'minimal'\ntext_size = 'small'\ncustom_css = 'editor.css'\n[markata-go.markdown.highlight]\nline_numbers = true\n"
+	config := "[markata-go.theme]\npalette = 'everforest'\npalette_light = 'everforest-light'\npalette_dark = 'everforest-dark'\nfallback_mode = 'light'\naesthetic = 'minimal'\ntext_size = 'small'\ncustom_css = 'editor.css'\nfontpack = 'handwritten'\n[markata-go.markdown.highlight]\nline_numbers = true\n"
 	if err := os.WriteFile(filepath.Join(root, "markata-go.toml"), []byte(config), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -201,6 +201,26 @@ func TestWorkspaceSiteAppearance(t *testing.T) {
 	}
 	if rendered.Document == nil || !strings.Contains(*rendered.Document, `data-palette="everforest-light"`) {
 		t.Fatal("preview missing site appearance")
+	}
+	if !strings.Contains(*rendered.Document, "data:text/css;base64,") || !strings.Contains(*rendered.Document, `id="markata-preview-fonts"`) {
+		t.Fatal("preview appearance styles are not embedded for the isolated frame")
+	}
+	if strings.Contains(*rendered.Document, `href="/appearance/css/`) {
+		t.Fatal("preview document still depends on authenticated appearance stylesheet requests")
+	}
+	if !strings.Contains(*rendered.Document, "data:font/woff2;base64,") {
+		t.Fatal("selected preview font files are not embedded")
+	}
+	for _, pack := range []string{"handwritten", "system"} {
+		fontRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1/preview-fonts.css?fontpack="+pack, http.NoBody)
+		fontResponse := httptest.NewRecorder()
+		handler.ServeHTTP(fontResponse, fontRequest)
+		if fontResponse.Code != http.StatusOK || !strings.Contains(fontResponse.Header().Get("Content-Type"), "text/css") {
+			t.Fatalf("preview font pack %s response = %d %q %s", pack, fontResponse.Code, fontResponse.Header().Get("Content-Type"), fontResponse.Body.String())
+		}
+		if pack == "handwritten" && !strings.Contains(fontResponse.Body.String(), "data:font/woff2;base64,") {
+			t.Fatal("selected preview font pack has no embedded font files")
+		}
 	}
 	if handler.siteConfig == nil || !handler.siteConfig.MarkdownConfig.Highlight.LineNumbers {
 		t.Fatal("site renderer config not loaded")

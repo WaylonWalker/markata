@@ -1,5 +1,6 @@
 """Run with an installed Markata wheel after building Go and WASM workbenches."""
 import argparse
+import ast
 import base64
 from contextlib import ExitStack
 from functools import partial
@@ -37,6 +38,10 @@ def check_excalidraw_fence_controls(page):
     original_source = markdown
     edited_source = 'X' + markdown
 
+    # Cached-only rendering intentionally rejects a scene without an artifact.
+    # Wait for this preview to settle before exercising the keyboard controls.
+    expect(page.get_by_role('alert').filter(has_text='no matching cached Excalidraw SVG')).to_be_visible(timeout=60000)
+
     show = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Show Excalidraw JSON')
     expect(show).to_be_visible()
     expect(show).to_have_attribute('aria-expanded', 'false')
@@ -51,12 +56,22 @@ def check_excalidraw_fence_controls(page):
     canvas = page.locator('#excalidraw-canvas .excalidraw')
     expect(canvas).to_be_visible(timeout=30000)
     expect(canvas).to_have_class(re.compile(r'\btheme--dark\b'))
+    page.evaluate("""() => {
+      const dialog = document.querySelector('#excalidraw-dialog');
+      window.__excalidrawDialogClosed = new Promise(resolve =>
+        dialog.addEventListener('close', resolve, {once:true}));
+    }""")
     page.locator('#excalidraw-cancel').click()
+    page.evaluate('() => window.__excalidrawDialogClosed')
     expect(dialog).not_to_be_visible()
+    # Modal Cancel restores the keyboard launcher rather than the hidden
+    # CodeMirror input. Wait for that restoration before moving to Show JSON.
+    expect(edit).to_be_focused()
     show = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Show Excalidraw JSON')
     expect(show).to_be_visible()
 
     show.focus()
+    expect(show).to_be_focused()
     page.keyboard.press('Space')
     hide = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Hide Excalidraw JSON')
     expect(hide).to_be_visible()
@@ -89,6 +104,7 @@ def check_excalidraw_fence_controls(page):
     assert 'https://esm.sh/' not in svg
     assert 'data:font/woff2;base64,' in svg
     expect(page.frame_locator('#preview').locator('.markata-visualization img')).to_be_visible(timeout=60000)
+    expect(page.get_by_role('alert').filter(has_text='no matching cached Excalidraw SVG')).not_to_be_visible()
 
 
 def check(browser, url, excalidraw=False):
@@ -221,7 +237,14 @@ def main():
                 with browser.new_context() as context:
                     check_site_tree(context.new_page(), url)
                 print(name + ': workspace tree passed', flush=True)
-        assert len(set(fonts)) == 1, fonts
+        # The Go CMS intentionally uses a compact 14px branded header;
+        # Python and WASM preserve their 24px legacy workbench headings.
+        # The editor font and both rendered-preview fonts remain parity
+        # contracts across all three implementations.
+        samples = [ast.literal_eval(value) for value in fonts]
+        assert len({repr(sample[1:]) for sample in samples}) == 1, samples
+        assert samples[0][0] == samples[2][0], samples
+        assert samples[1][0][1] == '14px', samples
 
 
 if __name__ == '__main__':
