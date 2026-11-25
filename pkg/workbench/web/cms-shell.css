@@ -16,6 +16,47 @@
   --cms-topbar-h: 52px;
   --cms-mobile-nav-h: 58px;
   --cms-ui-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --cms-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --cms-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+button,
+a,
+[role="button"],
+[role="menuitem"] {
+  touch-action: manipulation;
+}
+
+button,
+[role="button"],
+[role="menuitem"],
+.pane-label {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#site-sidebar .site-tree,
+#preview-pane,
+#frontmatter-panel,
+.cms-flow-dialog,
+.cms-publish-menu,
+#publish-review,
+#settings-dialog,
+#create-dialog {
+  overscroll-behavior: contain;
+}
+
+#header-doc-meta,
+.cms-pm-badge,
+#publish-message-count {
+  font-variant-numeric: tabular-nums;
 }
 
 body {
@@ -216,7 +257,8 @@ body > header h1 {
   min-width: 0;
 }
 
-.cms-header-actions #publish-open {
+.cms-header-actions > #publish-open,
+.cms-header-actions > .cms-publish-split {
   margin-left: 0;
   order: 3;
 }
@@ -480,6 +522,20 @@ body > header h1 {
     padding: 0 11px;
     font-size: 12.5px;
     border-radius: 8px;
+  }
+
+  .cms-header-actions .cms-publish-split {
+    border-radius: 8px;
+  }
+
+  .cms-header-actions .cms-publish-split #publish-open {
+    border-radius: 8px 0 0 8px;
+  }
+
+  .cms-header-actions .cms-publish-menu-toggle {
+    width: 28px;
+    min-height: 34px;
+    border-radius: 0 8px 8px 0;
   }
 
   .cms-header-actions #publish-open::after {
@@ -919,12 +975,14 @@ body > header h1 {
 }
 
 .cms-publish-split #publish-open {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  border-right: 1px solid color-mix(in srgb, var(--cms-on-accent, #fff) 22%, transparent);
+  order: 0;
+  margin-left: 0;
+  border-radius: 9px 0 0 9px;
+  border-right: 0;
 }
 
 .cms-publish-menu-toggle {
+  order: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -932,12 +990,18 @@ body > header h1 {
   min-height: 34px;
   padding: 0;
   border: 1px solid var(--cms-accent);
-  border-left: 0;
+  border-left: 1px solid color-mix(in srgb, var(--cms-on-accent, #fff) 24%, transparent);
   border-radius: 0 9px 9px 0;
   background: var(--cms-accent);
   color: var(--cms-on-accent, #fff);
   cursor: pointer;
   transition: filter 0.12s ease;
+}
+
+.cms-publish-split:has(#publish-open:disabled[data-publish-state="up-to-date"]) .cms-publish-menu-toggle {
+  background: color-mix(in srgb, var(--color-success, #388463) 14%, var(--color-surface, #fff));
+  border-color: color-mix(in srgb, var(--color-success, #388463) 38%, var(--color-border, #c8d5e2));
+  color: var(--color-success, #388463);
 }
 
 .cms-publish-menu-toggle:hover,
@@ -1496,11 +1560,133 @@ body > header h1 {
   }
 }
 
+/* ── Emil Kowalski mobile-native & gesture polish ─────────────────────────── */
+body > header {
+  padding-top: env(safe-area-inset-top, 0px);
+  height: calc(var(--cms-topbar-h) + env(safe-area-inset-top, 0px));
+}
+
+.cms-header-actions button,
+.cms-quick-actions button,
+#mobile-nav button,
+#mobile-editing-toolbar button,
+.cms-publish-menu [role="menuitem"],
+.cms-toast-action {
+  transition: transform 100ms var(--cms-ease-out), background-color 120ms var(--cms-ease-out), border-color 120ms var(--cms-ease-out), color 120ms var(--cms-ease-out);
+}
+
+.cms-header-actions button:active,
+.cms-quick-actions button:active,
+#mobile-nav button:active,
+#mobile-editing-toolbar button:active,
+.cms-publish-menu [role="menuitem"]:active,
+.cms-toast-action:active {
+  transform: scale(0.97);
+}
+
+/* Popover / sheet motion: fast ease-out from trigger on desktop, Vaul curve on mobile */
+.cms-publish-menu {
+  transform-origin: top right;
+  transition: transform 160ms var(--cms-ease-out), opacity 140ms var(--cms-ease-out);
+}
+
+@starting-style {
+  .cms-publish-menu:not([hidden]) {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+
+.cms-publish-toast {
+  touch-action: pan-x;
+  transition: transform 220ms var(--cms-ease-out), opacity 180ms var(--cms-ease-out);
+}
+
+.cms-publish-toast.is-dragging {
+  transition: none;
+}
+
+@starting-style {
+  .cms-publish-toast:not([hidden]) {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+
+@media (max-width: 768px) {
+  .cms-publish-menu {
+    transform-origin: bottom center;
+    transition: transform 320ms var(--cms-ease-sheet), opacity 200ms var(--cms-ease-out);
+  }
+
+  @starting-style {
+    .cms-publish-menu:not([hidden]) {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+  }
+}
+
+/* Coarse-pointer native feel: prevent iOS input zoom & enlarge compact icon hitboxes to >=44px */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  .cms-header-actions #header-commands,
+  .cms-header-actions #settings-open,
+  #sidebar-toggle {
+    position: relative;
+  }
+
+  .cms-header-actions #header-commands::before,
+  .cms-header-actions #settings-open::before,
+  #sidebar-toggle::before {
+    content: "";
+    position: absolute;
+    inset: -5px;
+  }
+}
+
+/* Prevent sticky hover highlights on touch-only devices */
+@media (hover: none) {
+  .cms-publish-menu-toggle:hover {
+    filter: none;
+  }
+
+  .cms-publish-menu [role="menuitem"]:hover,
+  .cms-wl-item:hover,
+  .cms-toast-close:hover {
+    background: transparent;
+  }
+
+  .cms-quick-actions button:hover,
+  .cms-toast-action:hover {
+    background: var(--cms-surface);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   #header-doc,
   .header-modes button,
   #workspace-view-tabs button,
-  #mobile-nav button {
+  #mobile-nav button,
+  .cms-header-actions button,
+  .cms-quick-actions button,
+  #mobile-editing-toolbar button,
+  .cms-publish-menu,
+  .cms-publish-toast {
     transition: none;
+  }
+
+  .cms-header-actions button:active,
+  .cms-quick-actions button:active,
+  #mobile-nav button:active,
+  #mobile-editing-toolbar button:active,
+  .cms-publish-menu [role="menuitem"]:active,
+  .cms-toast-action:active {
+    transform: none;
   }
 }
