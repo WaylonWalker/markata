@@ -106,9 +106,26 @@
     return fallback;
   }
 
+  function resolveQuickNoteDir(url) {
+    if (url) {
+      return detectDirectory(
+        ['thoughts', 'pages/thoughts', 'link', 'pages/link', 'notes', 'pages/notes', 'posts', 'pages'],
+        'notes'
+      );
+    }
+    return detectDirectory(
+      ['notes', 'pages/notes', 'note', 'pages/note', 'posts', 'pages'],
+      'notes'
+    );
+  }
+
+  function resolveDailyDir() {
+    return detectDirectory(['daily', 'pages/daily', 'journal', 'posts/daily'], 'daily');
+  }
+
   async function openOrCreateDailyNote(appendBlock = '', shouldPublish = false) {
     const date = todayISO();
-    const dir = detectDirectory(['daily', 'pages/daily', 'journal', 'posts/daily'], 'daily');
+    const dir = resolveDailyDir();
     const path = `${dir}/${date}.md`;
     try {
       const existing = await fetch('/workspace/file?path=' + encodeURIComponent(path), { cache: 'no-store' });
@@ -353,13 +370,23 @@
     }
   });
 
+  function updateQuickSubmitLabel() {
+    if (qnDest === 'daily') {
+      qnSubmit.textContent = `Append to ${resolveDailyDir()}/${todayISO()}.md`;
+      return;
+    }
+    const dir = resolveQuickNoteDir(qnUrl.value.trim());
+    qnSubmit.textContent = `Save to ${dir}/`;
+  }
+
   function setQuickDest(dest) {
     qnDest = dest;
     quickDialog.querySelectorAll('[data-qn-dest]').forEach((btn) => {
       btn.setAttribute('aria-pressed', String(btn.dataset.qnDest === dest));
     });
-    qnSubmit.textContent = dest === 'daily' ? 'Append to Daily' : 'Save Note';
+    updateQuickSubmitLabel();
   }
+  qnUrl.addEventListener('input', updateQuickSubmitLabel);
   quickDialog.querySelectorAll('[data-qn-dest]').forEach((btn) => {
     btn.addEventListener('click', () => setQuickDest(btn.dataset.qnDest));
   });
@@ -468,7 +495,7 @@
       }
 
       const date = todayISO();
-      const dir = detectDirectory(['thoughts', 'notes', 'posts', 'pages'], 'notes');
+      const dir = resolveQuickNoteDir(url);
       const slug = slugify(title) || (qnPhotos.length ? 'shared-photos' : 'quick-note');
       // Titles can repeat, and share targets can arrive seconds apart; keep
       // independent captures from colliding with existing filenames.
