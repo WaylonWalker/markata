@@ -899,6 +899,9 @@
   <script src="{{ 'js/conditional-css.js' | theme_asset_hashed }}" defer></script>
   {% endif %}
 
+  {# Browser chrome (mobile status bar, app title bar) follows the active palette and mode. #}
+  <script src="{{ 'js/theme-color.js' | theme_asset_hashed }}" defer></script>
+
   {# Lightweight sidebar fallback if optional navigation JavaScript is unavailable. #}
   {% if config.components.feed_sidebar.enabled or resolved_doc_sidebar.enabled or resolved_content_sidebar.enabled %}
   <script src="{{ 'js/sidebar-rescue.js' | theme_asset_hashed }}" defer></script>

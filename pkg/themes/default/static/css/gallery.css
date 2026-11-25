@@ -8,7 +8,7 @@
   .gallery-grid__item { display: inline-block; width: 100%; margin: 0 0 clamp(.5rem, 1vw, 1rem); break-inside: avoid; }
   .gallery-grid__link { display: block; overflow: hidden; background: var(--color-surface); cursor: zoom-in; }
   .gallery-grid__link img { display: block; width: 100%; height: auto; transition: transform .25s ease; }
-  .gallery-grid__link:hover img { transform: scale(1.02); }
+  @media (hover: hover) and (pointer: fine) { .gallery-grid__link:hover img { transform: scale(1.02); } }
   .gallery-grid__link:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 3px; }
   .gallery-grid figcaption { padding: .45rem .1rem .2rem; color: var(--color-text-muted); font-size: var(--text-sm); line-height: 1.4; }
   .gallery-viewer { width: 100vw; max-width: none; height: 100dvh; max-height: none; margin: 0; padding: 3.5rem 4rem 2rem; border: 0; background: var(--color-background); color: var(--color-text); }
@@ -29,7 +29,7 @@
   .gallery-viewer__close { top: .75rem; right: .75rem; }
   .gallery-viewer__prev { left: 1rem; top: 50%; transform: translateY(-50%); }
   .gallery-viewer__next { right: 1rem; top: 50%; transform: translateY(-50%); }
-  .gallery-viewer__prev:hover, .gallery-viewer__next:hover { transform: translateY(-50%) scale(1.06); }
+  @media (hover: hover) and (pointer: fine) { .gallery-viewer__prev:hover, .gallery-viewer__next:hover { transform: translateY(-50%) scale(1.06); } }
   @keyframes gallery-viewer-enter-next { from { opacity: 0; transform: translateX(3.5rem); } to { opacity: 1; transform: translateX(0); } }
   @keyframes gallery-viewer-enter-previous { from { opacity: 0; transform: translateX(-3.5rem); } to { opacity: 1; transform: translateX(0); } }
   @media (min-width: 700px) { .gallery-grid { columns: 3; } }

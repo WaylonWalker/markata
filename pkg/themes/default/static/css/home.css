@@ -391,8 +391,14 @@
 
 .home-shots-section .photo-figure:hover img,
 .home-shots-section .photo-figure:hover video {
-  transform: scale(1.05);
   filter: brightness(0.7);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .home-shots-section .photo-figure:hover img,
+  .home-shots-section .photo-figure:hover video {
+    transform: scale(1.05);
+  }
 }
 
 /* Caption overlay -- hidden by default, shown on hover */

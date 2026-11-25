@@ -230,6 +230,7 @@ header:has(.theme-picker.is-open),
   width: min(30rem, calc(100vw - 1.5rem));
   /* A fixed height keeps the panel still while switching tabs. */
   height: min(36rem, calc(100vh - 6rem));
+  height: min(36rem, calc(100dvh - 6rem));
   /* The picker's own UI stays put while the visitor previews fonts. */
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: var(--color-background, #fff);

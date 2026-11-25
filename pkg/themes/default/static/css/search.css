@@ -468,8 +468,13 @@
 .bleve-search__link:hover {
   border-color: color-mix(in srgb, var(--color-primary) 50%, var(--color-border) 50%);
   box-shadow: 0 12px 24px -20px rgba(0, 0, 0, 0.55);
-  transform: translateY(-1px);
   text-decoration: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bleve-search__link:hover {
+    transform: translateY(-1px);
+  }
 }
 
 .bleve-search__link.is-active {

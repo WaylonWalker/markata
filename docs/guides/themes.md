@@ -180,6 +180,11 @@ These CSS custom properties can be overridden:
 | `--color-border-soft` | `--color-border` at 60% alpha, for section dividers | Derived |
 | `--heading-rule` | Color of the short accent bar under `h1`/`h2` | `color-mix(in srgb, var(--color-primary) 55%, transparent)` |
 | `--radius-sm` / `--radius` / `--radius-lg` / `--radius-xl` | Corner radius scale | `0.375rem` / `0.5rem` / `0.75rem` / `1rem` |
+| `--ease-out` | Curve for things entering, leaving, or being pressed | `cubic-bezier(0.23, 1, 0.32, 1)` |
+| `--ease-in-out` | Curve for things moving across the screen | `cubic-bezier(0.77, 0, 0.175, 1)` |
+| `--ease-drawer` | Curve for drawers and sheets | `cubic-bezier(0.32, 0.72, 0, 1)` |
+| `--duration-press` | Button press feedback duration | `160ms` |
+| `--press-scale` | How far buttons shrink while pressed (`1` turns it off) | `0.97` |
 | `--leading-prose` | Article body line-height | `1.7` |
 | `--color-code-bg` | Code block background | Depends on palette |
 | `--color-code-text` | Code block text | Depends on palette |
@@ -198,6 +203,43 @@ These CSS custom properties can be overridden:
 | `--article-progress-start` | Gradient start color for the filled portion | `var(--color-primary)` |
 | `--article-progress-end` | Gradient end color for the filled portion | `var(--color-primary-light, var(--color-primary))` |
 | `--article-progress-glow` | Glow color around the indicator | `color-mix(in srgb, var(--color-primary) 35%, transparent)` |
+
+### Motion and Touch
+
+The default theme is tuned to feel right on phones as well as desktops:
+
+- Buttons shrink slightly (`--press-scale`) the moment they are pressed, so a
+  tap feels acknowledged. Set `--press-scale` to `1` to turn this off.
+- Cards and links that lift or zoom on hover only do so on devices with a real
+  mouse or trackpad. On a phone, a tapped card no longer stays lifted.
+- Search and other text fields render at 16px on touch screens, so iOS Safari
+  does not zoom the page when you tap into them.
+- The mobile browser's status bar and toolbar color follows your active
+  palette, including after switching palettes or light and dark mode.
+
+When you write custom CSS, reuse the motion tokens instead of the built-in
+`ease` keywords, and gate hover motion the same way the theme does:
+
+```css
+.my-popover {
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 150ms var(--ease-out), transform 150ms var(--ease-out);
+}
+.my-popover.is-open {
+  opacity: 1;
+  transform: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .my-card:hover {
+    transform: translateY(-2px);
+  }
+}
+```
+
+Keep interface animations under about 300ms, use `--ease-out` for things that
+appear or disappear, and avoid `ease-in`, which makes interfaces feel slow.
 
 ---
 

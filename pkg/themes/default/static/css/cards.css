@@ -191,8 +191,10 @@
   transition: transform 0.3s ease;
 }
 
-.card-article.has-cover:hover .card-cover-img {
-  transform: scale(1.03);
+@media (hover: hover) and (pointer: fine) {
+  .card-article.has-cover:hover .card-cover-img {
+    transform: scale(1.03);
+  }
 }
 
 .card-article.has-cover .card-content {
@@ -330,8 +332,10 @@
   display: block;
 }
 
-.card-photo:hover .card-image {
-  transform: scale(1.02);
+@media (hover: hover) and (pointer: fine) {
+  .card-photo:hover .card-image {
+    transform: scale(1.02);
+  }
 }
 
 .card-photo .card-body {
@@ -426,8 +430,10 @@
   transition: transform 0.3s ease;
 }
 
-.card-video:hover .card-thumbnail {
-  transform: scale(1.02);
+@media (hover: hover) and (pointer: fine) {
+  .card-video:hover .card-thumbnail {
+    transform: scale(1.02);
+  }
 }
 
 .card-video .card-play-icon {
@@ -448,7 +454,12 @@
 
 .card-video:hover .card-play-icon {
   background: var(--color-primary);
-  transform: translate(-50%, -50%) scale(1.1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card-video:hover .card-play-icon {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
 }
 
 .card-video .card-play-icon svg {
