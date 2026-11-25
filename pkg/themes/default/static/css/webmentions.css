@@ -114,9 +114,14 @@
 }
 
 .webmention-avatar:hover {
-  transform: scale(1.15);
   border-color: var(--color-primary);
   z-index: 10;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .webmention-avatar:hover {
+    transform: scale(1.15);
+  }
 }
 
 .webmention-avatar img {

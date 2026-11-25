@@ -91,10 +91,14 @@
   box-shadow: 0 8px 24px color-mix(in srgb, var(--color-text, #17241c) 5%, transparent);
   transition: box-shadow 220ms ease, transform 220ms cubic-bezier(.2,.7,.2,1), border-color 220ms ease;
 }
-.pin-card:hover, .pin-card:focus-within { transform: translateY(-3px); border-color: color-mix(in srgb, var(--color-primary, #557a66) 42%, var(--color-border, #d8ddd8)); box-shadow: 0 16px 36px color-mix(in srgb, var(--color-text, #17241c) 12%, transparent); }
+.pin-card:focus-within { transform: translateY(-3px); }
+@media (hover: hover) and (pointer: fine) { .pin-card:hover { transform: translateY(-3px); } }
+.pin-card:hover, .pin-card:focus-within { border-color: color-mix(in srgb, var(--color-primary, #557a66) 42%, var(--color-border, #d8ddd8)); box-shadow: 0 16px 36px color-mix(in srgb, var(--color-text, #17241c) 12%, transparent); }
 .pin-image-link { display: block; overflow: hidden; background: color-mix(in srgb, var(--color-primary, #557a66) 12%, var(--color-background, #fff)); }
 .pin-image { display: block; width: 100%; max-height: 27rem; object-fit: cover; transition: transform 380ms cubic-bezier(.2,.7,.2,1), filter 380ms ease; }
-.pin-card:hover .pin-image, .pin-card:focus-within .pin-image { transform: scale(1.04); filter: saturate(1.06) brightness(.94); }
+.pin-card:hover .pin-image, .pin-card:focus-within .pin-image { filter: saturate(1.06) brightness(.94); }
+.pin-card:focus-within .pin-image { transform: scale(1.04); }
+@media (hover: hover) and (pointer: fine) { .pin-card:hover .pin-image { transform: scale(1.04); } }
 .pin-card-content { padding: 1rem 1.05rem 1.05rem; }
 .pin-source-row { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .65rem; }
 .pin-source {
@@ -109,7 +113,8 @@
 }
 .pin-source:hover { text-decoration: underline; text-underline-offset: .2em; }
 .pin-source-mark { display: inline-block; font-size: .92rem; transition: transform 180ms ease; }
-.pin-card:hover .pin-source-mark, .pin-card:focus-within .pin-source-mark { transform: translate(2px, -2px); }
+.pin-card:focus-within .pin-source-mark { transform: translate(2px, -2px); }
+@media (hover: hover) and (pointer: fine) { .pin-card:hover .pin-source-mark { transform: translate(2px, -2px); } }
 .pin-date { flex: 0 0 auto; color: var(--color-text-muted, #737b74); font-size: .68rem; }
 .pin-title { margin: 0; font: 600 1.25rem/1.18 var(--font-heading, Georgia, serif); letter-spacing: -.025em; }
 .pin-title a { color: inherit; text-decoration: none; }

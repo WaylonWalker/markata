@@ -132,6 +132,44 @@ Radii follow a four-step scale — `--radius-sm` (0.375rem), `--radius`
 remap the scale (for example the `minimal` aesthetic tightens it). Tags render
 as pills; cards and the article container use `--radius-lg`/`--radius-xl`.
 
+### Motion and Touch
+
+The default theme defines shared motion tokens so built-in components and
+custom CSS share one feel:
+
+| Token | Value | Use |
+|-------|-------|-----|
+| `--ease-out` | `cubic-bezier(0.23, 1, 0.32, 1)` | Enter/exit (popovers, tooltips, menus) and press feedback |
+| `--ease-in-out` | `cubic-bezier(0.77, 0, 0.175, 1)` | Elements moving or morphing on screen |
+| `--ease-drawer` | `cubic-bezier(0.32, 0.72, 0, 1)` | Drawers and sheets |
+| `--duration-press` | `160ms` | Press feedback |
+| `--press-scale` | `0.97` | Press feedback scale |
+
+Built-in theme CSS MUST follow these rules:
+
+- UI transitions MUST NOT use `ease-in`, and MUST NOT animate from
+  `scale(0)`; entrances start at `scale(0.9)` or larger with `opacity: 0`.
+- Hover rules that move or scale an element (`transform`) MUST be gated behind
+  `@media (hover: hover) and (pointer: fine)`. Touch browsers apply `:hover` on
+  tap and keep it, so ungated hover motion leaves tapped cards lifted. Color,
+  border, and shadow hover changes MAY stay ungated.
+- Buttons (`button`, `[role="button"]`, submit/button/reset inputs) MUST scale
+  to `--press-scale` on `:active` unless disabled. The rule uses the
+  independent `scale` property so it composes with component `transform`s.
+- Buttons MUST NOT show the browser tap highlight, MUST NOT select their label
+  on long-press, and MUST use `touch-action: manipulation`. Links, `summary`,
+  and `label` MUST use `touch-action: manipulation` and keep the tap highlight.
+- On coarse pointers, text-entry `input`, `select`, and `textarea` MUST render
+  at 16px or larger so iOS Safari does not zoom the page on focus. Zoom MUST NOT
+  be disabled through the viewport meta tag.
+- Viewport-height sizing MUST use `svh` for `min-height` and `dvh` for
+  `height`/`max-height`, each after a `vh` fallback, so mobile browser chrome
+  does not hide the page bottom or overflow drawers.
+- `base.html` MUST keep a `<meta name="theme-color">` in sync with the rendered
+  page background, updating when `data-theme`, `data-palette`, or the root
+  class changes, when a stylesheet loads, and after a view-transition
+  navigation.
+
 ### Contrast Guarantees
 
 - Default theme text in compact UI surfaces such as home metadata, card metadata, and admonition titles MUST use text tokens that maintain WCAG 2.1 AA contrast at their rendered size.

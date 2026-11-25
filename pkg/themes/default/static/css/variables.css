@@ -127,6 +127,15 @@
   --media-border-gradient: none;
   --media-border-radius: var(--radius-lg);
 
+  /* Motion - strong custom curves; the built-in CSS easings are too weak.
+     Enter/exit and press feedback use --ease-out, on-screen movement
+     --ease-in-out, drawers and sheets --ease-drawer. Never ease-in for UI. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-press: 160ms;
+  --press-scale: 0.97;
+
 }
 
 /* Dark mode */

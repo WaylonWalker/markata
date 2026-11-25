@@ -12,6 +12,7 @@
   display: flex;
   flex-direction: row;
   min-height: calc(100vh - 200px);
+  min-height: calc(100svh - 200px);
   max-width: var(--site-width, 1400px);
   margin: 0 auto;
   align-self: center;
@@ -137,7 +138,7 @@
   visibility: hidden;
   pointer-events: none;
   transform: translateY(-0.35rem);
-  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms;
+  transition: opacity 160ms var(--ease-out, ease-out), transform 160ms var(--ease-out, ease-out), visibility 160ms;
 }
 
 .nav-entry:last-child .nav-preview {
@@ -509,6 +510,7 @@
   top: 1rem;
   height: fit-content;
   max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
   overflow-y: auto;
   flex-shrink: 0;
   scrollbar-width: thin;
@@ -683,6 +685,7 @@
   top: 1rem;
   height: fit-content;
   max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
   flex-shrink: 0;
 }
 
@@ -948,7 +951,12 @@
   color: var(--color-text);
   background-color: color-mix(in srgb, var(--color-text) 6%, transparent);
   border-left-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
-  transform: translateX(2px);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .feed-nav-link:hover {
+    transform: translateX(2px);
+  }
 }
 
 .feed-nav-empty {
@@ -1424,8 +1432,8 @@
   border-bottom-width: 2px;
   border-radius: 4px;
   opacity: 0;
-  transform: scale(0.85);
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform: scale(0.95);
+  transition: opacity 0.15s var(--ease-out, ease-out), transform 0.15s var(--ease-out, ease-out);
 }
 
 .feed-sidebar--right > .sidebar-toggle .sidebar-toggle__kbd,
@@ -2761,8 +2769,10 @@
   transition: transform 0.2s ease;
 }
 
-.embed-card:hover .embed-card-image img {
-  transform: scale(1.02);
+@media (hover: hover) and (pointer: fine) {
+  .embed-card:hover .embed-card-image img {
+    transform: scale(1.02);
+  }
 }
 
 .embed-card-content {
@@ -2993,9 +3003,14 @@
 }
 
 .blogroll-nav a:hover {
-  transform: translateY(-1px);
   background-color: var(--color-primary);
   color: var(--color-background);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .blogroll-nav a:hover {
+    transform: translateY(-1px);
+  }
 }
 
 .blogroll-sections {
@@ -3046,8 +3061,13 @@
 }
 
 .blogroll-card:hover {
-  transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .blogroll-card:hover {
+    transform: translateY(-1px);
+  }
 }
 
 .blogroll-card-avatar,
@@ -3296,9 +3316,14 @@
 }
 
 .reader-nav a:hover {
-  transform: translateY(-1px);
   background-color: var(--color-primary);
   color: var(--color-background);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .reader-nav a:hover {
+    transform: translateY(-1px);
+  }
 }
 
 .reader-stream {
@@ -3691,7 +3716,7 @@ article.kb-highlighted {
    font-size: 0.875rem;
    opacity: 0;
    visibility: hidden;
-   transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+   transition: opacity 0.2s var(--ease-out, ease-out), transform 0.2s var(--ease-out, ease-out), visibility 0.2s;
    z-index: 10000;
 }
 
@@ -4134,7 +4159,7 @@ kbd.kbd {
       letter-spacing: 0.01em;
       opacity: 0;
       visibility: hidden;
-      transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+      transition: opacity 0.2s var(--ease-out, ease-out), transform 0.2s var(--ease-out, ease-out), visibility 0.2s;
       pointer-events: none;
       white-space: nowrap;
       z-index: 2;
@@ -4321,7 +4346,7 @@ kbd.kbd {
   opacity: 0;
   visibility: hidden;
   transform: translateY(4px);
-  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  transition: opacity 0.15s var(--ease-out, ease-out), transform 0.15s var(--ease-out, ease-out), visibility 0.15s;
   pointer-events: auto;
 }
 

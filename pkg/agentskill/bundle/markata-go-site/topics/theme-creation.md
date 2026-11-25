@@ -40,6 +40,18 @@ Any unlayered rule outranks all layered rules, so custom CSS that must lose to
 palette tokens should be wrapped in `@layer components { ... }`, and a rule
 that should win everything belongs in `@layer overrides`.
 
+## Motion and Touch in Custom CSS
+
+Reuse the theme's motion tokens: `--ease-out` for enter, exit and press,
+`--ease-in-out` for on-screen movement, `--ease-drawer` for drawers. Do not use
+`ease-in` or animate from `scale(0)`, and keep interface transitions under
+about 300ms. Put any hover rule that changes `transform` inside
+`@media (hover: hover) and (pointer: fine)`; touch browsers keep `:hover` after
+a tap, so ungated hover lifts stay stuck on phones. Buttons already scale to
+`--press-scale` on `:active` through the `scale` property, so do not add a
+second press `transform`. Do not set text inputs below 16px for touch, and do
+not add `maximum-scale` or `user-scalable=no` to the viewport.
+
 ## Page Stylesheet Performance
 
 For a page with many blocking stylesheets, consider

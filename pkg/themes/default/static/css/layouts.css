@@ -37,6 +37,7 @@
 
 .layout {
   min-height: 100vh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
 }
@@ -179,6 +180,7 @@
   top: calc(var(--layout-header-height) + var(--space-4));
   height: fit-content;
   max-height: calc(100vh - var(--layout-header-height) - var(--space-8));
+  max-height: calc(100dvh - var(--layout-header-height) - var(--space-8));
   overflow-y: auto;
   padding: var(--space-4) 0;
 
@@ -317,6 +319,7 @@
   top: calc(var(--layout-header-height) + var(--space-4));
   height: fit-content;
   max-height: calc(100vh - var(--layout-header-height) - var(--space-8));
+  max-height: calc(100dvh - var(--layout-header-height) - var(--space-8));
   overflow-y: auto;
   padding: var(--space-4) 0;
 
