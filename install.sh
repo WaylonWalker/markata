@@ -4,7 +4,7 @@
 # https://github.com/WaylonWalker/markata
 #
 # Usage:
-#   curl -sSL https://raw.githubusercontent.com/WaylonWalker/markata/main/install.sh | bash
+#   curl -sSL https://markata.dev/install.sh | bash
 #
 # Environment variables:
 #   MARKATA_INSTALL_DIR    - Custom install directory (legacy: MARKATA_GO_INSTALL_DIR)
@@ -172,6 +172,33 @@ ensure_install_dir() {
     fi
 }
 
+# Validate an archive against the SHA-256 manifest published in the release.
+verify_archive() {
+    local archive="$1" manifest="$2" filename="$3" expected actual
+    expected=$(awk -v name="$filename" '$2 == name || $2 == "*" name {print $1}' "$manifest")
+    if ! [[ "$expected" =~ ^[a-fA-F0-9]{64}$ ]]; then
+        log_error "Missing or malformed checksum for $filename"
+        return 1
+    fi
+    if command_exists sha256sum; then
+        actual=$(sha256sum "$archive" | awk '{print $1}')
+    elif command_exists shasum; then
+        actual=$(shasum -a 256 "$archive" | awk '{print $1}')
+    else
+        log_error "SHA-256 verification requires sha256sum or shasum"
+        return 1
+    fi
+    # macOS ships Bash 3.2, which lacks the Bash 4 ${value,,} expansion.
+    # Use portable tr for the hex-only values verified above.
+    actual=$(printf '%s' "${actual}" | tr 'A-F' 'a-f')
+    expected=$(printf '%s' "${expected}" | tr 'A-F' 'a-f')
+    if [ "${actual}" != "${expected}" ]; then
+        log_error "SHA-256 mismatch for $filename"
+        return 1
+    fi
+    log_success "Verified SHA-256 checksum"
+}
+
 # Download the preferred Markata artifact, falling back to historical releases.
 # Both executable names are installed so existing scripts keep working.
 download_and_install() {
@@ -216,6 +243,15 @@ download_and_install() {
         exit 1
     fi
 
+    local checksums="${tmp_dir}/checksums.txt"
+    local checksums_url="${GITHUB_RELEASES}/download/${version}/checksums.txt"
+    log_info "Checking release SHA-256 checksum..."
+    if command_exists curl; then
+        curl -fsSL "${checksums_url}" -o "${checksums}" || { log_error "Failed to download release checksums"; exit 1; }
+    else
+        wget -q "${checksums_url}" -O "${checksums}" || { log_error "Failed to download release checksums"; exit 1; }
+    fi
+    verify_archive "${archive_path}" "${checksums}" "${archive_name}" || exit 1
     log_success "Downloaded ${archive_name}"
     if [ "${ext}" = "tar.gz" ]; then
         tar -xzf "${archive_path}" -C "${tmp_dir}"
@@ -335,8 +371,12 @@ verify_installation() {
 # Main installation function
 main() {
     echo ""
-    echo "Markata installer"
-    echo "===================="
+    printf '%s\n' '  __  __            _         _'
+    printf '%s\n' ' |  \/  | __ _ _ __| | ____ _| |_ __ _'
+    printf '%s\n' ' | |\/| |/ _` | __| |/ / _` | __/ _` |'
+    printf '%s\n' ' | |  | | (_| | |  |   < (_| | || (_| |'
+    printf '%s\n' ' |_|  |_|\__,_|_|  |_|\_\__,_|\__\__,_|'
+    printf '%s\n' ' Write Markdown. Publish more than pages.'
     echo ""
 
     # Detect platform
@@ -389,11 +429,21 @@ main() {
     echo ""
     log_success "Installation complete!"
     echo ""
-    echo "Get started:"
-    echo "  ${BINARY_NAME} --help"
+    echo "Give your agent setup instructions:"
+    if "${install_dir}/${BINARY_NAME}" --help 2>/dev/null | grep -q -- '--skill'; then
+        echo "  ${BINARY_NAME} --skill"
+    else
+        echo "  ${BINARY_NAME} agent install --help"
+        echo "  (Your installed release predates the --skill handoff.)"
+    fi
+    echo ""
+    echo "Or start manually:"
+    echo "  mkdir my-site && cd my-site"
+    echo "  ${BINARY_NAME} config init"
     echo "  ${BINARY_NAME} new \"My First Post\""
     echo "  ${BINARY_NAME} build"
     echo "  ${BINARY_NAME} serve"
+    echo "  Docs: https://markata.dev/docs/quickstart/"
     echo "  markata-go build   # Backward-compatible alias"
     echo ""
 }

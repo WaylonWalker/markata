@@ -109,6 +109,9 @@ func (s *cacheSite) buildWithCacheConfigAndExtra(configContent string, extra map
 	cfg.Extra["url"] = "https://example.com"
 	cfg.Extra["title"] = "Test Site"
 	cfg.Extra["cache_dir"] = s.cacheDir
+	// Output equality tests must not depend on live third-party CDN availability.
+	// The explicit vendor-asset test opts back into self-hosting below.
+	cfg.Extra["assets"] = models.AssetsConfig{Mode: "cdn"}
 	disableMinificationForTestBuild(cfg.Extra)
 	for key, value := range extra {
 		cfg.Extra[key] = value
@@ -161,6 +164,9 @@ func (s *cacheSite) buildWithCacheAndTheme(theme models.ThemeConfig) {
 	cfg.Extra["url"] = "https://example.com"
 	cfg.Extra["title"] = "Test Site"
 	cfg.Extra["cache_dir"] = s.cacheDir
+	// Output equality tests must not depend on live third-party CDN availability.
+	// The explicit vendor-asset test opts back into self-hosting below.
+	cfg.Extra["assets"] = models.AssetsConfig{Mode: "cdn"}
 	cfg.Extra["theme"] = theme
 	disableMinificationForTestBuild(cfg.Extra)
 	m.SetConfig(cfg)
@@ -210,6 +216,9 @@ func (s *cacheSite) buildWithCacheAndFeeds(feedConfigs []models.FeedConfig) {
 	cfg.Extra["url"] = "https://example.com"
 	cfg.Extra["title"] = "Test Site"
 	cfg.Extra["cache_dir"] = s.cacheDir
+	// Output equality tests must not depend on live third-party CDN availability.
+	// The explicit vendor-asset test opts back into self-hosting below.
+	cfg.Extra["assets"] = models.AssetsConfig{Mode: "cdn"}
 	disableMinificationForTestBuild(cfg.Extra)
 	cfg.Extra["feeds"] = feedConfigs
 	cfg.Extra["feed_defaults"] = models.FeedDefaults{
@@ -290,6 +299,47 @@ func (s *cacheSite) removePost(path string) {
 // Directory Comparison Helpers
 // =============================================================================
 
+// firstOutputDifference identifies where two generated files diverge without
+// dumping full HTML output into CI logs. Escaped windows reveal whether an
+// intermittent failure involves a timestamp, ordering, or formatting change.
+func firstOutputDifference(before, after []byte) string {
+	index := 0
+	for index < len(before) && index < len(after) && before[index] == after[index] {
+		index++
+	}
+	const context = 64
+	start := index - context
+	if start < 0 {
+		start = 0
+	}
+	beforeEnd := index + context
+	if beforeEnd > len(before) {
+		beforeEnd = len(before)
+	}
+	afterEnd := index + context
+	if afterEnd > len(after) {
+		afterEnd = len(after)
+	}
+	return fmt.Sprintf("first differing byte=%d, before=%q, after=%q",
+		index, before[start:beforeEnd], after[start:afterEnd])
+}
+
+func TestFirstOutputDifference(t *testing.T) {
+	for _, tc := range []struct {
+		name, before, after, position string
+	}{
+		{"character", "abcXdef", "abcYdef", "byte=3"},
+		{"length", "abc", "abcd", "byte=3"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := firstOutputDifference([]byte(tc.before), []byte(tc.after))
+			if !strings.Contains(got, tc.position) {
+				t.Fatalf("expected %q in %q", tc.position, got)
+			}
+		})
+	}
+}
+
 // compareOutputDirs recursively compares two directories.
 // Returns a list of differences (empty if identical).
 // It ignores known non-deterministic files (e.g., build-cache.json).
@@ -319,8 +369,8 @@ func compareOutputDirs(t *testing.T, dir1, dir2 string) []string {
 	for relPath, content1 := range files1 {
 		if content2, ok := files2[relPath]; ok {
 			if !bytes.Equal(content1, content2) {
-				diffs = append(diffs, fmt.Sprintf("content differs: %s (dir1=%d bytes, dir2=%d bytes)",
-					relPath, len(content1), len(content2)))
+				diffs = append(diffs, fmt.Sprintf("content differs: %s (dir1=%d bytes, dir2=%d bytes): %s",
+					relPath, len(content1), len(content2), firstOutputDifference(content1, content2)))
 			}
 		}
 	}
@@ -1504,7 +1554,7 @@ Content that should be stable.`)
 
 	// Output should be identical regardless of build time
 	if content1 != content2 {
-		t.Error("post output should not contain build-time timestamps that change between runs")
+		t.Errorf("post output should not contain build-time timestamps that change between runs: %s", firstOutputDifference([]byte(content1), []byte(content2)))
 	}
 }
 
@@ -1709,6 +1759,7 @@ date: 2024-01-01
 	// This helper passes plugin settings through lifecycle.Config.Extra; writing
 	// the TOML alone does not configure the direct lifecycle test runner.
 	site.buildWithCacheConfigAndExtra("", map[string]interface{}{
+		"assets":  models.AssetsConfig{Mode: "self-hosted"},
 		"mermaid": map[string]interface{}{"mode": "client"},
 	})
 
@@ -1728,5 +1779,60 @@ date: 2024-01-01
 	}
 	if !strings.Contains(string(page), "/assets/vendor/mermaid/mermaid.min.js") {
 		t.Fatalf("diagram page should import mermaid from the vendored path")
+	}
+}
+
+func TestBuild_CustomThemeInheritsEmbeddedPostCopyAsset(t *testing.T) {
+	site := newCacheSite(t)
+	site.addPost("post.md", `---
+title: Custom Theme Post
+published: true
+---
+Copy this post.
+`)
+
+	customStaticDir := filepath.Join(site.dir, "themes", "acme", "static", "js")
+	if err := os.MkdirAll(customStaticDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(customStaticDir, "acme.js"), []byte("window.acme = true;"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	site.buildWithCacheAndTheme(models.ThemeConfig{Name: "acme"})
+
+	postCopySource, err := os.ReadFile(filepath.Join(site.outputDir, "js", "post-copy.js"))
+	if err != nil {
+		t.Fatalf("read post-copy source asset: %v", err)
+	}
+	if len(postCopySource) == 0 {
+		t.Fatal("published post-copy source asset is empty")
+	}
+
+	if _, err := os.Stat(filepath.Join(site.outputDir, "js", "acme.js")); err != nil {
+		t.Fatalf("custom theme asset was not published: %v", err)
+	}
+
+	page, err := os.ReadFile(filepath.Join(site.outputDir, "post", "index.html"))
+	if err != nil {
+		t.Fatalf("read custom-theme post page: %v", err)
+	}
+	pageText := string(page)
+
+	matches, err := filepath.Glob(filepath.Join(site.outputDir, "js", "post-copy.*.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matches) != 1 {
+		t.Fatalf("expected one hashed post-copy asset, got %d", len(matches))
+	}
+
+	hashedName := "/" + filepath.ToSlash(strings.TrimPrefix(matches[0], site.outputDir))
+	hashedName = strings.TrimPrefix(hashedName, "//")
+	if !strings.Contains(pageText, hashedName) {
+		t.Fatalf("custom-theme post page should reference %s", hashedName)
+	}
+	if strings.Contains(pageText, `src="/js/post-copy.js"`) {
+		t.Fatal("custom-theme post page should use the hashed post-copy asset")
 	}
 }

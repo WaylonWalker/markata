@@ -52,37 +52,41 @@ requested. Article video keeps native controls and remains usable if JavaScript
 does not run. The adaptive script does not replace an image that is already
 visible or restart a video when the connection changes.
 
-Markdown videos default to no autoplay and `preload = "none"`. Raw HTML keeps
-explicit autoplay intent in `data-authored-autoplay="true"`, while removing the
-native autoplay attribute and using preload none. Raw HTML without autoplay
-never gains it from the site-wide Markdown setting.
-To opt into GIF-like playback for site videos, set:
+Markdown videos on individual posts (including shot posts) now default to
+muted, looping autoplay **when the video becomes visible**, with
+`preload = "none"` until then. Feed/preview cards are separate and remain
+poster-only until deliberate interaction. Raw HTML retains autoplay intent
+only when its author explicitly supplies `autoplay`; that intent is stored as
+`data-authored-autoplay="true"` rather than a native autoplay attribute.
+
+To opt out of autoplay for Markdown videos site-wide:
 
 ```toml
 [markata-go.md_video]
-autoplay = true
-loop = true
-muted = true
-preload = "metadata"
+autoplay = false
 ```
 
-The generated intent marker allows Full Quality or already-confident fast Auto at page entry to
-start authored autoplay. Save Data and constrained/unknown Auto leave the poster
-until interaction. Videos authored without autoplay stay manual in every mode.
-Reduced motion also prevents automatic playback. Changing policy does not pause,
-restart, or replace a video that has begun loading or playing. With JavaScript
-disabled, even authored autoplay requires pressing the native controls; this
-keeps the initial document conservative before a visitor's preference is known.
+Auto starts marked videos once visible unless connection measurements indicate
+constrained bandwidth. Save Data (including the browser's Save Data hint),
+reduced motion, and offline mode suppress automatic starts even in Full Quality.
+The controller pauses videos **it started** when they leave the viewport or
+the tab becomes hidden, then resumes them when visible again unless the reader
+manually paused. User-started videos are not hijacked. Raw video without
+authored autoplay stays manual even when Markdown autoplay is enabled.
+
+With JavaScript disabled or IntersectionObserver unavailable, videos remain
+click-to-play through their native controls. The controller keeps posters and
+`preload="none"` before viewport playback and does not automatically load
+offscreen video data.
 
 The controller is a small theme asset. Video and embed helpers remain
 conditional, so a text-only page does not load a player just in case.
 
 
-Auto honors authored autoplay when measured confidence is already fast at page
-entry. Learning that the network is fast during a page view affects subsequent
-pages; it does not suddenly animate an existing poster. An explicit Full Quality
-choice may start unrequested authored video on the current page. Active media
-remains untouched in either case.
+Autoplay starts only when the video enters the viewport and loading policy
+allows it. The initial page waits for its load event so resource measurements
+can detect constrained bandwidth before autoplay. Switching to Save Data pauses
+only playback managed by this controller; manual playback remains untouched.
 
 
 Keep native controls enabled (or supply an accessible play action) for deferred

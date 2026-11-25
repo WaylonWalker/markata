@@ -20,6 +20,9 @@ Use the arrow keys to choose a result, then press **Enter**.
 You can also select a result with a mouse or touch.
 Each result shows the syntax that it inserts.
 
+In the Go and FastAPI workbenches, search for `Excalidraw` to insert a new
+drawing or edit the scene at the cursor. See the [Excalidraw editor guide](excalidraw-editor.md).
+
 For example, the **Note box** command inserts:
 
 ```markdown

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/excalidraw-editor.css">
+    <script>
+      window.EXCALIDRAW_ASSET_PATH = "/excalidraw-fonts/";
+      window.markataExcalidrawReady = import("/excalidraw-editor.js")
+        .then((module) => {
+          window.markataRenderExcalidrawSvg = module.renderExcalidrawSvg;
+          return true;
+        })
+        .catch((error) => {
+          window.markataExcalidrawError = String(error);
+          return false;
+        });
+    </script>
+  </head>
+  <body></body>
+</html>

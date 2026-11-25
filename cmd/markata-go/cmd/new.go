@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,16 +17,26 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	contentTemplateNoteName     = "note"
+	contentTemplatePingName     = "ping"
+	contentTemplateArticleName  = "article"
+	contentTemplateImageName    = "image"
+	contentTemplateGuideName    = "guide"
+	contentTemplateInlineName   = "inline"
+	contentFilenameModeNumbered = "numbered"
+)
+
 var contentTemplateAliases = map[string][]string{
-	"article": {"blog-post", "essay", "tutorial"},
-	"note":    {"ping", "thought", "status", "tweet"},
-	"photo":   {"shot", "shots", "image", "gallery"},
-	"video":   {"clip", "cast", "stream"},
-	"link":    {"bookmark", "til", "stars"},
-	"quote":   {"quotation"},
-	"guide":   {"series", "step", "chapter"},
-	"inline":  {"gratitude", "micro"},
-	"contact": {"character", "person"},
+	contentTemplateArticleName: {"blog-post", "essay", "tutorial"},
+	contentTemplateNoteName:    {"thought", "status", "tweet"},
+	tmplPhoto:                  {"shot", "shots", contentTemplateImageName, "gallery"},
+	tmplVideo:                  {"clip", "cast", "stream"},
+	tmplLink:                   {"bookmark", "til", "stars"},
+	tmplQuote:                  {"quotation"},
+	contentTemplateGuideName:   {"series", "step", "chapter"},
+	contentTemplateInlineName:  {"gratitude", "micro"},
+	tmplContact:                {"character", "person"},
 }
 
 var (
@@ -55,6 +66,7 @@ type ContentTemplate struct {
 	Aliases         []string
 	ValidationError string
 	Directory       string
+	FilenameMode    string
 	Frontmatter     map[string]interface{}
 	Body            string
 	Source          string // "builtin", "config", or "file"
@@ -131,13 +143,23 @@ func builtinTemplates() map[string]ContentTemplate {
 			Body:   "Write your article here...",
 			Source: "builtin",
 		},
-		"note": {
-			Name:      "note",
+		contentTemplateNoteName: {
+			Name:      contentTemplateNoteName,
 			Directory: "pages/note",
 			Frontmatter: map[string]interface{}{
-				"template": "note",
+				"template": contentTemplateNoteName,
 			},
 			Body:   "A quick note...",
+			Source: "builtin",
+		},
+		contentTemplatePingName: {
+			Name:      contentTemplatePingName,
+			Directory: "pages/ping",
+			Frontmatter: map[string]interface{}{
+				"template":    contentTemplatePingName,
+				"templateKey": contentTemplatePingName,
+			},
+			Body:   "A quick ping...",
 			Source: "builtin",
 		},
 		"photo": {
@@ -238,7 +260,7 @@ func builtinTemplates() map[string]ContentTemplate {
 
 // newCmd represents the new command.
 var newCmd = &cobra.Command{
-	Use:   "new [title]",
+	Use:   "new [title-or-url]",
 	Short: "Create a new content file",
 	Long: `Create a new markdown content file with frontmatter template.
 
@@ -263,6 +285,7 @@ Example usage:
   markata-go new "About" --template page            # Create pages/about.md
   markata-go new "Getting Started" --template docs  # Create docs/getting-started.md
   markata-go new "Hello World" --dir blog           # Override directory: blog/hello-world.md
+  markata new --template link "https://example.com/article" # Create from link metadata
   markata-go new --list                             # List available templates
   markata-go new                                    # Interactive mode`,
 	Args: cobra.MaximumNArgs(1),
@@ -278,14 +301,15 @@ func init() {
 	newCmd.Flags().StringVarP(&newTemplate, "template", "t", "post", "content template to use")
 	newCmd.Flags().BoolVarP(&newList, "list", "l", false, "list available templates")
 	newCmd.Flags().BoolVar(&newPlain, "plain", false, "use plain text prompts (for non-TTY environments)")
+	newCmd.Flags().String(newTitleKey, "", "explicit title override (including URL-first link posts)")
 }
 
 // loadTemplates discovers and loads all available content templates.
 func loadTemplates() map[string]ContentTemplate {
 	templates := builtinTemplates()
+	cfg := loadConfigSafe()
 
 	// Load templates from config if available
-	cfg := loadConfigSafe()
 	if cfg != nil {
 		// Apply placement overrides from config
 		for name, dir := range cfg.ContentTemplates.Placement {
@@ -315,6 +339,29 @@ func loadTemplates() map[string]ContentTemplate {
 	} else {
 		// No config, try default directory
 		loadTemplatesFromDir("content-templates", templates)
+	}
+	if cfg != nil {
+		for name, directory := range cfg.ContentTemplates.Placement {
+			if template, exists := templates[name]; exists {
+				template.Directory = directory
+				templates[name] = template
+			} else if template, resolvedName, ok := resolveTemplateSelection(name, templates); ok {
+				template.Directory = directory
+				templates[resolvedName] = template
+			}
+		}
+		for name, mode := range cfg.ContentTemplates.FilenameMode {
+			if mode != listSortTitle && mode != contentFilenameModeNumbered {
+				continue
+			}
+			if template, exists := templates[name]; exists {
+				template.FilenameMode = mode
+				templates[name] = template
+			} else if template, resolvedName, ok := resolveTemplateSelection(name, templates); ok {
+				template.FilenameMode = mode
+				templates[resolvedName] = template
+			}
+		}
 	}
 
 	return templates
@@ -544,6 +591,14 @@ func mergeTemplateConfig(base, override *configWrapper) {
 			base.ContentTemplates.Placement[name] = directory
 		}
 	}
+	if len(override.ContentTemplates.FilenameMode) > 0 {
+		if base.ContentTemplates.FilenameMode == nil {
+			base.ContentTemplates.FilenameMode = make(map[string]string)
+		}
+		for name, mode := range override.ContentTemplates.FilenameMode {
+			base.ContentTemplates.FilenameMode[name] = mode
+		}
+	}
 	if override.ContentTemplates.Templates != nil {
 		base.ContentTemplates.Templates = override.ContentTemplates.Templates
 	}
@@ -552,9 +607,10 @@ func mergeTemplateConfig(base, override *configWrapper) {
 // configWrapper wraps the content templates config for safe loading.
 type configWrapper struct {
 	ContentTemplates struct {
-		Directory string            `yaml:"directory" toml:"directory" json:"directory"`
-		Placement map[string]string `yaml:"placement" toml:"placement" json:"placement"`
-		Templates []struct {
+		Directory    string            `yaml:"directory" toml:"directory" json:"directory"`
+		Placement    map[string]string `yaml:"placement" toml:"placement" json:"placement"`
+		FilenameMode map[string]string `yaml:"filename_mode" toml:"filename_mode" json:"filename_mode"`
+		Templates    []struct {
 			Name        string                 `yaml:"name" toml:"name" json:"name"`
 			Directory   string                 `yaml:"directory" toml:"directory" json:"directory"`
 			Frontmatter map[string]interface{} `yaml:"frontmatter" toml:"frontmatter" json:"frontmatter"`
@@ -602,13 +658,7 @@ func runInteractiveMode(cmd *cobra.Command, templates map[string]ContentTemplate
 
 	errln()
 
-	// Get title
-	title := promptNew(reader, "Title", "")
-	if title == "" {
-		return nil, fmt.Errorf("title is required")
-	}
-
-	template, _, ok := resolveTemplateSelection(newTemplate, templates)
+	template, canonical, ok := resolveTemplateSelection(newTemplate, templates)
 	if !ok {
 		return nil, fmt.Errorf("unknown template %q", newTemplate)
 	}
@@ -625,10 +675,22 @@ func runInteractiveMode(cmd *cobra.Command, templates map[string]ContentTemplate
 			errlnf("  %s", formatTemplateEntry(name, templates[name]))
 		}
 		templateInput := promptNew(reader, "Template", "post")
-		if t, _, ok := resolveTemplateSelection(templateInput, templates); ok {
+		if t, name, ok := resolveTemplateSelection(templateInput, templates); ok {
 			newTemplate = templateInput
 			template = t
+			canonical = name
 		}
+	}
+
+	if canonical == tmplLink {
+		return runPlainNewLink(cmd, template, reader)
+	}
+	title := promptNew(reader, "Title", "")
+	if title == "" {
+		return nil, fmt.Errorf("title is required")
+	}
+	if flag := cmd.Flags().Lookup(newTitleKey); flag != nil && flag.Changed {
+		title = flag.Value.String()
 	}
 
 	// Get directory (only prompt if not explicitly set via flag)
@@ -667,6 +729,17 @@ func writeContentFile(title, slug, outputDir string, draft, draftSet bool, tags 
 	if template.ValidationError != "" {
 		return fmt.Errorf("invalid starter %q: %s", template.Name, template.ValidationError)
 	}
+	if template.FilenameMode == contentFilenameModeNumbered {
+		prefix := generateSlug(template.Name)
+		if prefix == "" {
+			prefix = "post"
+		}
+		next, err := nextNumberedSlug(outputDir, prefix)
+		if err != nil {
+			return fmt.Errorf("find next %s filename: %w", prefix, err)
+		}
+		slug = next
+	}
 	filename := slug + ".md"
 	fullPath := filepath.Join(outputDir, filename)
 
@@ -704,6 +777,34 @@ func writeContentFile(title, slug, outputDir string, draft, draftSet bool, tags 
 	return nil
 }
 
+func nextNumberedSlug(directory, prefix string) (string, error) {
+	entries, err := os.ReadDir(directory)
+	if os.IsNotExist(err) {
+		return prefix + "-1", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	maximum := 0
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasPrefix(entry.Name(), prefix+"-") {
+			continue
+		}
+		extension := strings.ToLower(filepath.Ext(entry.Name()))
+		switch extension {
+		case ".md", ".markdown", ".mdown", ".mkd":
+		default:
+			continue
+		}
+		numberText := strings.TrimSuffix(strings.TrimPrefix(entry.Name(), prefix+"-"), extension)
+		number, parseErr := strconv.Atoi(numberText)
+		if parseErr == nil && number > maximum {
+			maximum = number
+		}
+	}
+	return fmt.Sprintf("%s-%d", prefix, maximum+1), nil
+}
+
 func runNewCommand(cmd *cobra.Command, args []string) error {
 	currentCmd = cmd
 	// Handle --list flag
@@ -715,7 +816,7 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 	templates := loadTemplates()
 
 	// Validate template exists
-	template, _, exists := resolveTemplateSelection(newTemplate, templates)
+	template, canonical, exists := resolveTemplateSelection(newTemplate, templates)
 	if !exists {
 		availableNames := make([]string, 0, len(templates))
 		for name := range templates {
@@ -726,6 +827,16 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 	}
 	var title string
 	var tags []string
+	var titleOverride string
+	if flag := cmd.Flags().Lookup(newTitleKey); flag != nil {
+		titleOverride = flag.Value.String()
+	}
+	if cmd.Flags().Changed(newTitleKey) && strings.TrimSpace(titleOverride) == "" {
+		return fmt.Errorf("--title must not be empty")
+	}
+	if len(args) == 0 && canonical != tmplLink && titleOverride != "" {
+		args = []string{titleOverride}
+	}
 
 	// If no title provided, run interactive mode
 	if len(args) == 0 {
@@ -744,9 +855,10 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 			title = input.title
 			template = input.template
 			tags = input.tags
+			_, canonical, _ = resolveTemplateSelection(newTemplate, templates)
 		} else {
 			// Use huh TUI wizard
-			state, err := runHuhNewWizard(templates)
+			state, err := runHuhNewWizard(cmd, templates)
 			if err != nil {
 				return err
 			}
@@ -754,6 +866,26 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 		}
 	} else {
 		title = args[0]
+		if canonical == tmplLink && isNewLinkURL(title) {
+			rawURL := title
+			metadata, err := resolveNewLinkMetadata(cmd, rawURL)
+			if err != nil {
+				return err
+			}
+			if !metadata.TrustedTitle {
+				if noInput || !inputIsTerminal() {
+					return newLinkTitleError(cmd, rawURL, metadata.Title)
+				}
+				metadata.Title, err = promptNewLinkTitle(bufio.NewReader(inReader()), metadata.Title)
+				if err != nil {
+					return err
+				}
+			}
+			title = metadata.Title
+			template = applyNewLinkMetadata(template, rawURL, metadata)
+		} else if titleOverride != "" {
+			title = titleOverride
+		}
 		if newTags != "" {
 			tags = parseTags(newTags)
 		} else if cmd.Flags().Changed("tags") {
@@ -778,6 +910,11 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 
 	// Generate slug from title
 	slug := generateSlug(title)
+	if canonical == tmplLink {
+		if rawURL, ok := template.Frontmatter["url"].(string); ok && rawURL != "" {
+			slug = newLinkSlug(title, rawURL)
+		}
+	}
 
 	draftSet := cmd.Flags().Changed("draft")
 	if len(args) == 0 && !draftSet {
@@ -834,11 +971,25 @@ func listTemplates() error {
 
 // generateTemplatedContent creates the markdown content with template-specific frontmatter.
 func generateTemplatedContent(title, slug string, date time.Time, draft, draftSet bool, tags []string, template ContentTemplate) string {
-	// Only the selected starter's frontmatter and explicit user overrides are
-	// serialized. A value inferred from site/built-in defaults is not a field.
 	fm := make(map[string]interface{}, len(template.Frontmatter))
 	for key, value := range template.Frontmatter {
 		fm[key] = expandStarterValue(value, title, slug, date)
+	}
+	if strings.EqualFold(template.Name, "link") && template.FilenameMode != contentFilenameModeNumbered && slug != "" {
+		if _, hasSlug := fm["slug"]; !hasSlug {
+			fm["slug"] = "link/" + slug
+		}
+	}
+	switch value := fm["date"].(type) {
+	case nil:
+		fm["date"] = date.Format("2006-01-02")
+	case string:
+		if strings.TrimSpace(value) == "" {
+			fm["date"] = date.Format("2006-01-02")
+		}
+	}
+	if fm["published"] == nil {
+		fm["published"] = !starterDraftDefault(template)
 	}
 	if _, exists := fm["title"]; exists {
 		fm["title"] = title
@@ -854,9 +1005,6 @@ func generateTemplatedContent(title, slug string, date time.Time, draft, draftSe
 	body := expandStarterText(template.Body, title, slug, date)
 	if body == "" {
 		body = "Write your content here..."
-	}
-	if len(fm) == 0 {
-		return body + "\n"
 	}
 	fmBytes, err := yaml.Marshal(fm)
 	if err != nil {

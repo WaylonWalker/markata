@@ -1,10 +1,14 @@
 """Run with an installed Markata wheel after building Go and WASM workbenches."""
 import argparse
+import ast
+import base64
 from contextlib import ExitStack
 from functools import partial
+import gzip
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-import re
+import json
 import os
+import re
 import time
 from pathlib import Path
 import shutil
@@ -21,7 +25,89 @@ from editor_test_support import load_editor, serve_editor
 from command_palette_checks import check_commands, select_keymap
 
 
-def check(browser, url):
+def check_excalidraw_fence_controls(page):
+    scene = (ROOT / 'pkg/plugins/testdata/excalidraw/renderer-corpus/text-fonts.excalidraw').read_text()
+    markdown = '# Diagram\n\n```excalidraw\n' + scene.rstrip() + '\n```\n'
+    page.evaluate("""markdown => {
+      const editor = document.querySelector('.CodeMirror')?.CodeMirror;
+      if (!editor) throw new Error('CodeMirror is unavailable');
+      editor.setValue(markdown);
+      editor.setCursor({line:0,ch:0});
+      editor.replaceRange('X', {line:0,ch:0});
+    }""", markdown)
+    original_source = markdown
+    edited_source = 'X' + markdown
+
+    # Cached-only rendering intentionally rejects a scene without an artifact.
+    # Wait for this preview to settle before exercising the keyboard controls.
+    expect(page.get_by_role('alert').filter(has_text='no matching cached Excalidraw SVG')).to_be_visible(timeout=60000)
+
+    show = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Show Excalidraw JSON')
+    expect(show).to_be_visible()
+    expect(show).to_have_attribute('aria-expanded', 'false')
+    show.focus()
+    page.keyboard.press('Tab')
+    edit = page.locator('.excalidraw-fence-controls__button--edit')
+    expect(edit).to_be_focused()
+    page.keyboard.press('Enter')
+
+    dialog = page.locator('#excalidraw-dialog')
+    expect(dialog).to_be_visible()
+    canvas = page.locator('#excalidraw-canvas .excalidraw')
+    expect(canvas).to_be_visible(timeout=30000)
+    expect(canvas).to_have_class(re.compile(r'\btheme--dark\b'))
+    page.evaluate("""() => {
+      const dialog = document.querySelector('#excalidraw-dialog');
+      window.__excalidrawDialogClosed = new Promise(resolve =>
+        dialog.addEventListener('close', resolve, {once:true}));
+    }""")
+    page.locator('#excalidraw-cancel').click()
+    page.evaluate('() => window.__excalidrawDialogClosed')
+    expect(dialog).not_to_be_visible()
+    # Modal Cancel restores the keyboard launcher rather than the hidden
+    # CodeMirror input. Wait for that restoration before moving to Show JSON.
+    expect(edit).to_be_focused()
+    show = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Show Excalidraw JSON')
+    expect(show).to_be_visible()
+
+    show.focus()
+    expect(show).to_be_focused()
+    page.keyboard.press('Space')
+    hide = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Hide Excalidraw JSON')
+    expect(hide).to_be_visible()
+    expect(hide).to_have_attribute('aria-expanded', 'true')
+    hide.focus()
+    page.keyboard.press('Space')
+    show = page.locator('.excalidraw-fence-controls').get_by_role('button', name='Show Excalidraw JSON')
+    expect(show).to_be_focused()
+    assert page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()") == edited_source
+    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.undo()")
+    assert page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()") == original_source
+
+    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setOption('readOnly', true)")
+    expect(page.locator('.excalidraw-fence-controls__button--edit')).to_be_disabled()
+    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setOption('readOnly', false)")
+
+    page.locator('.excalidraw-fence-controls__button--edit').click()
+    expect(page.locator('#excalidraw-canvas .excalidraw')).to_be_visible(timeout=30000)
+    page.locator('#excalidraw-apply').click()
+    expect(dialog).not_to_be_visible(timeout=30000)
+    applied = page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
+    scene_json = re.search(r'```excalidraw\s*([\s\S]*?)\s*```', applied).group(1)
+    saved_scene = json.loads(scene_json)
+    artifact = saved_scene['_markata']['excalidraw_svg']
+    assert artifact['format'] == 'markata-excalidraw-svg-v1'
+    assert artifact['theme'] == 'dark'
+    assert re.fullmatch(r'[0-9a-f]{64}', artifact['source_sha256'])
+    assert re.fullmatch(r'[0-9a-f]{64}', artifact['svg_sha256'])
+    svg = gzip.decompress(base64.b64decode(artifact['svg'])).decode()
+    assert 'https://esm.sh/' not in svg
+    assert 'data:font/woff2;base64,' in svg
+    expect(page.frame_locator('#preview').locator('.markata-visualization img')).to_be_visible(timeout=60000)
+    expect(page.get_by_role('alert').filter(has_text='no matching cached Excalidraw SVG')).not_to_be_visible()
+
+
+def check(browser, url, excalidraw=False):
     context = browser.new_context(accept_downloads=True)
     context.tracing.start(screenshots=True, snapshots=True, sources=True)
     try:
@@ -37,7 +123,9 @@ def check(browser, url):
         preview = page.frame_locator('#preview')
         expect(preview.locator('h1')).to_be_visible(timeout=60000)
         check_commands(page, preview)
-        expect(page.locator('#saved')).to_contain_text('Draft saved')
+        if excalidraw:
+            check_excalidraw_fence_controls(page)
+        expect(page.locator('#saved')).to_contain_text(re.compile(r'Draft saved|Saved to site'))
         assert page.locator('header h1').evaluate("e => getComputedStyle(e).fontFamily") != 'Georgia, serif'
         assert not page.locator('link[href$="/css/main.css"]').count()
         select_keymap(page, 'vim')
@@ -137,7 +225,7 @@ def main():
                 with browser.new_context() as context:
                     check_site_tree(context.new_page(), url)
                 print(name + ': workspace tree passed', flush=True)
-            fonts.append(check(browser, url))
+            fonts.append(check(browser, url, excalidraw=name in ('Python', 'Go')))
             print(name + ': editor parity passed', flush=True)
             if name == 'Go':
                 from shortcut_ui_checks import check_app_shortcuts
@@ -149,7 +237,14 @@ def main():
                 with browser.new_context() as context:
                     check_site_tree(context.new_page(), url)
                 print(name + ': workspace tree passed', flush=True)
-        assert len(set(fonts)) == 1, fonts
+        # The Go CMS intentionally uses a compact 14px branded header;
+        # Python and WASM preserve their 24px legacy workbench headings.
+        # The editor font and both rendered-preview fonts remain parity
+        # contracts across all three implementations.
+        samples = [ast.literal_eval(value) for value in fonts]
+        assert len({repr(sample[1:]) for sample in samples}) == 1, samples
+        assert samples[0][0] == samples[2][0], samples
+        assert samples[1][0][1] == '14px', samples
 
 
 if __name__ == '__main__':

@@ -489,6 +489,9 @@ func ParseTOML(data []byte) (*models.Config, error) {
 	if err := toml.Unmarshal(data, &rawWrapper); err != nil {
 		return config, nil // Non-fatal: continue with parsed config
 	}
+	if err := applyContentTemplateSettings(config, rawWrapper); err != nil {
+		return nil, err
+	}
 
 	// Extract the markata-go section as a map
 	if markataGoRaw, ok := rawWrapper["markata-go"].(map[string]any); ok {
@@ -627,6 +630,9 @@ func ParseYAML(data []byte) (*models.Config, error) {
 	config := wrapper.MarkataGo.toConfig()
 	var raw map[string]any
 	if err := yaml.Unmarshal(data, &raw); err == nil {
+		if err := applyContentTemplateSettings(config, raw); err != nil {
+			return nil, err
+		}
 		normalizeParsedTheme(config, raw)
 		copyLLMsTXTConfig(config, raw)
 	}
@@ -669,6 +675,9 @@ func ParseJSON(data []byte) (*models.Config, error) {
 	config := wrapper.MarkataGo.toConfig()
 	var raw map[string]any
 	if err := json.Unmarshal(data, &raw); err == nil {
+		if err := applyContentTemplateSettings(config, raw); err != nil {
+			return nil, err
+		}
 		normalizeParsedTheme(config, raw)
 		copyLLMsTXTConfig(config, raw)
 	}

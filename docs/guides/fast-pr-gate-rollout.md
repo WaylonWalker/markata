@@ -76,6 +76,36 @@ This baseline measures the **existing** CI workflow, not the newly introduced
 `PR Gate`. Repeat the same sample method after its deployment; add separate
 runner queue and dependency-wait metrics from attempt-specific timestamps.
 
+## Measurement in the timing instrumentation PR
+
+The PR gate and three existing Linux race/coverage shards now record Go test
+package timings from the **same test invocation** using `go test -json`.
+No extra Go test pass is added. CI adds a short summary of the ten slowest
+packages and uploads machine-readable JSON as a workflow artifact for 14 days:
+
+- Fast PR validation: `pr-go-timings`.
+- Full CI: `ci-go-timings-linux-core`,
+  `ci-go-timings-linux-cli`, and `ci-go-timings-linux-site`.
+
+Each JSON report records wall-clock command time, package-level Go-reported
+elapsed time, the slowest individual test cases, exit status, runner OS, and
+the tested SHA. The wrapper retains live test output and propagates failures.
+Missing artifacts on docs-only PRs or if tests never started are expected.
+
+Interpret measurements carefully: package times **overlap** because Go runs
+packages concurrently, and their sum is not the job duration. Command wall
+time includes compilation and test startup; neither it nor the difference
+between wall time and the slowest package is a pure compilation metric.
+The Actions job-step timestamps separately expose checkout, setup, dependency
+download, and CLI build overhead. macOS/Windows durations are initially
+compared from Actions job steps, rather than Go package instrumentation.
+
+The October 29–November 2 figures below are **historical baseline measurements**,
+not timing improvements attributed to this PR. After this instrumentation
+lands, sample completed non-cancelled runs on distinct PR SHAs and compare
+p50/p90 values per change class. Keep the existing shadow gate and branch
+protection untouched until sufficient evidence exists.
+
 ## Baseline and progression
 
 Before switching branch protection, record at least 20 completed, non-cancelled

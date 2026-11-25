@@ -74,7 +74,7 @@ func (p *ContributionGraphPlugin) Configure(m *lifecycle.Manager) error {
 			p.config.Enabled = enabled
 		}
 		if mode, ok := cfgMap["mode"].(string); ok && mode != "" {
-			if mode != presentationAuto && mode != "go" && mode != "client" {
+			if mode != presentationAuto && mode != "go" && mode != mermaidModeClient {
 				return fmt.Errorf("contribution_graph.mode must be auto, go, or client, got %q", mode)
 			}
 			p.config.Mode = mode
@@ -193,7 +193,7 @@ func (p *ContributionGraphPlugin) processPost(m *lifecycle.Manager, post *models
 
 		// Native SVG is the default: no Cal-Heatmap, D3, Popper, or script assets.
 		// Explicit client mode preserves the full interactive Cal-Heatmap contract.
-		if p.config.Mode != "client" {
+		if p.config.Mode != mermaidModeClient {
 			svg, err := renderNativeContributionGraph(data, optionsMap, maxValue, graphID)
 			if err == nil {
 				return fmt.Sprintf(`<div class=%q>%s</div>`, html.EscapeString(p.config.ContainerClass), svg)

@@ -37,6 +37,26 @@ func TestValidateEditorListenAddress(t *testing.T) {
 	}
 }
 
+func TestValidateEditorListenAddressHosted(t *testing.T) {
+	for _, test := range []struct {
+		address string
+		hosted  bool
+		wantErr bool
+	}{
+		{address: "127.0.0.1:8766"},
+		{address: "0.0.0.0:8766", wantErr: true},
+		{address: "0.0.0.0:8766", hosted: true},
+		{address: "[::]:8766", hosted: true},
+		{address: "editor.internal:8766", hosted: true, wantErr: true},
+	} {
+		t.Run(test.address, func(t *testing.T) {
+			if err := validateEditorListenAddressWithHosted(test.address, test.hosted); (err != nil) != test.wantErr {
+				t.Fatalf("validateEditorListenAddressWithHosted(%q, %t) error = %v, wantErr %t", test.address, test.hosted, err, test.wantErr)
+			}
+		})
+	}
+}
+
 func TestEditorCommand_ServesAndShutsDown(t *testing.T) {
 	previousWorkspace, previousListen := editorWorkspace, editorListen
 	t.Cleanup(func() {

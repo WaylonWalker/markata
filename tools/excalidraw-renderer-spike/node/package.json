@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "@aldinokemal2104/excalidraw-to-svg": "1.1.1"
+  }
+}

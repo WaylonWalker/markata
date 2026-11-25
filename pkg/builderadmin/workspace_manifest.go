@@ -10,20 +10,13 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/WaylonWalker/markata/internal/fileidentity"
 )
 
-type publicationIdentity struct {
-	Device   uint64
-	Inode    uint64
-	Size     int64
-	Mode     uint32
-	Modified int64
-	Changed  int64
-}
-
 type publicationRecord struct {
-	Source  publicationIdentity
-	Release publicationIdentity
+	Source  fileidentity.Identity
+	Release fileidentity.Identity
 	Digest  string
 }
 
@@ -95,12 +88,8 @@ func savePublicationManifest(workspace, release string, files map[string]publica
 	return os.Rename(file.Name(), workspace+".publication.json") == nil
 }
 
-func cachedSourceDigest(record publicationRecord, identity publicationIdentity, committed, now time.Time) bool {
-	if identity.Inode == 0 || record.Source != identity || now.Before(committed) {
-		return false
-	}
-	threshold := committed.Add(-time.Second).UnixNano()
-	return identity.Modified < threshold && identity.Changed < threshold && validPublicationDigest(record.Digest)
+func cachedSourceDigest(record publicationRecord, identity fileidentity.Identity, committed, now time.Time) bool {
+	return record.Source == identity && !now.Before(committed) && identity.StableBefore(committed) && validPublicationDigest(record.Digest)
 }
 
 func validPublicationDigest(digest string) bool {
@@ -115,7 +104,7 @@ func hashPublicationFile(file *os.File, buffer []byte) (string, int64, error) {
 }
 
 func (p *workspaceDeltaPublisher) sourceDigest(path string, info fs.FileInfo, record publicationRecord) (string, error) {
-	identity := publicationFileIdentity(info)
+	identity := fileidentity.Read(info)
 	if cachedSourceDigest(record, identity, p.previous.Committed, time.Now()) {
 		p.stats.CachedSourceHashes++
 		return record.Digest, nil
@@ -134,7 +123,7 @@ func (p *workspaceDeltaPublisher) sourceDigest(path string, info fs.FileInfo, re
 	if err != nil {
 		return "", err
 	}
-	if identity.Inode != 0 && publicationFileIdentity(after) != identity {
+	if identity.Inode != 0 && fileidentity.Read(after) != identity {
 		return "", fmt.Errorf("workspace file changed during publication: %s", path)
 	}
 	return digest, nil
@@ -145,7 +134,7 @@ func (p *workspaceDeltaPublisher) baselineDigest(old string, source fs.FileInfo,
 	if err != nil || !info.Mode().IsRegular() || info.Size() != source.Size() || info.Mode().Perm() != source.Mode().Perm() || os.SameFile(info, source) {
 		return ""
 	}
-	identity := publicationFileIdentity(info)
+	identity := fileidentity.Read(info)
 	identity.Changed = 0
 	if identity.Inode != 0 && identity == record.Release && validPublicationDigest(record.Digest) {
 		p.stats.CachedReleaseHashes++
@@ -185,8 +174,8 @@ func (p *workspaceDeltaPublisher) copyRegular(path, target, next, rel string, in
 	if err != nil {
 		return err
 	}
-	identity := publicationFileIdentity(final)
+	identity := fileidentity.Read(final)
 	identity.Changed = 0
-	p.records[rel] = publicationRecord{Source: publicationFileIdentity(info), Release: identity, Digest: digest}
+	p.records[rel] = publicationRecord{Source: fileidentity.Read(info), Release: identity, Digest: digest}
 	return nil
 }

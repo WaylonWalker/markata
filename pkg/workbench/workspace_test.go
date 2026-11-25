@@ -51,6 +51,56 @@ func TestWorkspaceHTTP(t *testing.T) {
 	}
 }
 
+func TestWorkspaceIndexStatusReportsPhasesWithoutForcingLoad(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "markata-go.toml"), []byte("[markata-go.glob]\npatterns=['*.md']\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "post.md"), []byte("---\ntitle: Post\n---\n# Body"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	store, err := editorworkspace.Open(context.Background(), root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := store.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
+	handler := &Handler{store: store, workspace: store}
+	get := func(path string) *httptest.ResponseRecorder {
+		t.Helper()
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1"+path, http.NoBody)
+		req.RemoteAddr = "127.0.0.1:1234"
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, req)
+		return response
+	}
+	first := get("/workspace/index-status")
+	if first.Code != http.StatusOK {
+		t.Fatalf("status endpoint returned %d: %s", first.Code, first.Body.String())
+	}
+	var status editorworkspace.IndexStatus
+	if err := json.Unmarshal(first.Body.Bytes(), &status); err != nil {
+		t.Fatal(err)
+	}
+	if status.Ready || status.Phase != "queued" || status.Files != 1 {
+		t.Fatalf("initial status = %+v", status)
+	}
+	listing := get("/workspace?metadata=true")
+	if listing.Code != http.StatusOK || !strings.Contains(listing.Header().Get("Server-Timing"), "site-feeds;dur=") {
+		t.Fatalf("metadata response %d missing Server-Timing: %s", listing.Code, listing.Body.String())
+	}
+	loaded := get("/workspace/index-status")
+	if err := json.Unmarshal(loaded.Body.Bytes(), &status); err != nil {
+		t.Fatal(err)
+	}
+	if !status.Ready || status.Phase != "ready" || status.Indexed != 1 {
+		t.Fatalf("status after indexing = %+v", status)
+	}
+}
+
 func TestWorkspaceFileMutationRequiresSameOrigin(t *testing.T) {
 	tests := []struct {
 		name, method, path, origin, fetchSite string
@@ -82,6 +132,9 @@ func TestWorkspaceFileMutationRequiresSameOrigin(t *testing.T) {
 			handler := &Handler{workspace: workspace}
 			request := httptest.NewRequestWithContext(context.Background(), test.method, "http://127.0.0.1/workspace/file?path="+test.path, strings.NewReader("# Replaced"))
 			request.RemoteAddr = "127.0.0.1:1234"
+			if test.method == http.MethodPut && test.status == http.StatusOK {
+				request.Header.Set("X-Markata-Expected-Version", editorworkspace.SourceVersion(original))
+			}
 			if test.origin != "" {
 				request.Header.Set("Origin", test.origin)
 			}
@@ -118,7 +171,7 @@ func TestWorkspaceFileMutationRequiresSameOrigin(t *testing.T) {
 
 func TestWorkspaceSiteAppearance(t *testing.T) {
 	root := t.TempDir()
-	config := "[markata-go.theme]\npalette = 'everforest'\npalette_light = 'everforest-light'\npalette_dark = 'everforest-dark'\nfallback_mode = 'light'\naesthetic = 'minimal'\ntext_size = 'small'\ncustom_css = 'editor.css'\n[markata-go.markdown.highlight]\nline_numbers = true\n"
+	config := "[markata-go.theme]\npalette = 'everforest'\npalette_light = 'everforest-light'\npalette_dark = 'everforest-dark'\nfallback_mode = 'light'\naesthetic = 'minimal'\ntext_size = 'small'\ncustom_css = 'editor.css'\nfontpack = 'handwritten'\n[markata-go.markdown.highlight]\nline_numbers = true\n"
 	if err := os.WriteFile(filepath.Join(root, "markata-go.toml"), []byte(config), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -148,6 +201,26 @@ func TestWorkspaceSiteAppearance(t *testing.T) {
 	}
 	if rendered.Document == nil || !strings.Contains(*rendered.Document, `data-palette="everforest-light"`) {
 		t.Fatal("preview missing site appearance")
+	}
+	if !strings.Contains(*rendered.Document, "data:text/css;base64,") || !strings.Contains(*rendered.Document, `id="markata-preview-fonts"`) {
+		t.Fatal("preview appearance styles are not embedded for the isolated frame")
+	}
+	if strings.Contains(*rendered.Document, `href="/appearance/css/`) {
+		t.Fatal("preview document still depends on authenticated appearance stylesheet requests")
+	}
+	if !strings.Contains(*rendered.Document, "data:font/woff2;base64,") {
+		t.Fatal("selected preview font files are not embedded")
+	}
+	for _, pack := range []string{"handwritten", "system"} {
+		fontRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1/preview-fonts.css?fontpack="+pack, http.NoBody)
+		fontResponse := httptest.NewRecorder()
+		handler.ServeHTTP(fontResponse, fontRequest)
+		if fontResponse.Code != http.StatusOK || !strings.Contains(fontResponse.Header().Get("Content-Type"), "text/css") {
+			t.Fatalf("preview font pack %s response = %d %q %s", pack, fontResponse.Code, fontResponse.Header().Get("Content-Type"), fontResponse.Body.String())
+		}
+		if pack == "handwritten" && !strings.Contains(fontResponse.Body.String(), "data:font/woff2;base64,") {
+			t.Fatal("selected preview font pack has no embedded font files")
+		}
 	}
 	if handler.siteConfig == nil || !handler.siteConfig.MarkdownConfig.Highlight.LineNumbers {
 		t.Fatal("site renderer config not loaded")

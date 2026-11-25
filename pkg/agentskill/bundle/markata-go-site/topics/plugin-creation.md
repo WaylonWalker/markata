@@ -81,8 +81,8 @@ This is the minimum shape of a transform-stage plugin:
 package plugins
 
 import (
-    "github.com/WaylonWalker/markata-go/pkg/lifecycle"
-    "github.com/WaylonWalker/markata-go/pkg/models"
+    "github.com/WaylonWalker/markata/pkg/lifecycle"
+    "github.com/WaylonWalker/markata/pkg/models"
 )
 
 type GreetingPlugin struct{}
@@ -110,6 +110,19 @@ var (
     _ lifecycle.TransformPlugin = (*GreetingPlugin)(nil)
 )
 ```
+
+## Site-Owned Custom Binary (Supported Starter)
+
+The repository now includes `examples/custom-plugin/main.go`: a minimal
+working wrapper that calls `plugins.RegisterPluginConstructor` and
+`cmd.Execute()`. Copy it into a site-owned Go module, pin a released Markata
+version (for example `github.com/WaylonWalker/markata@v0.15.0`), and add
+`greeting` to the site's `hooks` configuration. Build with `go run . build`
+or a compiled site binary, not the unmodified stock `markata`. The matching
+test file demonstrates deterministic metadata and skipped-post handling.
+
+Read [Custom Plugins](/docs/guides/custom-plugins/) for the complete setup,
+validation, security and rollback steps. No custom runtime loader is implied.
 
 ## Registration Pattern
 

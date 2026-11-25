@@ -54,6 +54,19 @@ func NewEmbedsPlugin() *EmbedsPlugin {
 	return plugin
 }
 
+// SetMetadataHTTPClient configures the HTTP client used by both Open Graph and
+// oEmbed metadata resolution. The workbench supplies a request-scoped client
+// that rejects private-network destinations. Call before resolving metadata.
+func (p *EmbedsPlugin) SetMetadataHTTPClient(client *http.Client) {
+	if p == nil || client == nil {
+		return
+	}
+	p.httpClient = client
+	if p.oembed != nil {
+		p.oembed.client = client
+	}
+}
+
 // Name returns the unique name of the plugin.
 func (p *EmbedsPlugin) Name() string {
 	return "embeds"
@@ -309,6 +322,38 @@ func embedsCacheSignature(config models.EmbedsConfig, extra map[string]interface
 	}
 
 	return buildcache.ContentHash(string(payload))
+}
+
+// HasCachedEmbedTransform reports whether the persistent build cache contains
+// the transform result for post under the effective embeds configuration.
+// Builder Admin uses this before skipping a build so expired remote metadata
+// cannot be hidden by an absent or stale per-post transform result.
+func HasCachedEmbedTransform(cache *buildcache.Cache, post *models.Post, extra map[string]interface{}) bool {
+	if cache == nil || post == nil {
+		return false
+	}
+	plugin := NewEmbedsPlugin()
+	if extra != nil {
+		if raw, ok := extra["embeds"].(map[string]interface{}); ok {
+			plugin.applyEmbedsConfig(raw)
+		}
+	}
+	signature := embedsCacheSignature(plugin.config, extra)
+	_, ok := cache.GetCachedEmbedsContent(post.Path, linkPostEmbedCacheHash(post, signature))
+	return ok
+}
+
+// HasExternalEmbedCandidate reports whether a post can make the embed
+// transform resolve remote metadata.
+func HasExternalEmbedCandidate(post *models.Post) bool {
+	if linkPostDestination(post) != "" {
+		return true
+	}
+	if post == nil || post.Content == "" {
+		return false
+	}
+	content := embedsCodeBlockRegex.ReplaceAllString(post.Content, "")
+	return externalEmbedRegex.MatchString(content) || embedBracketRegex.MatchString(content) || externalObsidianEmbedRegex.MatchString(content)
 }
 
 func (p *EmbedsPlugin) enableLiteYouTubeAssets(m *lifecycle.Manager) {
@@ -1186,6 +1231,21 @@ func (p *EmbedsPlugin) fetchExternalMetadata(rawURL string) *OGMetadata {
 		}
 		return metadata
 	}
+}
+
+// ResolveExternalMetadata returns the metadata used to render an external
+// embed. Callers such as the workbench can use the same configured providers
+// and Open Graph fallback when creating link posts.
+func (p *EmbedsPlugin) ResolveExternalMetadata(rawURL string) (*OGMetadata, error) {
+	if p == nil {
+		return nil, fmt.Errorf("embed metadata resolver is unavailable")
+	}
+	rawURL = strings.TrimSpace(rawURL)
+	parsed, err := url.Parse(rawURL)
+	if err != nil || parsed.Hostname() == "" || (parsed.Scheme != schemeHTTP && parsed.Scheme != schemeHTTPS) || parsed.User != nil {
+		return nil, fmt.Errorf("metadata URL must be an absolute HTTP(S) URL without credentials")
+	}
+	return p.fetchExternalMetadata(rawURL), nil
 }
 
 func (p *EmbedsPlugin) resolveOEmbedMetadata(rawURL string) (*OGMetadata, bool) {

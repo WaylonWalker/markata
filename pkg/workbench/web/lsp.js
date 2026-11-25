@@ -4,7 +4,7 @@
   window.MarkataEditorLSP = {connect};
   async function connect(editor, status) {
     let socket, uri, version = 1, sequence = 0, ready = false, disposed = false;
-    let timer, autoTimer, generation = 0;
+    let timer, autoTimer, reconnectTimer, retryDelay = 500, generation = 0;
     const pending = new Map(), marks = [];
     const pos = p => ({line:p.line, ch:p.character});
     const rpcPos = p => ({line:p.line, character:p.ch});
@@ -77,14 +77,26 @@
         autoTimer = setTimeout(() => complete(false),180);
       }
     });
+    function scheduleReconnect() {
+      if (disposed || reconnectTimer) return;
+      label('Language assistance reconnecting… · writing remains available');
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = undefined;
+        startConnection();
+      }, retryDelay);
+      retryDelay = Math.min(retryDelay * 2, 8000);
+    }
     function dispose() {
       if (disposed) return;
       disposed = true;
+      clearTimeout(reconnectTimer);
       try { if (ready) send('textDocument/didClose',{textDocument:{uri}}); } catch {}
       unavailable();
       socket?.close();
     }
     window.addEventListener('pagehide',dispose,{once:true});
+    async function startConnection() {
+    if (disposed) return;
     try {
       const response = await fetch('/lsp/config',{cache:'no-store'});
       if (!response.ok) throw new Error('Language service configuration unavailable');
@@ -113,8 +125,8 @@
           }
         }
       });
-      socket.addEventListener('close',unavailable);
-      socket.addEventListener('error',unavailable);
+      socket.addEventListener('close', () => {unavailable();scheduleReconnect();});
+      socket.addEventListener('error', () => {unavailable();scheduleReconnect();});
       await new Promise((resolve,reject) => {
         const timeout = setTimeout(() => {socket.close();reject(new Error('Connection timed out'));},10000);
         socket.addEventListener('open',() => {clearTimeout(timeout);resolve();},{once:true});
@@ -124,7 +136,10 @@
       send('initialized',{});
       send('textDocument/didOpen',{textDocument:{uri,languageId:'markdown',version,text:editor.getValue()}});
       ready = true;
+      retryDelay = 500;
       label('LSP connected · Ctrl+Space for links');
-    } catch { unavailable();socket?.close(); }
+    } catch { unavailable();socket?.close();scheduleReconnect(); }
+    }
+    startConnection();
   }
 })();

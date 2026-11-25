@@ -9,6 +9,7 @@
     "chartjs",
     "checklists",
     "code",
+    "excalidraw",
     "figures",
     "mermaid",
     "roads",
@@ -16,6 +17,7 @@
   ],
   "diagram_modes": {
     "chartjs": ["client"],
+    "excalidraw": ["auto", "cached", "chromium"],
     "mermaid": ["client", "go"]
   },
   "asset_modes": ["inline", "linked"],

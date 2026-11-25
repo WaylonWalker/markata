@@ -261,6 +261,22 @@ func TestAestheticCSSPlugin_InvalidTextureStillRejected(t *testing.T) {
 	}
 }
 
+func TestAestheticCSSPlugin_NonBrushUnsupportedMotifFallsBackToLegacy(t *testing.T) {
+	config := lifecycle.NewConfig()
+	theme := models.NewThemeConfig()
+	theme.Fontpack = "editorial"
+	theme.Motif.Kind = "letter"
+	config.Extra = map[string]interface{}{"models_config": &models.Config{Theme: theme}}
+
+	bundle, err := compileMotifBundle(config)
+	if err != nil {
+		t.Fatalf("non-brush fontpack with unsupported motif kind should fall back to legacy projection, got error: %v", err)
+	}
+	if len(bundle.Assets) != 0 {
+		t.Fatalf("expected empty bundle on legacy fallback, got assets: %v", bundle.Assets)
+	}
+}
+
 func containsPass(passes []renderingrecipe.Pass, id string) bool {
 	for i := range passes {
 		pass := &passes[i]

@@ -302,8 +302,31 @@ func configFromRawWrapper(rawWrapper map[string]any) (*models.Config, error) {
 	}
 
 	config := wrapper.MarkataGo.toConfig()
+	if err := applyContentTemplateSettings(config, rawWrapper); err != nil {
+		return nil, err
+	}
 	populateExtra(config, rawWrapper)
 	return config, nil
+}
+
+func applyContentTemplateSettings(config *models.Config, rawWrapper map[string]any) error {
+	settings, ok := rawWrapper["content_templates"]
+	if !ok {
+		if markataGo, exists := rawWrapper["markata-go"].(map[string]any); exists {
+			settings, ok = markataGo["content_templates"]
+		}
+	}
+	if !ok || settings == nil {
+		return nil
+	}
+	data, err := json.Marshal(settings)
+	if err != nil {
+		return fmt.Errorf("encode content template settings: %w", err)
+	}
+	if err := json.Unmarshal(data, &config.ContentTemplates); err != nil {
+		return fmt.Errorf("decode content template settings: %w", err)
+	}
+	return nil
 }
 
 func rawWrapperFromConfig(config *models.Config) (map[string]any, error) {

@@ -1,11 +1,14 @@
 package workbench
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -52,14 +55,19 @@ func (h *Handler) servePublishReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	path := r.URL.Query().Get("path")
-	if !filepath.IsLocal(filepath.FromSlash(path)) || !strings.HasSuffix(strings.ToLower(path), ".md") {
-		fail(w, http.StatusBadRequest, "choose a Markdown file from the workspace")
+	if path == "" || !filepath.IsLocal(filepath.FromSlash(path)) {
+		fail(w, http.StatusBadRequest, "choose a file from the workspace")
 		return
 	}
-	current, err := h.workspace.Read(path)
-	if err != nil {
-		fail(w, http.StatusNotFound, err.Error())
-		return
+	markdown := strings.HasSuffix(strings.ToLower(path), ".md")
+	var current string
+	var err error
+	if markdown {
+		current, err = h.workspace.Read(path)
+		if err != nil {
+			fail(w, http.StatusNotFound, err.Error())
+			return
+		}
 	}
 	absoluteWorkspace, err := filepath.Abs(h.root)
 	if err != nil {
@@ -83,6 +91,13 @@ func (h *Handler) servePublishReview(w http.ResponseWriter, r *http.Request) {
 	if err != nil || !filepath.IsLocal(relative) {
 		fail(w, http.StatusUnprocessableEntity, "file is outside Git repository")
 		return
+	}
+	if !markdown {
+		current, err = readChangedWorkspaceFile(ctx, root, resolvedPath, relative)
+		if err != nil {
+			fail(w, http.StatusUnprocessableEntity, err.Error())
+			return
+		}
 	}
 	head, err := gitOutput(ctx, absoluteWorkspace, "rev-parse", "--verify", "HEAD")
 	if err != nil {
@@ -114,4 +129,32 @@ func (h *Handler) servePublishReview(w http.ResponseWriter, r *http.Request) {
 	}); err != nil {
 		return
 	}
+}
+
+// readChangedWorkspaceFile returns the current text of a non-Markdown file only
+// when Git reports it as changed, so this read-only endpoint cannot browse the
+// repository.
+func readChangedWorkspaceFile(ctx context.Context, root, resolvedPath, relative string) (string, error) {
+	status, err := gitOutput(ctx, root, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", filepath.ToSlash(relative))
+	if err != nil || strings.TrimSpace(status) == "" {
+		return "", errors.New("file has no Git changes to compare")
+	}
+	// resolvedPath comes from publishPath, which verifies workspace containment.
+	// #nosec G703 -- publishPath has validated the resolved path against the workspace root.
+	file, err := os.Open(resolvedPath)
+	if err != nil {
+		return "", errors.New("cannot read current file")
+	}
+	defer file.Close()
+	data, err := io.ReadAll(io.LimitReader(file, maxSource+1))
+	if err != nil {
+		return "", errors.New("cannot read current file")
+	}
+	if len(data) > maxSource {
+		return "", errors.New("file exceeds 200,000 bytes")
+	}
+	if bytes.IndexByte(data, 0) >= 0 {
+		return "", errors.New("binary files cannot be compared")
+	}
+	return string(data), nil
 }

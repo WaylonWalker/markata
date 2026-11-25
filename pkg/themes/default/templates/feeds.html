@@ -1,7 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}{{ title | default:"Feeds" }}{% endblock %}
+{% block title %}{{ title | default:"Feeds" }} | {{ config.title | default:"My Site" }}{% endblock %}
 {% block description %}{{ description | default:config.description | default:"" }}{% endblock %}
+{% block meta %}
+{{ block.Super() }}
+<link rel="canonical" href="{{ config.url }}/{{ config.feeds_page.slug_prefix | default:'feeds' }}/{% if pagination and pagination.Number > 1 %}page/{{ pagination.Number }}/{% endif %}">
+<meta property="og:site_name" content="{{ config.title }}">
+<meta property="og:title" content="{{ title | default:'Feeds' }}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ config.url }}/{{ config.feeds_page.slug_prefix | default:'feeds' }}/{% if pagination and pagination.Number > 1 %}page/{{ pagination.Number }}/{% endif %}">
+{% if description or config.description %}
+<meta property="og:description" content="{{ description | default:config.description }}">
+{% endif %}
+{% if config.seo.default_image %}
+<meta property="og:image" content="{% if config.seo.default_image | startswith:'http' %}{{ config.seo.default_image }}{% else %}{{ config.url }}{{ config.seo.default_image }}{% endif %}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{% if config.seo.default_image | startswith:'http' %}{{ config.seo.default_image }}{% else %}{{ config.url }}{{ config.seo.default_image }}{% endif %}">
+{% else %}
+<meta name="twitter:card" content="summary">
+{% endif %}
+{% if config.seo.twitter_handle %}
+<meta name="twitter:site" content="@{{ config.seo.twitter_handle }}">
+{% endif %}
+<meta name="twitter:title" content="{{ title | default:'Feeds' }}">
+{% if description or config.description %}
+<meta name="twitter:description" content="{{ description | default:config.description }}">
+{% endif %}
+{% endblock %}
 {% block body_class %}page-feeds{% endblock %}
 {% block head %}
 {{ block.Super() }}
@@ -14,9 +39,16 @@
 <article class="post feeds-page">
   <div class="feeds-listing">
     <header class="page-header">
-      <h1>{{ title | default:"Feeds" }}</h1>
+      <h1><span class="heading-wear-glyph">{{ title | default:"Feeds" }}</span></h1>
       {% if description %}<p class="page-description">{{ description }}</p>{% endif %}
       <p class="feeds-count">{{ total_feeds }} feed{{ total_feeds|pluralize }} available</p>
+      {% if feed_sections and feed_sections|length > 1 %}
+      <nav class="feeds-jump-nav" aria-label="Feed sections">
+        {% for section in feed_sections %}
+        <a href="#{{ section.ID }}" class="feed-link">{{ section.Title }} ({{ section.TotalCount }})</a>
+        {% endfor %}
+      </nav>
+      {% endif %}
       {% if page_links %}
       <div class="page-links">
         {% for link in page_links %}

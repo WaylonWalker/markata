@@ -6,6 +6,7 @@ The Python environment must contain a standalone-renderer Markata wheel.
 from contextlib import contextmanager
 from pathlib import Path
 import os
+import re
 import json
 import subprocess
 import tempfile
@@ -61,6 +62,35 @@ class BrowserLSPTest(unittest.TestCase):
         cls.browser = cls.driver.chromium.launch(**options)
         cls.addClassCleanup(cls.browser.close)
 
+    def test_go_startup_index_phases_and_timings_are_visible(self):
+        context = self.browser.new_context()
+        try:
+            page = context.new_page()
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.goto(self.go_url)
+            expect(page.locator("#startup-index-summary")).to_contain_text("Site index")
+            page.wait_for_function(
+                """() => {
+                  const report=window.MarkataStartupStatus?.snapshot();
+                  return report?.site_index?.ready === true && report?.metadata_request_ms !== null;
+                }""",
+                timeout=20000,
+            )
+            expect(page.locator("#startup-index-summary")).to_have_text("Site index ready")
+            expect(page.frame_locator("#preview").locator("h1")).to_have_text("Real workspace draft")
+            snapshot = page.evaluate("window.MarkataStartupStatus.snapshot()")
+            self.assertGreater(snapshot["site_index"]["files"], 0)
+            self.assertGreaterEqual(snapshot["site_index"]["last_load_ms"], 0)
+            self.assertGreaterEqual(snapshot["site_index"]["frontmatter_ms"], 0)
+            self.assertGreaterEqual(snapshot["site_index"]["links_ms"], 0)
+            self.assertGreaterEqual(snapshot["metadata_request_ms"], 0)
+            self.assertIsNotNone(snapshot["workspace_ready_ms"])
+            self.assertIsNotNone(snapshot["first_preview_ms"])
+            self.assertEqual(errors, [])
+        finally:
+            context.close()
+
     def test_real_draft_file_and_scratch_are_independent(self):
         for name, url in [("Python", self.python_url), ("Go", self.go_url)]:
             with self.subTest(server=name), self.browser.new_context() as context:
@@ -82,6 +112,29 @@ class BrowserLSPTest(unittest.TestCase):
                 expect(preview.locator('h1')).to_have_text('Real workspace draft')
                 page.reload()
                 expect(preview.locator('h1')).to_have_text('Real workspace draft')
+
+    def test_go_recent_files_are_scoped_and_survive_reload(self):
+        with self.browser.new_context() as context:
+            page = context.new_page()
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.goto(self.go_url)
+            page.wait_for_function(
+                "() => Boolean(window.MarkataSiteTree?.files?.().some(file => file.path === 'hello world.md'))"
+            )
+            for path in ("hello world.md", "draft.md"):
+                page.evaluate("(path) => window.MarkataSiteTree.openFile(path)", path)
+                expect(page.locator("#active-file")).to_have_text(path)
+            recent = page.locator("#recent-files-list")
+            expect(recent.locator("button")).to_have_count(2)
+            expect(recent.locator("button").first).to_have_attribute("title", "draft.md")
+            page.reload()
+            page.locator("#workspace-tab-recent").click()
+            expect(recent.locator("button")).to_have_count(2)
+            recent.locator('button[title="hello world.md"]').click()
+            expect(page.locator("#active-file")).to_have_text("hello world.md")
+            expect(recent.locator("button").first).to_have_attribute("title", "hello world.md")
+            self.assertEqual(errors, [])
 
     def test_external_edits_refresh_clean_buffers_and_preserve_drafts(self):
         source_path = self.root / "draft.md"
@@ -115,6 +168,79 @@ class BrowserLSPTest(unittest.TestCase):
         finally:
             source_path.write_text(original, encoding="utf-8")
 
+    def test_go_link_post_starter_validates_url_and_creates_unpublished_file(self):
+        target = self.root / "link-post-from-url.md"
+        self.assertFalse(target.exists())
+        try:
+            with self.browser.new_context() as context:
+                page = context.new_page()
+                errors = []
+                page.on("pageerror", lambda error: errors.append(str(error)))
+                page.goto(self.go_url)
+                # This tests the Link starter, not palette search ranking.
+                # Invoke the registered New Post command deterministically.
+                page.wait_for_function(
+                    "() => Boolean(window.MarkataShortcuts?.all?.().some(c => c.id === 'workbench.newPost'))"
+                )
+                self.assertTrue(page.evaluate(
+                    "window.MarkataShortcuts.execute('workbench.newPost')"
+                ))
+                expect(page.locator("#template-picker")).to_be_visible(timeout=10000)
+                page.locator("#template-picker-query").fill("Link")
+                page.locator(".template-choice").filter(has_text="Save a web link").click()
+                expect(page.locator("#create-dialog")).to_be_visible()
+                expect(page.locator("#create-link-field")).to_be_visible()
+                expect(page.locator("#create-link-url")).to_be_focused()
+                page.locator("#create-title").fill("An interesting article")
+                page.locator("#create-slug").fill("link-post-from-url")
+                page.locator("#create-directory").fill(".")
+                page.locator("#create-link-url").fill("javascript:alert(1)")
+                page.locator('#create-form button[type="submit"]').click()
+                # Browsers differ in whether a type=url input accepts arbitrary
+                # absolute schemes. The app must reject non-http(s) schemes
+                # even if native HTML validation considers them syntactically valid.
+                expect(page.locator("#create-error")).to_contain_text(
+                    "http(s)", timeout=10000
+                )
+                self.assertFalse(target.exists())
+                page.locator("#create-link-url").fill("https://user:secret@example.com/")
+                page.locator('#create-form button[type="submit"]').click()
+                expect(page.locator("#create-error")).to_contain_text("without embedded credentials")
+                self.assertFalse(target.exists())
+
+                page.locator("#create-link-url").fill("https://example.com/article?q=one&lang=en#part")
+                page.locator('#create-form button[type="submit"]').click()
+                expect(page.locator("#create-dialog")).not_to_be_visible()
+                expect(page.locator("#active-file")).to_have_text("link-post-from-url.md", timeout=10000)
+                source = target.read_text(encoding="utf-8")
+                self.assertIn('title: "An interesting article"', source)
+                self.assertIn('url: "https://example.com/article?q=one&lang=en#part"', source)
+                self.assertIn("published: false", source)
+                self.assertIn("template: link", source)
+                self.assertEqual(errors, [])
+        finally:
+            target.unlink(missing_ok=True)
+
+    def test_go_photo_and_shot_starters_focus_image_url(self):
+        with self.browser.new_context() as context:
+            page = context.new_page()
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.goto(self.go_url)
+            for name, description in (("Photo", "A photo post"), ("Shot", "A shot post")):
+                page.wait_for_function(
+                    "() => Boolean(window.MarkataShortcuts?.all?.().some(c => c.id === 'workbench.newPost'))"
+                )
+                self.assertTrue(page.evaluate("window.MarkataShortcuts.execute('workbench.newPost')"))
+                expect(page.locator("#template-picker")).to_be_visible(timeout=10000)
+                page.locator("#template-picker-query").fill(name)
+                page.locator(".template-choice").filter(has_text=description).click()
+                expect(page.locator("#create-dialog")).to_be_visible()
+                expect(page.locator("#create-image-field")).to_be_visible()
+                expect(page.locator("#create-image-url")).to_be_focused()
+                page.locator("#create-cancel").click()
+            self.assertEqual(errors, [])
+
     def test_link_completion_and_diagnostics(self):
         for name, url in [("Python", self.python_url), ("Go", self.go_url)]:
             with self.subTest(server=name):
@@ -126,6 +252,13 @@ class BrowserLSPTest(unittest.TestCase):
                     page.goto(url)
                     expect(page.frame_locator("#preview").locator("h1")).to_have_text("Real workspace draft")
                     expect(page.locator("#language-status")).to_contain_text("LSP connected")
+                    # Completion scenarios edit the buffer repeatedly. Keep
+                    # those edits in the browser-only scratch document so this
+                    # shared workspace fixture remains intact for later tests.
+                    page.locator("#site-files").get_by_role(
+                        "treeitem", name="Unsaved draft.md", exact=True
+                    ).click()
+                    expect(page.locator("#active-file")).to_have_text("Unsaved draft.md")
                     for source, wanted in [("😀 [[gre]]", "😀 [[greeting]]"),
                                            ("😀 [Hello](hello)", "😀 [Hello](hello%20world.md)"),
                                            ("[[", "[[hello")]:
@@ -228,7 +361,7 @@ class BrowserLSPTest(unittest.TestCase):
                     page.route("**/lsp/config", lambda route: route.abort())
                     page.goto(url)
                     expect(page.frame_locator("#preview").locator("h1")).to_have_text("Real workspace draft")
-                    expect(page.locator("#language-status")).to_contain_text("unavailable")
+                    expect(page.locator("#language-status")).to_contain_text(re.compile(r"unavailable|reconnecting"))
                     page.evaluate("document.querySelector('.CodeMirror').CodeMirror.setValue('# Still editing')")
                     expect(page.frame_locator("#preview").locator("h1")).to_have_text("Still editing")
                 finally:
