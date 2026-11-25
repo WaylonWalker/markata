@@ -653,6 +653,8 @@
   let quickBusy = false;
   let pendingQuick = null;
   let publishStatus = null;
+  let publishSnapshot = null;
+  let publishRefreshTimer = null;
   function reportQuick(message, type='info') {
     if (publishStatus) {
       publishStatus.textContent = message;
@@ -687,6 +689,7 @@
       reportQuick('Could not save draft: ' + error.message, 'warning');
     } finally {
       quickBusy = false;
+      updatePublishButton();
     }
   }
   async function finishQuickPush(pending) {
@@ -774,7 +777,6 @@
       reportQuick('Not published: ' + error.message, 'warning');
     } finally {
       quickBusy = false;
-      button.disabled = false;
       updatePublishButton();
     }
   }
@@ -782,13 +784,41 @@
   function updatePublishButton() {
     if (!button || !editor) return;
     const path = canOpen();
-    const label = pendingQuick ? 'Retry publish' : (!path ? 'Choose post' : 'Publish post');
-    const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
-    icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');
-    const pathNode=document.createElementNS('http://www.w3.org/2000/svg','path');
-    pathNode.setAttribute('d','M12 15V3m0 0 4 4m-4-4L8 7M4 14v6h16v-6');icon.append(pathNode);
-    button.replaceChildren(icon,document.createTextNode(label));
-    button.title = 'Publish this post only (Ctrl/Cmd+S). Review changes with Ctrl/Cmd+Shift+Enter.';
+    const snapshot = publishSnapshot?.path === path ? publishSnapshot : null;
+    const source = editor.getValue();
+    const fields = frontmatter(source);
+    const upToDate = Boolean(snapshot && snapshot.baselineExists && !snapshot.changed &&
+      snapshot.current === source && fields.published === 'true' && fields.draft !== 'true');
+    const publishState = quickBusy ? 'publishing' : pendingQuick ? 'retry' :
+      !path ? 'no-post' : upToDate ? 'up-to-date' : 'ready';
+    const label = {publishing:'Publishing…',retry:'Retry publish','no-post':'Choose post',
+      'up-to-date':'Up to date',ready:'Publish post'}[publishState];
+    if (button.dataset.publishState !== publishState) {
+      const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');
+      const pathNode=document.createElementNS('http://www.w3.org/2000/svg','path');
+      pathNode.setAttribute('d',publishState==='up-to-date'?'M5 12l4 4L19 6':'M12 15V3m0 0 4 4m-4-4L8 7M4 14v6h16v-6');icon.append(pathNode);
+      button.replaceChildren(icon,document.createTextNode(label));
+    }
+    button.dataset.publishState = publishState;
+    button.disabled = quickBusy || publishState === 'up-to-date' || !path;
+    button.setAttribute('aria-busy',String(quickBusy));
+    button.setAttribute('aria-label',publishState==='up-to-date'?'Up to date in Git; deployment not verified':
+      publishState==='retry'?'Retry pending publish':publishState==='no-post'?'Choose a site post to publish':
+      publishState==='publishing'?'Publishing current post':'Publish current post');
+    button.title = publishState==='up-to-date'?
+      'This saved post matches its local Git commit. Remote push and site deployment are not verified.':
+      'Publish this post only (Ctrl/Cmd+S). Review changes with Ctrl/Cmd+Shift+Enter.';
+  }
+
+  function schedulePublishStateRefresh() {
+    // A saved file or regained focus invalidates the previous proof immediately.
+    // Reuse the gutter's review request; never poll or fetch a second full source.
+    publishSnapshot = null;
+    gutterRequest++;
+    updatePublishButton();
+    clearTimeout(publishRefreshTimer);
+    publishRefreshTimer = setTimeout(refreshChangeGutter,180);
   }
 
   // Git-style gutter. Compare the visible editor to Git HEAD, not autosave.
@@ -865,6 +895,8 @@
   }
   async function refreshChangeGutter() {
     const path=canOpen(), request=++gutterRequest;
+    clearTimeout(publishRefreshTimer);
+    publishSnapshot=null;updatePublishButton();
     gutterPath=path;gutterBase=null;clearChangeGutter();
     if(!path){reportGutter('Git gutter: select a site Markdown file','muted');return;}
     reportGutter('Loading Git change gutter…','loading');
@@ -878,6 +910,10 @@
       if(request!==gutterRequest||canOpen()!==path)return;
       if(typeof data.baseline!=='string')throw new Error('missing committed baseline');
       gutterBase=data.baseline_exists?data.baseline:'';
+      if (typeof data.current==='string' && typeof data.changed==='boolean') {
+        publishSnapshot={path,current:data.current,baselineExists:data.baseline_exists===true,changed:data.changed};
+      }
+      updatePublishButton();
       drawChangeGutter();
     } catch(error) {
       if(request===gutterRequest)reportGutter('Git gutter unavailable: '+error.message,'warning');
@@ -1456,9 +1492,13 @@
       window.MarkataPierreDiff?.release?.(changesReviewDetail.querySelector('#workspace-review-diff'));
       refreshWorkspaceChanges();
     });
-    window.addEventListener('focus', () => refreshWorkspaceChanges(true));
+    window.addEventListener('focus', () => {
+      refreshWorkspaceChanges(true);
+      schedulePublishStateRefresh();
+    });
     window.addEventListener('markata-workspace-file-saved', () => {
       refreshWorkspaceChanges(true);
+      schedulePublishStateRefresh();
     });
     let persisted = false;
     try { persisted = localStorage.getItem('markata-workspace-changes-open') === 'true'; }

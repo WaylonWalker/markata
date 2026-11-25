@@ -576,6 +576,11 @@ when a site file saves or the editor regains focus. Opening the view shows its
 last inventory immediately while a fresh Git status check runs. **Review** for
 the active post is in the Changes panel header.
 
+A saved public post that matches its local Git commit shows **Up to date**.
+Editing it re-enables **Publish post**. Drafts and unpublished posts remain
+publishable. This status does not verify the remote branch or a live deployment.
+The existing publishing menu provides detailed comparison and review.
+
 Use **Publish post** in the header or **Ctrl/Cmd+S** (Emacs **Ctrl-X Ctrl-S**,
 Vim `:w`) to publish *only the active site Markdown post*. This explicitly
 marks the post as public, saves it to disk, verifies the remote branch equals
