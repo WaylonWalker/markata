@@ -54,7 +54,7 @@ func TestVerifiedNoOpLeavesCurrentReleaseAndWorkspaceUntouched(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(svc.cfg.SiteDir, "releases", "release-a", "index.html"), []byte("live"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	wellKnownTimePath := filepath.Join(svc.cfg.SiteDir, "releases", "release-a", ".well-known", "time.txt")
+	wellKnownTimePath := filepath.Join(svc.cfg.SiteDir, "releases", "release-a", ".well-known", "time")
 	wellKnownTime := "2026-11-25T20:00:00Z\n"
 	writeNoOpFile(t, wellKnownTimePath, wellKnownTime)
 	if err := os.Symlink(filepath.Join("releases", "release-a"), filepath.Join(svc.cfg.SiteDir, "current")); err != nil {
@@ -846,7 +846,7 @@ func BenchmarkVerifiedNoOpProductionShape(b *testing.B) {
 	}
 	releaseID := "release-production-shaped"
 	releaseRoot := filepath.Join(svc.cfg.SiteDir, "releases", releaseID)
-	for i := 0; i < 37655; i++ {
+	for i := 0; i < 37654; i++ {
 		dir := filepath.Join(releaseRoot, "pages", "shard-"+strconv.Itoa(i/600))
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			b.Fatal(err)
@@ -855,6 +855,14 @@ func BenchmarkVerifiedNoOpProductionShape(b *testing.B) {
 		if err := os.WriteFile(path, []byte("<!doctype html><title>Page</title>"), 0o644); err != nil {
 			b.Fatal(err)
 		}
+	}
+	wellKnownTimePath := filepath.Join(releaseRoot, ".well-known", "time")
+	if err := os.MkdirAll(filepath.Dir(wellKnownTimePath), 0o755); err != nil {
+		b.Fatal(err)
+	}
+	wellKnownTime := []byte("2026-11-25T20:00:00Z\n")
+	if err := os.WriteFile(wellKnownTimePath, wellKnownTime, 0o644); err != nil {
+		b.Fatal(err)
 	}
 	if err := os.MkdirAll(filepath.Dir(filepath.Join(svc.cfg.SiteDir, "current")), 0o755); err != nil {
 		b.Fatal(err)
@@ -904,6 +912,9 @@ func BenchmarkVerifiedNoOpProductionShape(b *testing.B) {
 			if !ok {
 				b.Fatal("production-shaped unchanged request did not complete as a no-op")
 			}
+		}
+		if got, err := os.ReadFile(wellKnownTimePath); err != nil || string(got) != string(wellKnownTime) {
+			b.Fatalf("well-known time output changed during no-op benchmark: got=%q error=%v", got, err)
 		}
 	})
 }

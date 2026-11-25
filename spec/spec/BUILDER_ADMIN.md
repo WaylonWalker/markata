@@ -205,7 +205,7 @@ releases. An unsafe pointer, unsupported file type, or changed release entry
 MUST fall through to a normal build. Concurrent out-of-band edits are outside
 the serialization contract. A no-op MUST NOT extend the baseline expiry or
 refresh publication timestamps such as the diagnostics artifact's `BuiltAt`
-value or `.well-known/time.txt`. A no-op with the well-known time endpoint
+value or `.well-known/time`. A no-op with the well-known time endpoint
 enabled MUST preserve the existing published timestamp; changed inputs or an
 explicit full build MUST regenerate it.
 

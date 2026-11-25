@@ -586,7 +586,7 @@ func validateNoOpContentPatterns(patterns []string) error {
 }
 
 func validateNoOpExternalInputs(siteConfig *models.Config, builderMermaidMode []string) error {
-	// Build-time outputs such as .well-known/time.txt are preserved by the
+	// Build-time outputs such as .well-known/time are preserved by the
 	// no-op release check. Only inputs that can change independently of the
 	// captured source, configuration, and cache fingerprints need guards here.
 	if noOpTailwindBuildEnabled(siteConfig) {

@@ -410,7 +410,7 @@ minutes and expires at the next local calendar day boundary. If
 the service cannot verify its inputs, it runs a normal build. Build history records the unchanged
 result and its check duration. The build API accepts an optional `{"force": true}` body; existing
 empty-body requests continue to work. An unchanged result does not refresh publication timestamps
-such as the diagnostics artifact's `BuiltAt` value or `.well-known/time.txt`. A no-op keeps the
+such as the diagnostics artifact's `BuiltAt` value or `.well-known/time`. A no-op keeps the
 timestamp from the last published build. A full build after an input change or a force request
 generates a new timestamp.
 
