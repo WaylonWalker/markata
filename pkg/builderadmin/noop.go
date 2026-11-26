@@ -509,7 +509,8 @@ func validateNoOpCacheTree(ctx context.Context, root string) error {
 	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 		return fmt.Errorf("no-op cache root %q is not a regular directory", root)
 	}
-	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+	paths := make([]noOpPathIdentity, 0)
+	err = filepath.WalkDir(root, func(path string, _ fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -519,17 +520,19 @@ func validateNoOpCacheTree(ctx context.Context, root string) error {
 		if path == root {
 			return nil
 		}
-		entryInfo, err := entry.Info()
-		if err != nil {
-			return err
-		}
-		if entryInfo.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("no-op cache %q contains a symlink", path)
-		}
+		paths = append(paths, noOpPathIdentity{path: path})
 		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("validate no-op cache tree %q: %w", root, err)
+	}
+	if err := statNoOpPaths(ctx, paths); err != nil {
+		return fmt.Errorf("validate no-op cache tree %q: %w", root, err)
+	}
+	for _, path := range paths {
+		if path.info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("no-op cache %q contains a symlink", path.path)
+		}
 	}
 	return nil
 }
@@ -1002,13 +1005,7 @@ func statNoOpReleasePaths(ctx context.Context, releasePath string, paths []strin
 		return nil, err
 	}
 	entries := make([]noOpReleaseIdentity, len(paths))
-	workers := runtime.GOMAXPROCS(0) * 2
-	if workers < 8 {
-		workers = 8
-	}
-	if workers > 32 {
-		workers = 32
-	}
+	workers := noOpReleaseStatWorkerCount()
 	jobs := make(chan int)
 	var wg sync.WaitGroup
 	var errorOnce sync.Once
@@ -1805,6 +1802,10 @@ func extraStringField(value any, name string) string {
 }
 
 func hashNoOpTree(ctx context.Context, h hash.Hash, root string, entryCount *int64) error {
+	return hashNoOpTreeWithWorkers(ctx, h, root, entryCount, noOpStatWorkerCount())
+}
+
+func hashNoOpTreeWithWorkers(ctx context.Context, h hash.Hash, root string, entryCount *int64, workers int) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -1830,7 +1831,8 @@ func hashNoOpTree(ctx context.Context, h hash.Hash, root string, entryCount *int
 	if err := writeNoOpIdentity(h, "input-dir", root, info); err != nil {
 		return err
 	}
-	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+	paths := make([]noOpPathIdentity, 0)
+	err = filepath.WalkDir(root, func(path string, _ fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -1845,22 +1847,112 @@ func hashNoOpTree(ctx context.Context, h hash.Hash, root string, entryCount *int
 		if entryCount != nil {
 			*entryCount++
 		}
-		info, err := entry.Info()
-		if err != nil {
-			return err
-		}
-		if err := writeNoOpIdentity(h, "input-entry", filepath.ToSlash(strings.TrimPrefix(path, root+string(os.PathSeparator))), info); err != nil {
-			return err
-		}
-		if info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("no-op input %q contains a symlink", path)
-		}
+		paths = append(paths, noOpPathIdentity{
+			path: path,
+			name: filepath.ToSlash(strings.TrimPrefix(path, root+string(os.PathSeparator))),
+		})
 		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("walk no-op cache %q: %w", root, err)
 	}
+	if err := statNoOpPathsWithWorkers(ctx, paths, workers); err != nil {
+		return fmt.Errorf("walk no-op cache %q: %w", root, err)
+	}
+	for _, path := range paths {
+		if err := writeNoOpIdentity(h, "input-entry", path.name, path.info); err != nil {
+			return err
+		}
+		if path.info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("no-op input %q contains a symlink", path.path)
+		}
+	}
 	return nil
+}
+
+type noOpPathIdentity struct {
+	path string
+	name string
+	info fs.FileInfo
+}
+
+func noOpStatWorkerCount() int {
+	// Four workers performed best on the production source volume. Larger pools
+	// increased latency there, even when the container had more available CPUs.
+	return 4
+}
+
+func noOpReleaseStatWorkerCount() int {
+	workers := runtime.GOMAXPROCS(0) * 2
+	if workers < 8 {
+		workers = 8
+	}
+	if workers > 32 {
+		workers = 32
+	}
+	return workers
+}
+
+func statNoOpPaths(ctx context.Context, paths []noOpPathIdentity) error {
+	return statNoOpPathsWithWorkers(ctx, paths, noOpStatWorkerCount())
+}
+
+func statNoOpPathsWithWorkers(ctx context.Context, paths []noOpPathIdentity, workers int) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if len(paths) == 0 {
+		return nil
+	}
+	if workers < 1 {
+		workers = 1
+	}
+	if workers > len(paths) {
+		workers = len(paths)
+	}
+	jobs := make(chan int)
+	var wg sync.WaitGroup
+	var errorOnce sync.Once
+	var firstErr error
+	setError := func(err error) {
+		if err != nil {
+			errorOnce.Do(func() { firstErr = err })
+		}
+	}
+	for worker := 0; worker < workers; worker++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for index := range jobs {
+				if err := ctx.Err(); err != nil {
+					setError(err)
+					continue
+				}
+				info, err := os.Lstat(paths[index].path)
+				if err != nil {
+					setError(err)
+					continue
+				}
+				paths[index].info = info
+			}
+		}()
+	}
+	for index := range paths {
+		select {
+		case <-ctx.Done():
+			setError(ctx.Err())
+			close(jobs)
+			wg.Wait()
+			return firstErr
+		case jobs <- index:
+		}
+	}
+	close(jobs)
+	wg.Wait()
+	if firstErr != nil {
+		return firstErr
+	}
+	return ctx.Err()
 }
 
 func writeNoOpIdentity(h hash.Hash, label, name string, info fs.FileInfo) error {

@@ -1,7 +1,7 @@
 ---
 title: "Builder Admin Unchanged Build Benchmark"
-description: "Measures the verified unchanged build path on a production-shaped local fixture."
-date: 2026-11-25
+description: "Measures verified unchanged builds on a local fixture and input scanning on production storage."
+date: 2026-11-26
 published: true
 tags:
   - performance
@@ -31,6 +31,14 @@ These results prove the time endpoint does not prevent the fast path on this fix
 On 2026-11-25, the fixture was extended to use the production-style `.markata` and `.markata-cache` symlinks to a dedicated cache mount. It includes 3,689 files below the managed build cache. Five fresh `complete-verified-no-op` samples took 175, 214, 179, 187, and 180 ms. The median was **180 ms**. Five live-release fingerprint samples took 99, 127, 128, 119, and 110 ms. Managed cache trees are checked for unsafe symlinks but are not treated as semantic inputs; a separate test mutates their files between snapshots and verifies that the no-op fingerprint stays stable.
 
 This exercises the cache-mount path on a local Linux fixture. It does not measure the production volume or prove that the deployed Builder saves and consumes a baseline; the latest production runs still need a post-fix check.
+
+## Read-only production input scan
+
+On 2026-11-26, a temporary probe pod on `falcon3` mounted the production source PVC read-only. The comparison scanned the same `/data/source/public` and `/data/source/static` trees, 54,851 filesystem entries in total. The serial sample uses the previous `DirEntry.Info` traversal; the candidate uses four bounded `Lstat` workers and writes identities in the original sorted walk order. Both paths produced the same fingerprint and entry count.
+
+Ten samples, each averaging three scans, measured a serial median of **395 ms** (356–496 ms) and a candidate median of **329 ms** (299–381 ms), a **17% reduction** for one input scan. Four workers were the best tested setting on this volume. Eight or more workers were slower or less stable.
+
+This measures only the semantic input-tree scan. It does not include the second stability scan, managed-cache validation, the live-release scan, API handling, or a complete Builder Admin no-op. It also does not show that production is running this candidate: all live Builder and editor containers remain on `sha-05000c9`. The candidate probe pod mounted the source PVC read-only, did not enqueue a build, and did not write a baseline or release.
 
 ## Method
 

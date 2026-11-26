@@ -3,6 +3,9 @@ package builderadmin
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
+	"fmt"
+	"hash"
 	"io"
 	"io/fs"
 	"net/http/httptest"
@@ -876,6 +879,58 @@ func TestNoOpHashesIgnoredDirectoriesWithNonMarkdownInputs(t *testing.T) {
 	}
 }
 
+func TestHashNoOpTreeIsDeterministicAndFailsClosed(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
+	root := t.TempDir()
+	for i := 0; i < 96; i++ {
+		path := filepath.Join(root, "shard", strconv.Itoa(i%8), "asset-"+strconv.Itoa(i))
+		writeNoOpFile(t, path, "asset content")
+	}
+	hashTree := func(ctx context.Context) ([]byte, int64, error) {
+		h := sha256.New()
+		var entries int64
+		err := hashNoOpTree(ctx, h, root, &entries)
+		return h.Sum(nil), entries, err
+	}
+	first, firstEntries, err := hashTree(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	serialHash := sha256.New()
+	serialEntries, err := hashNoOpTreeSerial(context.Background(), serialHash, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if serialEntries != firstEntries || string(serialHash.Sum(nil)) != string(first) {
+		t.Fatal("parallel no-op tree fingerprint differs from the previous serial traversal")
+	}
+	second, secondEntries, err := hashTree(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(first) != string(second) {
+		t.Fatal("identical no-op input trees produced different fingerprints")
+	}
+	if firstEntries != secondEntries || firstEntries != 105 {
+		t.Fatalf("entry counts = %d and %d, want 105", firstEntries, secondEntries)
+	}
+
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, _, err := hashTree(canceled); !errors.Is(err, context.Canceled) {
+		t.Fatalf("canceled tree hash error = %v, want context.Canceled", err)
+	}
+
+	if err := os.Symlink(filepath.Join(t.TempDir(), "outside"), filepath.Join(root, "zz-link")); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := hashTree(context.Background()); err == nil || !strings.Contains(err.Error(), "contains a symlink") {
+		t.Fatalf("symlink tree hash error = %v, want fail-closed symlink rejection", err)
+	}
+}
+
 func TestNoOpSnapshotRejectsUnsafeInputs(t *testing.T) {
 	if !fileidentity.Available {
 		t.Skip("verified no-op requires Linux file identity")
@@ -1113,6 +1168,142 @@ func BenchmarkVerifiedNoOpProductionShape(b *testing.B) {
 			b.Fatalf("well-known time output changed during no-op benchmark: got=%q error=%v", got, err)
 		}
 	})
+}
+
+// BenchmarkNoOpInputTreeMetadataScan compares the previous serial Info path
+// with bounded parallel Lstat collection. Set MARKATA_NOOP_TREE_BENCH_ROOTS to
+// a path-list of existing input roots to measure a mounted production tree.
+func BenchmarkNoOpInputTreeMetadataScan(b *testing.B) {
+	if !fileidentity.Available {
+		b.Skip("verified no-op requires Linux file identity")
+	}
+	b.StopTimer()
+	roots := filepath.SplitList(os.Getenv("MARKATA_NOOP_TREE_BENCH_ROOTS"))
+	if len(roots) == 0 || roots[0] == "" {
+		roots = makeNoOpInputTreeBenchmarkFixture(b)
+	}
+	serialHash := sha256.New()
+	parallelHash := sha256.New()
+	var serialEntries, parallelEntries int64
+	for _, root := range roots {
+		count, err := hashNoOpTreeSerial(context.Background(), serialHash, root)
+		if err != nil {
+			b.Fatalf("serial fingerprint %q: %v", root, err)
+		}
+		serialEntries += count
+		var entries int64
+		if err := hashNoOpTree(context.Background(), parallelHash, root, &entries); err != nil {
+			b.Fatalf("parallel fingerprint %q: %v", root, err)
+		}
+		parallelEntries += entries
+	}
+	if serialEntries != parallelEntries || string(serialHash.Sum(nil)) != string(parallelHash.Sum(nil)) {
+		b.Fatalf("serial and parallel fingerprints differ (entries %d/%d)", serialEntries, parallelEntries)
+	}
+
+	b.Run("serial-info", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			h := sha256.New()
+			for _, root := range roots {
+				if _, err := hashNoOpTreeSerial(context.Background(), h, root); err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+		b.ReportMetric(float64(serialEntries), "entries")
+	})
+	b.Run("parallel-lstat-default", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			h := sha256.New()
+			for _, root := range roots {
+				if err := hashNoOpTree(context.Background(), h, root, nil); err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+		b.ReportMetric(float64(parallelEntries), "entries")
+	})
+	for _, workers := range []int{1, 2, 4, 8, 16, 32} {
+		b.Run(fmt.Sprintf("parallel-lstat-%d", workers), func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				h := sha256.New()
+				for _, root := range roots {
+					if err := hashNoOpTreeWithWorkers(context.Background(), h, root, nil, workers); err != nil {
+						b.Fatal(err)
+					}
+				}
+			}
+			b.ReportMetric(float64(parallelEntries), "entries")
+		})
+	}
+}
+
+func makeNoOpInputTreeBenchmarkFixture(b *testing.B) []string {
+	b.Helper()
+	root := b.TempDir()
+	roots := []string{filepath.Join(root, "public"), filepath.Join(root, "static")}
+	counts := []int{52568, 2175}
+	for rootIndex, inputRoot := range roots {
+		for i := 0; i < counts[rootIndex]; i++ {
+			shard := filepath.Join(inputRoot, "shard-"+strconv.Itoa(i/512))
+			if err := os.MkdirAll(shard, 0o755); err != nil {
+				b.Fatal(err)
+			}
+			path := filepath.Join(shard, "asset-"+strconv.Itoa(i))
+			if err := os.WriteFile(path, []byte("production-shaped asset"), 0o644); err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+	return roots
+}
+
+func hashNoOpTreeSerial(ctx context.Context, h hash.Hash, root string) (int64, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
+	info, err := os.Lstat(root)
+	if err != nil {
+		return 0, err
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return 0, fmt.Errorf("no-op input root %q is a symlink", root)
+	}
+	if !info.IsDir() {
+		return 0, fmt.Errorf("benchmark root %q is not a directory", root)
+	}
+	if err := writeNoOpIdentity(h, "input-dir", root, info); err != nil {
+		return 0, err
+	}
+	var entries int64
+	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if path == root {
+			return nil
+		}
+		entries++
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		name := filepath.ToSlash(strings.TrimPrefix(path, root+string(os.PathSeparator)))
+		if err := writeNoOpIdentity(h, "input-entry", name, info); err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("no-op input %q contains a symlink", path)
+		}
+		return nil
+	})
+	return entries, err
 }
 
 func newNoOpFixture(t testing.TB) (*Service, string) {
