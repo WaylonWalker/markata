@@ -254,12 +254,10 @@ func (s *Service) captureNoOpSnapshot(ctx context.Context) (noOpSnapshot, error)
 	if err := validateNoOpConfig(siteConfig, s.cfg.MermaidMode); err != nil {
 		return noOpSnapshot{}, err
 	}
-	inputRoots := noOpInputRoots(s.cfg.SourceDir, configPath, s.cfg.CacheMount, siteConfig)
-	cacheRoots, err := noOpManagedCacheInputRoots(s.cfg.SourceDir, s.cfg.CacheMount)
-	if err != nil {
+	if err := validateNoOpManagedCacheTrees(ctx, s.cfg.SourceDir, s.cfg.CacheMount); err != nil {
 		return noOpSnapshot{}, err
 	}
-	inputRoots = append(inputRoots, cacheRoots...)
+	inputRoots := noOpInputRoots(s.cfg.SourceDir, configPath, siteConfig)
 	themeRoots, err := noOpExternalThemeRoots(s.cfg.SourceDir, s.executable, siteConfig.Theme.Name)
 	if err != nil {
 		return noOpSnapshot{}, err
@@ -350,7 +348,10 @@ func (s *Service) confirmNoOpSnapshot(ctx context.Context, expected noOpSnapshot
 	if time.Now().Format("2006-01-02") != expected.CalendarDay {
 		return noOpSnapshot{}, errors.New("no-op snapshot crossed a calendar day")
 	}
-	inputRoots := noOpInputRoots(s.cfg.SourceDir, expected.ConfigPath, s.cfg.CacheMount, expected.siteConfig)
+	if err := validateNoOpManagedCacheTrees(ctx, s.cfg.SourceDir, s.cfg.CacheMount); err != nil {
+		return noOpSnapshot{}, err
+	}
+	inputRoots := noOpInputRoots(s.cfg.SourceDir, expected.ConfigPath, expected.siteConfig)
 	themeRoots, err := noOpExternalThemeRoots(s.cfg.SourceDir, s.executable, expected.siteConfig.Theme.Name)
 	if err != nil {
 		return noOpSnapshot{}, err
@@ -439,15 +440,14 @@ func (s *Service) noOpSourceSnapshot(ctx context.Context, siteConfig *models.Con
 			if directory && !siteGitignore(filepath.ToSlash(path)) {
 				return false, nil
 			}
-			inputRoot := absolutePath
 			if noOpManagedCacheRootPath(s.cfg.SourceDir, absolutePath) {
-				inputRoot, err = resolveNoOpIgnoredCacheRoot(s.cfg.SourceDir, s.cfg.CacheMount, absolutePath)
-				if err != nil {
-					return false, fmt.Errorf("resolve ignored source input %q: %w", path, err)
-				}
+				// Builder-managed caches are derived state. Their paths are
+				// validated separately, but cache writes must not invalidate a
+				// baseline for otherwise unchanged source inputs.
+				return true, nil
 			}
-			if !noOpPathCoveredByRoots(inputRoot, inputRoots) {
-				inputRoots = append(inputRoots, inputRoot)
+			if !noOpPathCoveredByRoots(absolutePath, inputRoots) {
+				inputRoots = append(inputRoots, absolutePath)
 			}
 			return true, nil
 		},
@@ -471,13 +471,9 @@ func noOpManagedCacheRootPath(sourceDir, path string) bool {
 	}
 }
 
-// noOpManagedCacheInputRoots verifies Builder Admin's cache-mount links before
-// fingerprinting them. This also detects a missing link, which Git-ignore
-// discovery cannot report as an input path.
-func noOpManagedCacheInputRoots(sourceDir, cacheMount string) ([]string, error) {
-	if strings.TrimSpace(cacheMount) == "" {
-		return nil, nil
-	}
+// noOpManagedCacheRoots verifies Builder Admin's cache-mount links. The cache
+// trees contain derived state, so their contents are not no-op input roots.
+func noOpManagedCacheRoots(sourceDir, cacheMount string) ([]string, error) {
 	roots := make([]string, 0, 2)
 	for _, name := range []string{".markata", ".markata-cache"} {
 		root, err := resolveNoOpIgnoredCacheRoot(sourceDir, cacheMount, filepath.Join(sourceDir, name))
@@ -489,10 +485,59 @@ func noOpManagedCacheInputRoots(sourceDir, cacheMount string) ([]string, error) 
 	return roots, nil
 }
 
+func validateNoOpManagedCacheTrees(ctx context.Context, sourceDir, cacheMount string) error {
+	roots, err := noOpManagedCacheRoots(sourceDir, cacheMount)
+	if err != nil {
+		return err
+	}
+	for _, root := range roots {
+		if err := validateNoOpCacheTree(ctx, root); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateNoOpCacheTree(ctx context.Context, root string) error {
+	info, err := os.Lstat(root)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("inspect no-op cache %q: %w", root, err)
+	}
+	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("no-op cache root %q is not a regular directory", root)
+	}
+	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if path == root {
+			return nil
+		}
+		entryInfo, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if entryInfo.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("no-op cache %q contains a symlink", path)
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("validate no-op cache tree %q: %w", root, err)
+	}
+	return nil
+}
+
 // resolveNoOpIgnoredCacheRoot allows only the cache symlinks Builder Admin
 // creates for a configured cache mount. Gitignore discovery sees the symlink
-// itself as an ignored input directory; fingerprint its configured target
-// instead of traversing an unverified alias.
+// itself as an ignored input directory; validate its configured target without
+// treating derived cache contents as semantic inputs.
 func resolveNoOpIgnoredCacheRoot(sourceDir, cacheMount, path string) (string, error) {
 	absoluteSource, err := filepath.Abs(sourceDir)
 	if err != nil {
@@ -1335,10 +1380,6 @@ func noOpBuildCacheDir(sourceDir, cacheMount string, siteConfig *models.Config) 
 	return filepath.Join(sourceDir, ".markata")
 }
 
-func noOpBuildCacheFile(sourceDir, cacheMount string, siteConfig *models.Config) string {
-	return filepath.Join(noOpBuildCacheDir(sourceDir, cacheMount, siteConfig), buildcache.CacheFileName)
-}
-
 func noOpMetadataString(metadata map[string]any, key string) string {
 	value, _ := metadata[key].(string)
 	return value
@@ -1443,7 +1484,7 @@ func writePrivateAtomic(path string, data []byte) error {
 	return os.Rename(tmp, path)
 }
 
-func noOpInputRoots(sourceDir, configPath, cacheMount string, siteConfig *models.Config) []string {
+func noOpInputRoots(sourceDir, configPath string, siteConfig *models.Config) []string {
 	seen := make(map[string]struct{})
 	var dirs []string
 	add := func(value string) {
@@ -1467,7 +1508,6 @@ func noOpInputRoots(sourceDir, configPath, cacheMount string, siteConfig *models
 	for _, path := range siteConfig.ExternalCacheDirs() {
 		add(path)
 	}
-	add(noOpBuildCacheFile(sourceDir, cacheMount, siteConfig))
 	mentionsConfig := noOpMentionsConfig(siteConfig)
 	add(mentionsConfig.GetCacheDir())
 	if siteConfig.Extra != nil {

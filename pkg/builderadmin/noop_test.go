@@ -35,7 +35,7 @@ func TestNoOpCompletionRejectsExpiredOrCanceledVerification(t *testing.T) {
 	}
 }
 
-func TestNoOpSnapshotFingerprintsBuilderManagedCacheMountSymlinks(t *testing.T) {
+func TestNoOpSnapshotValidatesButDoesNotFingerprintBuilderManagedCacheTrees(t *testing.T) {
 	if !fileidentity.Available {
 		t.Skip("verified no-op requires Linux file identity")
 	}
@@ -58,27 +58,28 @@ func TestNoOpSnapshotFingerprintsBuilderManagedCacheMountSymlinks(t *testing.T) 
 		t.Fatal(err)
 	}
 	for _, expected := range []string{buildCache, pluginCache} {
-		found := false
 		for _, root := range before.InputRoots {
-			if filepath.Clean(root) == filepath.Clean(expected) {
-				found = true
+			if filepath.Clean(root) == filepath.Clean(expected) || filepath.Clean(root) == filepath.Join(sourceRoot, ".markata") || filepath.Clean(root) == filepath.Join(sourceRoot, ".markata-cache") {
+				t.Fatalf("managed cache path included in semantic input roots: %q", root)
 			}
-			if filepath.Clean(root) == filepath.Join(sourceRoot, ".markata") || filepath.Clean(root) == filepath.Join(sourceRoot, ".markata-cache") {
-				t.Fatalf("unresolved cache symlink included in roots: %q", root)
-			}
-		}
-		if !found {
-			t.Fatalf("resolved cache root %q missing from input roots: %v", expected, before.InputRoots)
 		}
 	}
 
 	writeNoOpFile(t, filepath.Join(pluginCache, "blogroll", "feeds.json"), "plugin-cache-v2")
+	writeNoOpFile(t, filepath.Join(buildCache, "build-cache.json"), "build-cache-v2")
 	after, err := svc.noOpInputSnapshot(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if before.Fingerprint == after.Fingerprint {
-		t.Fatal("cache-mount content change did not invalidate the no-op snapshot")
+	if before.Fingerprint != after.Fingerprint {
+		t.Fatal("derived managed-cache changes invalidated the no-op snapshot")
+	}
+	confirmed, err := svc.confirmNoOpSnapshot(context.Background(), after)
+	if err != nil {
+		t.Fatalf("confirm snapshot after managed-cache writes: %v", err)
+	}
+	if confirmed.InputFingerprint != after.InputFingerprint {
+		t.Fatal("final input verification changed after managed-cache writes")
 	}
 
 	outside := filepath.Join(t.TempDir(), "outside")
@@ -129,6 +130,23 @@ func TestNoOpSnapshotRequiresBuilderCacheSymlinksForConfiguredMount(t *testing.T
 	svc.cfg.CacheMount = cacheMount
 	if _, err := svc.noOpInputSnapshot(context.Background()); err == nil || !strings.Contains(err.Error(), "managed cache symlink") {
 		t.Fatalf("missing cache symlink error = %v, want fail-closed rejection", err)
+	}
+}
+
+func TestNoOpSnapshotRejectsSymlinksInLocalManagedCacheTrees(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
+	svc, sourceRoot := newNoOpFixture(t)
+	cacheRoot := filepath.Join(sourceRoot, ".markata")
+	if err := os.MkdirAll(cacheRoot, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(t.TempDir(), filepath.Join(cacheRoot, "nested-link")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.noOpInputSnapshot(context.Background()); err == nil || !strings.Contains(err.Error(), "contains a symlink") {
+		t.Fatalf("local managed-cache symlink error = %v, want fail-closed rejection", err)
 	}
 }
 
@@ -510,7 +528,7 @@ func TestNoOpFinalCheckDetectsConfigRewriteOutsideSource(t *testing.T) {
 	}
 }
 
-func TestNoOpSnapshotTracksCustomBuildCacheRoot(t *testing.T) {
+func TestNoOpSnapshotDoesNotFingerprintCustomBuildCacheFile(t *testing.T) {
 	if !fileidentity.Available {
 		t.Skip("verified no-op requires Linux file identity")
 	}
@@ -525,23 +543,15 @@ func TestNoOpSnapshotTracksCustomBuildCacheRoot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	info, err := os.Stat(filepath.Join(cacheDir, "build-cache.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	time.Sleep(10 * time.Millisecond)
 	if err := os.WriteFile(filepath.Join(cacheDir, "build-cache.json"), []byte(`{"version":2}`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chtimes(filepath.Join(cacheDir, "build-cache.json"), info.ModTime(), info.ModTime()); err != nil {
 		t.Fatal(err)
 	}
 	after, err := svc.noOpInputSnapshot(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if before.Fingerprint == after.Fingerprint {
-		t.Fatal("custom build cache root did not invalidate the no-op snapshot")
+	if before.Fingerprint != after.Fingerprint {
+		t.Fatal("derived custom build-cache metadata invalidated the no-op snapshot")
 	}
 }
 
@@ -1005,6 +1015,25 @@ func BenchmarkVerifiedNoOpProductionShape(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
+	cacheMount := filepath.Join(b.TempDir(), "cache-mount")
+	buildCache := filepath.Join(cacheMount, "build")
+	pluginCache := filepath.Join(cacheMount, "plugin")
+	if err := os.MkdirAll(filepath.Dir(buildCache), 0o755); err != nil {
+		b.Fatal(err)
+	}
+	if err := os.MkdirAll(pluginCache, 0o755); err != nil {
+		b.Fatal(err)
+	}
+	if err := os.Rename(filepath.Join(source, ".markata"), buildCache); err != nil {
+		b.Fatal(err)
+	}
+	if err := os.Symlink(buildCache, filepath.Join(source, ".markata")); err != nil {
+		b.Fatal(err)
+	}
+	if err := os.Symlink(pluginCache, filepath.Join(source, ".markata-cache")); err != nil {
+		b.Fatal(err)
+	}
+	svc.cfg.CacheMount = cacheMount
 	for _, args := range [][]string{{"add", "-A"}, {"commit", "-qm", "production-shaped source"}} {
 		command := exec.CommandContext(context.Background(), "git", append([]string{"-C", source}, args...)...)
 		if output, err := command.CombinedOutput(); err != nil {

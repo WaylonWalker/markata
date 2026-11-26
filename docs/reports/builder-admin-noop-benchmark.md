@@ -26,6 +26,12 @@ Five fresh `complete-verified-no-op` samples took 151, 154, 158, 167, and 187 ms
 
 These results prove the time endpoint does not prevent the fast path on this fixture. They do not prove the same latency on the production Builder volume; that still requires an isolated non-promoting production check.
 
+## Managed cache mount replay
+
+On 2026-11-25, the fixture was extended to use the production-style `.markata` and `.markata-cache` symlinks to a dedicated cache mount. It includes 3,689 files below the managed build cache. Five fresh `complete-verified-no-op` samples took 175, 214, 179, 187, and 180 ms. The median was **180 ms**. Five live-release fingerprint samples took 99, 127, 128, 119, and 110 ms. Managed cache trees are checked for unsafe symlinks but are not treated as semantic inputs; a separate test mutates their files between snapshots and verifies that the no-op fingerprint stays stable.
+
+This exercises the cache-mount path on a local Linux fixture. It does not measure the production volume or prove that the deployed Builder saves and consumes a baseline; the latest production runs still need a post-fix check.
+
 ## Method
 
 The benchmark ran on Linux x86_64 with Go 1.27.0. The host exposed 12 processors. The fixture used `tmpfs` storage.

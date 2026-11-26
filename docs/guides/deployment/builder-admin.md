@@ -414,12 +414,20 @@ such as the diagnostics artifact's `BuiltAt` value or `.well-known/time`. A no-o
 timestamp from the last published build. A full build after an input change or a force request
 generates a new timestamp.
 
-When a dedicated cache mount is configured, Builder Admin fingerprints the target directories for
-its `.markata` build-cache link and `.markata-cache` plugin-cache link. It accepts these links only
-when they resolve to `<cache-mount>/build` and `<cache-mount>/plugin`. The configured cache mount
-and target directories must exist as ordinary directories without symlink components. A different
-target or another symlink in a fingerprinted cache tree disables the shortcut and runs a normal
-build. Keep both link paths present and Git-ignored so they are not treated as source files.
+When a dedicated cache mount is configured, Builder Admin verifies that its `.markata` build-cache
+link and `.markata-cache` plugin-cache link resolve to `<cache-mount>/build` and
+`<cache-mount>/plugin`. It does not fingerprint these managed cache trees: they hold derived build
+state that can be rewritten during a successful build without changing the site's inputs. The
+configured mount and target directories must exist as ordinary directories without symlink
+components. A mismatched target, missing link, or symlink inside either managed cache tree disables
+the shortcut. Configured external cache roots remain part of the input check. Keep both link paths
+present and Git-ignored so they are not treated as source files.
+
+Without a dedicated cache mount, existing `.markata` and `.markata-cache` directories are treated
+as derived state when Git reports them as ignored. They must be ordinary directories without
+nested symlinks. Missing cache directories are allowed when no mount is configured. If Git does not
+ignore these paths, their untracked files remain visible to the source check and conservatively
+prevent the no-op shortcut.
 
 The [unchanged-build benchmark report](/docs/reports/builder-admin-noop-benchmark/) records the local
 performance method and its limits. Production storage still needs a separate measurement.
@@ -444,8 +452,9 @@ enable `.well-known/time` can use the unchanged result; it preserves the timesta
 published build and advances it only after a full build.
 
 When a post can fetch external embed metadata, the service also verifies that the persistent
-build cache contains the current transformed result for that post. The build cache must be enabled,
-and a custom cache directory is included in the input check. The service also verifies the live
+build cache contains the current transformed result for that post. The build cache must be enabled.
+Its derived `build-cache.json` file is not fingerprinted; the specific external cache roots and
+transform results that can affect output are checked separately. The service also verifies the live
 release pointer, every release entry's file identity, and the running builder executable before it
 records an unchanged result. Builder Admin treats published releases as immutable between atomic
 promotions; concurrent edits by other writers are outside this guarantee.
