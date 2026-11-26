@@ -230,6 +230,13 @@ time. Platforms without that identity MUST run a normal build. Failure to read
 or persist the baseline MUST fail closed and MUST NOT fail an otherwise
 successful publication.
 
+When a dedicated cache mount is configured, Builder Admin MUST recognize only
+its `.markata` and `.markata-cache` symlinks. It MUST verify that they resolve
+to `<cache-mount>/build` and `<cache-mount>/plugin`, respectively, and
+fingerprint those target trees. A mismatched managed target, another symlink
+root, a missing managed link, either path not being Git-ignored, or any symlink
+inside a fingerprinted tree MUST disable the shortcut.
+
 The incremental build cache hook MUST be active and enabled. Its configured
 `build-cache.json` file MUST be included in the no-op input snapshot. Baseline
 creation MUST fail closed if the build log reports a cache save failure. When a

@@ -255,6 +255,11 @@ func (s *Service) captureNoOpSnapshot(ctx context.Context) (noOpSnapshot, error)
 		return noOpSnapshot{}, err
 	}
 	inputRoots := noOpInputRoots(s.cfg.SourceDir, configPath, s.cfg.CacheMount, siteConfig)
+	cacheRoots, err := noOpManagedCacheInputRoots(s.cfg.SourceDir, s.cfg.CacheMount)
+	if err != nil {
+		return noOpSnapshot{}, err
+	}
+	inputRoots = append(inputRoots, cacheRoots...)
 	themeRoots, err := noOpExternalThemeRoots(s.cfg.SourceDir, s.executable, siteConfig.Theme.Name)
 	if err != nil {
 		return noOpSnapshot{}, err
@@ -434,8 +439,15 @@ func (s *Service) noOpSourceSnapshot(ctx context.Context, siteConfig *models.Con
 			if directory && !siteGitignore(filepath.ToSlash(path)) {
 				return false, nil
 			}
-			if !noOpPathCoveredByRoots(absolutePath, inputRoots) {
-				inputRoots = append(inputRoots, absolutePath)
+			inputRoot := absolutePath
+			if noOpManagedCacheRootPath(s.cfg.SourceDir, absolutePath) {
+				inputRoot, err = resolveNoOpIgnoredCacheRoot(s.cfg.SourceDir, s.cfg.CacheMount, absolutePath)
+				if err != nil {
+					return false, fmt.Errorf("resolve ignored source input %q: %w", path, err)
+				}
+			}
+			if !noOpPathCoveredByRoots(inputRoot, inputRoots) {
+				inputRoots = append(inputRoots, inputRoot)
 			}
 			return true, nil
 		},
@@ -444,6 +456,112 @@ func (s *Service) noOpSourceSnapshot(ctx context.Context, siteConfig *models.Con
 		return sourcegit.State{}, 0, nil, fmt.Errorf("read source snapshot: %w", err)
 	}
 	return source, time.Since(start).Milliseconds(), compactNoOpInputRoots(inputRoots), nil
+}
+
+func noOpManagedCacheRootPath(sourceDir, path string) bool {
+	relative, err := filepath.Rel(filepath.Clean(sourceDir), filepath.Clean(path))
+	if err != nil {
+		return false
+	}
+	switch filepath.ToSlash(relative) {
+	case ".markata", ".markata-cache":
+		return true
+	default:
+		return false
+	}
+}
+
+// noOpManagedCacheInputRoots verifies Builder Admin's cache-mount links before
+// fingerprinting them. This also detects a missing link, which Git-ignore
+// discovery cannot report as an input path.
+func noOpManagedCacheInputRoots(sourceDir, cacheMount string) ([]string, error) {
+	if strings.TrimSpace(cacheMount) == "" {
+		return nil, nil
+	}
+	roots := make([]string, 0, 2)
+	for _, name := range []string{".markata", ".markata-cache"} {
+		root, err := resolveNoOpIgnoredCacheRoot(sourceDir, cacheMount, filepath.Join(sourceDir, name))
+		if err != nil {
+			return nil, err
+		}
+		roots = append(roots, root)
+	}
+	return roots, nil
+}
+
+// resolveNoOpIgnoredCacheRoot allows only the cache symlinks Builder Admin
+// creates for a configured cache mount. Gitignore discovery sees the symlink
+// itself as an ignored input directory; fingerprint its configured target
+// instead of traversing an unverified alias.
+func resolveNoOpIgnoredCacheRoot(sourceDir, cacheMount, path string) (string, error) {
+	absoluteSource, err := filepath.Abs(sourceDir)
+	if err != nil {
+		return "", fmt.Errorf("resolve source root: %w", err)
+	}
+	absolutePath, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("resolve cache symlink path: %w", err)
+	}
+	info, err := os.Lstat(absolutePath)
+	if errors.Is(err, fs.ErrNotExist) {
+		if strings.TrimSpace(cacheMount) == "" {
+			return absolutePath, nil
+		}
+		return "", fmt.Errorf("managed cache symlink %q is missing", path)
+	}
+	if err != nil {
+		return "", fmt.Errorf("inspect cache input: %w", err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		if strings.TrimSpace(cacheMount) == "" {
+			return absolutePath, nil
+		}
+		return "", fmt.Errorf("managed cache root %q is not a symlink", path)
+	}
+
+	relative, err := filepath.Rel(absoluteSource, absolutePath)
+	if err != nil {
+		return "", fmt.Errorf("locate cache symlink: %w", err)
+	}
+	var targetName string
+	switch filepath.ToSlash(relative) {
+	case ".markata":
+		targetName = "build"
+	case ".markata-cache":
+		targetName = "plugin"
+	default:
+		return "", fmt.Errorf("unsupported symlink root %q", path)
+	}
+	if strings.TrimSpace(cacheMount) == "" {
+		return "", fmt.Errorf("managed cache symlink %q has no configured cache mount", path)
+	}
+	mountPath := cacheMount
+	if !filepath.IsAbs(mountPath) {
+		mountPath = filepath.Join(absoluteSource, mountPath)
+	}
+	mountPath, err = filepath.Abs(mountPath)
+	if err != nil {
+		return "", fmt.Errorf("resolve cache mount: %w", err)
+	}
+	expectedTarget, err := filepath.EvalSymlinks(filepath.Join(mountPath, targetName))
+	if err != nil {
+		return "", fmt.Errorf("resolve expected cache target: %w", err)
+	}
+	actualTarget, err := filepath.EvalSymlinks(absolutePath)
+	if err != nil {
+		return "", fmt.Errorf("resolve cache symlink target: %w", err)
+	}
+	if filepath.Clean(actualTarget) != filepath.Clean(expectedTarget) {
+		return "", fmt.Errorf("cache symlink %q targets %q, want configured cache target %q", path, actualTarget, expectedTarget)
+	}
+	targetInfo, err := os.Stat(actualTarget)
+	if err != nil {
+		return "", fmt.Errorf("inspect cache symlink target: %w", err)
+	}
+	if !targetInfo.IsDir() {
+		return "", fmt.Errorf("cache symlink %q target is not a directory", path)
+	}
+	return actualTarget, nil
 }
 
 func hashNoOpInputRoots(ctx context.Context, h hash.Hash, sourceRoot string, roots []string) (int64, int64, error) {
