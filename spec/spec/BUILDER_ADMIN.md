@@ -232,20 +232,31 @@ successful publication.
 
 When a dedicated cache mount is configured, Builder Admin MUST recognize only
 its `.markata` and `.markata-cache` symlinks. It MUST verify that they resolve
-to `<cache-mount>/build` and `<cache-mount>/plugin`, respectively, and
-fingerprint those target trees. The configured cache mount and both target
+to `<cache-mount>/build` and `<cache-mount>/plugin`, respectively. These
+Builder-managed caches are derived build state and MUST NOT be included in the
+no-op input fingerprint. The configured cache mount and both target
 directories MUST be existing ordinary directories; symlink components in those
-paths MUST disable the shortcut. A mismatched managed target, another symlink
-root, a missing managed link, either path not being Git-ignored, or any symlink
-inside a fingerprinted tree MUST also disable the shortcut.
+paths MUST disable the shortcut. A mismatched managed target, a missing
+managed link, either path not being Git-ignored, or any symlink inside a managed
+cache tree MUST also disable the shortcut. Configured external cache roots
+remain fingerprinted separately.
 
-The incremental build cache hook MUST be active and enabled. Its configured
-`build-cache.json` file MUST be included in the no-op input snapshot. Baseline
-creation MUST fail closed if the build log reports a cache save failure. When a
-source post can resolve external embed metadata, baseline creation MUST verify
-that the persistent build cache contains a matching embed-transform result for
-that post under the current source content and embed configuration. A missing, stale, disabled, or
-unpersisted transform result MUST disable baseline creation.
+Without a dedicated cache mount, existing `.markata` and `.markata-cache`
+directories are derived state and MUST NOT be fingerprinted when Git reports
+them as ignored. They MUST remain ordinary directories without nested
+symlinks; an absent directory is allowed when no mount is configured. If Git
+does not ignore these paths, their untracked files remain visible to the source
+snapshot and conservatively disable the shortcut.
+
+The incremental build cache hook MUST be active and enabled. Its
+`build-cache.json` file MUST NOT be included in the no-op input fingerprint;
+normal builds update derived cache metadata even when semantic inputs do not
+change. Baseline creation MUST fail closed if the build log reports a cache save
+failure. When a source post can resolve external embed metadata, baseline
+creation MUST verify that the persistent build cache contains a matching
+embed-transform result for that post under the current source content and
+embed configuration. A missing, stale, disabled, or unpersisted transform
+result MUST disable baseline creation.
 
 When Tailwind builds are enabled, the shortcut MUST be disabled until its
 external executable and installer cache are included in the input contract.
