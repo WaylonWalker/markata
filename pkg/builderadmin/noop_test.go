@@ -35,6 +35,159 @@ func TestNoOpCompletionRejectsExpiredOrCanceledVerification(t *testing.T) {
 	}
 }
 
+func TestNoOpSnapshotFingerprintsBuilderManagedCacheMountSymlinks(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
+	svc, sourceRoot := newNoOpFixture(t)
+	cacheMount := t.TempDir()
+	buildCache := filepath.Join(cacheMount, "build")
+	pluginCache := filepath.Join(cacheMount, "plugin")
+	writeNoOpFile(t, filepath.Join(buildCache, "build-cache.json"), "build-cache-v1")
+	writeNoOpFile(t, filepath.Join(pluginCache, "blogroll", "feeds.json"), "plugin-cache-v1")
+	svc.cfg.CacheMount = cacheMount
+	if err := os.Symlink(buildCache, filepath.Join(sourceRoot, ".markata")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(pluginCache, filepath.Join(sourceRoot, ".markata-cache")); err != nil {
+		t.Fatal(err)
+	}
+
+	before, err := svc.noOpInputSnapshot(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, expected := range []string{buildCache, pluginCache} {
+		found := false
+		for _, root := range before.InputRoots {
+			if filepath.Clean(root) == filepath.Clean(expected) {
+				found = true
+			}
+			if filepath.Clean(root) == filepath.Join(sourceRoot, ".markata") || filepath.Clean(root) == filepath.Join(sourceRoot, ".markata-cache") {
+				t.Fatalf("unresolved cache symlink included in roots: %q", root)
+			}
+		}
+		if !found {
+			t.Fatalf("resolved cache root %q missing from input roots: %v", expected, before.InputRoots)
+		}
+	}
+
+	writeNoOpFile(t, filepath.Join(pluginCache, "blogroll", "feeds.json"), "plugin-cache-v2")
+	after, err := svc.noOpInputSnapshot(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before.Fingerprint == after.Fingerprint {
+		t.Fatal("cache-mount content change did not invalidate the no-op snapshot")
+	}
+
+	outside := filepath.Join(t.TempDir(), "outside")
+	if err := os.Symlink(outside, filepath.Join(pluginCache, "outside-link")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.noOpInputSnapshot(context.Background()); err == nil || !strings.Contains(err.Error(), "contains a symlink") {
+		t.Fatalf("nested cache symlink error = %v, want fail-closed rejection", err)
+	}
+}
+
+func TestNoOpSnapshotRejectsBuilderCacheSymlinkOutsideConfiguredMount(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
+	svc, sourceRoot := newNoOpFixture(t)
+	cacheMount := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(cacheMount, "build"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(cacheMount, "plugin"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	outside := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(sourceRoot, ".markata")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(cacheMount, "plugin"), filepath.Join(sourceRoot, ".markata-cache")); err != nil {
+		t.Fatal(err)
+	}
+	svc.cfg.CacheMount = cacheMount
+	if _, err := svc.noOpInputSnapshot(context.Background()); err == nil || !strings.Contains(err.Error(), "configured cache target") {
+		t.Fatalf("mismatched cache symlink error = %v, want configured-target rejection", err)
+	}
+}
+
+func TestNoOpSnapshotRequiresBuilderCacheSymlinksForConfiguredMount(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
+	svc, _ := newNoOpFixture(t)
+	cacheMount := t.TempDir()
+	for _, name := range []string{"build", "plugin"} {
+		if err := os.MkdirAll(filepath.Join(cacheMount, name), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	svc.cfg.CacheMount = cacheMount
+	if _, err := svc.noOpInputSnapshot(context.Background()); err == nil || !strings.Contains(err.Error(), "managed cache symlink") {
+		t.Fatalf("missing cache symlink error = %v, want fail-closed rejection", err)
+	}
+}
+
+func TestNoOpSnapshotRejectsCacheMountAndTargetSymlinks(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
+	for _, tc := range []struct {
+		name string
+		link string
+	}{
+		{name: "mount", link: "mount"},
+		{name: "build target", link: "build"},
+		{name: "plugin target", link: "plugin"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, sourceRoot := newNoOpFixture(t)
+			cacheMount := filepath.Join(t.TempDir(), "cache")
+			targetMount := filepath.Join(t.TempDir(), "target")
+			for _, name := range []string{"build", "plugin"} {
+				if err := os.MkdirAll(filepath.Join(targetMount, name), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			switch tc.link {
+			case "mount":
+				if err := os.Symlink(targetMount, cacheMount); err != nil {
+					t.Fatal(err)
+				}
+			case "build", "plugin":
+				if err := os.MkdirAll(cacheMount, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				for _, name := range []string{"build", "plugin"} {
+					if name == tc.link {
+						if err := os.Symlink(filepath.Join(targetMount, name), filepath.Join(cacheMount, name)); err != nil {
+							t.Fatal(err)
+						}
+						continue
+					}
+					if err := os.MkdirAll(filepath.Join(cacheMount, name), 0o755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			if err := os.Symlink(filepath.Join(cacheMount, "build"), filepath.Join(sourceRoot, ".markata")); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink(filepath.Join(cacheMount, "plugin"), filepath.Join(sourceRoot, ".markata-cache")); err != nil {
+				t.Fatal(err)
+			}
+			svc.cfg.CacheMount = cacheMount
+			if _, err := svc.noOpInputSnapshot(context.Background()); err == nil || !strings.Contains(err.Error(), "not a regular directory") {
+				t.Fatalf("cache symlink path error = %v, want regular-directory validation failure", err)
+			}
+		})
+	}
+}
+
 func TestVerifiedNoOpLeavesCurrentReleaseAndWorkspaceUntouched(t *testing.T) {
 	if !fileidentity.Available {
 		t.Skip("verified no-op requires Linux file identity")
@@ -936,7 +1089,7 @@ func BenchmarkVerifiedNoOpProductionShape(b *testing.B) {
 func newNoOpFixture(t testing.TB) (*Service, string) {
 	t.Helper()
 	root := t.TempDir()
-	writeNoOpFile(t, filepath.Join(root, ".gitignore"), "cache/\n.cache/\n.markata/\ncustom/\n.env\n")
+	writeNoOpFile(t, filepath.Join(root, ".gitignore"), "cache/\n.cache/\n.markata\n.markata-cache\ncustom/\n.env\n")
 	writeNoOpFile(t, filepath.Join(root, "markata-go.json"), `{"markata-go":{"templates_dir":"templates","assets_dir":"static","glob":{"use_gitignore":true},"tailwind":{"build":false},"search":{"backend":"bleve"},"well_known":{"auto_generate":["time"]},"webmentions":{"cache_dir":"custom/webmentions"}}}`)
 	writeNoOpFile(t, filepath.Join(root, "templates", "footer.html"), `{{ now | date:"2006" }}`)
 	writeNoOpFile(t, filepath.Join(root, "static", "site.css"), "body{}\n")

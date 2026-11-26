@@ -414,6 +414,13 @@ such as the diagnostics artifact's `BuiltAt` value or `.well-known/time`. A no-o
 timestamp from the last published build. A full build after an input change or a force request
 generates a new timestamp.
 
+When a dedicated cache mount is configured, Builder Admin fingerprints the target directories for
+its `.markata` build-cache link and `.markata-cache` plugin-cache link. It accepts these links only
+when they resolve to `<cache-mount>/build` and `<cache-mount>/plugin`. The configured cache mount
+and target directories must exist as ordinary directories without symlink components. A different
+target or another symlink in a fingerprinted cache tree disables the shortcut and runs a normal
+build. Keep both link paths present and Git-ignored so they are not treated as source files.
+
 The [unchanged-build benchmark report](/docs/reports/builder-admin-noop-benchmark/) records the local
 performance method and its limits. Production storage still needs a separate measurement.
 
