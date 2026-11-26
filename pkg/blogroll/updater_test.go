@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -161,5 +162,21 @@ func TestFetchMetadata_UsesFeedSiteURLForSiteMetadata(t *testing.T) {
 	}
 	if metadata.FeedTitle != "DevTools FM" {
 		t.Fatalf("FeedTitle = %q, want %q", metadata.FeedTitle, "DevTools FM")
+	}
+}
+
+func TestFetchMetadataPreservesFeedAndSiteErrors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/feed" {
+			http.Error(w, "feed unavailable", http.StatusForbidden)
+			return
+		}
+		http.Error(w, "site unavailable", http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	_, err := NewUpdater(time.Second).FetchMetadata(context.Background(), server.URL+"/feed")
+	if err == nil || !strings.Contains(err.Error(), "feed: HTTP 403") || !strings.Contains(err.Error(), "website: HTTP 503") {
+		t.Fatalf("expected both fetch failures, got %v", err)
 	}
 }
