@@ -44,7 +44,7 @@ var (
 
 // Flags for blogroll add command.
 var (
-	blogrollAddManual bool
+	blogrollAddManual      bool
 	blogrollAddTitle       string
 	blogrollAddDescription string
 	blogrollAddCategory    string
@@ -59,12 +59,12 @@ var (
 
 // blogrollAddCmd adds a new feed to the blogroll.
 var blogrollAddCmd = &cobra.Command{
-	Use:   "add <url>",
+	Use:   "add [url]",
 	Short: "Add a new external feed to blogroll",
 	Long: `Add a new RSS/Atom feed to your blogroll by providing the feed URL.
 
 The command will:
-1. Fetch and validate the feed
+1. Fetch feed metadata (unless --manual is used)
 2. Extract metadata (title, description, site URL)
 3. Prompt for optional fields (category, tags)
 4. Add the feed to your config
@@ -103,7 +103,7 @@ func runBlogrollAdd(_ *cobra.Command, args []string) error {
 		if noInput || blogrollAddNoPrompt || !inputIsTerminal() || !outputIsTerminal() {
 			return newUsageError(&Diagnostic{Problem: "missing feed URL", Fix: "provide an RSS or Atom feed URL", Command: cliCommand("blogroll add https://example.com/feed.xml"), StatusCode: exitCodeUsage})
 		}
-		if err := huh.NewInput().Title("Feed URL").Description("Enter an RSS or Atom feed URL").Value(&rawInput).Run(); err != nil {
+		if err := huh.NewForm(huh.NewGroup(huh.NewInput().Title("Feed URL").Description("Enter an RSS or Atom feed URL").Value(&rawInput))).WithTheme(createHuhThemeForPalette(currentCLIPalette)).Run(); err != nil {
 			return err
 		}
 	} else {
@@ -116,9 +116,12 @@ func runBlogrollAdd(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	feedURL, err := normalizeBlogrollAddInput(cfg, rawInput)
-	if err != nil {
-		return err
+	feedURL := strings.TrimSpace(rawInput)
+	if !blogrollAddManual {
+		feedURL, err = normalizeBlogrollAddInput(cfg, rawInput)
+		if err != nil {
+			return err
+		}
 	}
 	if blogrollAddType != "" && parseReaderFeedType(blogrollAddType) == "" {
 		return fmt.Errorf("invalid --type %q: expected written, video, or podcast", blogrollAddType)
@@ -138,23 +141,15 @@ func runBlogrollAdd(_ *cobra.Command, args []string) error {
 	if !blogrollAddManual {
 		metadata, err = fetchFeedMetadataForAdd(cfg, feedURL)
 		if err != nil {
-			return &Diagnostic{
-				Problem: "Unable to fetch feed metadata",
-				Cause: err,
-				Details: []string{err.Error()},
-				Fix: "Check the feed URL and network connection, then retry. To add without verification, use --manual.",
-				Command: cliCommand("blogroll add <feed-url> --manual --title <title>"),
+			metadata, err = recoverBlogrollMetadata(err)
+			if err != nil {
+				return err
 			}
 		}
 	}
 
 	// Build feed values from flags and metadata
 	feedValues := buildFeedValues(metadata, feedURL)
-
-	// Check for duplicate handle
-	if err := checkDuplicateHandle(cfg, feedValues.handle, feedValues.title); err != nil {
-		return err
-	}
 
 	// Display fetched info
 	displayFetchedInfo(feedValues.title, feedValues.description)
@@ -165,6 +160,11 @@ func runBlogrollAdd(_ *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	// Check the final handle, including any edits made in the prompt.
+	if err := checkDuplicateHandle(cfg, feedValues.handle, feedValues.title); err != nil {
+		return err
 	}
 
 	// Build the feed config
@@ -181,6 +181,32 @@ func runBlogrollAdd(_ *cobra.Command, args []string) error {
 
 	// Add feed to config and write
 	return saveFeedToConfig(configPath, cfg, feedConfig)
+}
+
+// recoverBlogrollMetadata permits a deliberate manual add, never an implicit bypass.
+func recoverBlogrollMetadata(cause error) (*blogroll.Metadata, error) {
+	diagnostic := &Diagnostic{
+		Problem: "Unable to fetch feed metadata",
+		Cause:   cause,
+		Details: []string{cause.Error()},
+		Fix:     "Check the feed URL and network connection, then retry. To add without verification, use --manual.",
+		Command: cliCommand("blogroll add https://example.com/feed.xml --manual --title 'My Feed'"),
+	}
+	if noInput || blogrollAddNoPrompt || !inputIsTerminal() || !outputIsTerminal() {
+		return nil, diagnostic
+	}
+	manual := false
+	form := huh.NewForm(huh.NewGroup(huh.NewConfirm().
+		Title("Unable to fetch feed metadata").
+		Description(cause.Error()+"\\nAdd this feed without verification?").
+		Value(&manual))).WithTheme(createHuhThemeForPalette(currentCLIPalette))
+	if err := form.Run(); err != nil {
+		return nil, err
+	}
+	if !manual {
+		return nil, diagnostic
+	}
+	return &blogroll.Metadata{}, nil
 }
 
 type youtubeOEmbedResponse struct {
