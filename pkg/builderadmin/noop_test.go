@@ -471,15 +471,29 @@ func TestNoOpRequiresStableSearchBackend(t *testing.T) {
 	}
 }
 
-func TestNoOpRejectsExternalMermaidBuilderOverride(t *testing.T) {
+func TestNoOpMermaidBuilderOverrides(t *testing.T) {
 	config := newNoOpValidationConfig()
 	config.Search.Backend = "bleve"
 	config.Extra = map[string]any{"tailwind": map[string]any{"build": false}}
-	if err := validateNoOpConfig(config, "cli"); err == nil {
-		t.Fatal("external Mermaid builder override unexpectedly passed no-op validation")
+	for _, mode := range []string{"go", "client"} {
+		if err := validateNoOpConfig(config, mode); err != nil {
+			t.Errorf("deterministic Mermaid mode %q rejected: %v", mode, err)
+		}
 	}
-	if err := validateNoOpConfig(config, "go"); err != nil {
-		t.Fatalf("native Go Mermaid override rejected: %v", err)
+	for _, mode := range []string{"cli", "chromium", "unknown"} {
+		if err := validateNoOpConfig(config, mode); err == nil {
+			t.Errorf("unsupported Mermaid mode %q unexpectedly passed no-op validation", mode)
+		}
+	}
+
+	clientConfig := newNoOpValidationConfig()
+	clientConfig.Search.Backend = "bleve"
+	clientConfig.Extra = map[string]any{
+		"tailwind": map[string]any{"build": false},
+		"mermaid":  map[string]any{"enabled": true, "mode": "client"},
+	}
+	if err := validateNoOpConfig(clientConfig); err != nil {
+		t.Fatalf("configured Mermaid client mode rejected: %v", err)
 	}
 }
 

@@ -1561,7 +1561,17 @@ func noOpExternalMermaidRenderer(siteConfig *models.Config, builderModes []strin
 	if len(builderModes) > 0 && strings.TrimSpace(builderModes[0]) != "" {
 		mode = strings.TrimSpace(builderModes[0])
 	}
-	return !strings.EqualFold(mode, "go")
+	// Go mode renders deterministic SVGs in-process. Client mode only keeps
+	// the Mermaid source in the page for the browser script, so its build-time
+	// output is also deterministic and covered by the source/config snapshots.
+	// CLI and Chromium modes depend on external renderers whose output is not
+	// covered by the no-op fingerprints.
+	switch strings.ToLower(strings.TrimSpace(mode)) {
+	case "go", "client":
+		return false
+	default:
+		return true
+	}
 }
 
 func noOpExternalExcalidrawRenderer(siteConfig *models.Config) bool {
