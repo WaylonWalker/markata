@@ -198,7 +198,7 @@ func recoverBlogrollMetadata(cause error) (*blogroll.Metadata, error) {
 	manual := false
 	form := huh.NewForm(huh.NewGroup(huh.NewConfirm().
 		Title("Unable to fetch feed metadata").
-		Description(cause.Error()+"\\nAdd this feed without verification?").
+		Description(cause.Error()+"\nAdd this feed without verification?").
 		Value(&manual))).WithTheme(createHuhThemeForPalette(currentCLIPalette))
 	if err := form.Run(); err != nil {
 		return nil, err
