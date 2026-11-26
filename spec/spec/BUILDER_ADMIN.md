@@ -242,9 +242,10 @@ When Tailwind builds are enabled, the shortcut MUST be disabled until its
 external executable and installer cache are included in the input contract.
 An explicit `tailwind.build = false` setting is required to use the shortcut.
 Enabled icon-vendor downloads, Python docs generation, external link hover,
-Mermaid modes other than the native Go renderer, and Excalidraw Chromium
-rendering MUST also disable the shortcut until their external inputs are
-included in the fingerprint contract.
+Mermaid CLI/Chromium modes, and Excalidraw Chromium rendering MUST also disable
+the shortcut until their external inputs are included in the fingerprint
+contract. Mermaid client mode MAY use the shortcut because build-time output
+retains the source text and the source/config snapshots cover its inputs.
 The Pagefind search backend MUST disable the shortcut because a CLI binary can
 become available or auto-install later and produce a new index. The Bleve
 backend MAY use the shortcut when its configured source and cache roots match.

@@ -1320,8 +1320,10 @@ func (s *Service) runBuild(ctx context.Context, req queueRequest) {
 						_, _ = fmt.Fprintln(logFile, "verified no-op baseline unavailable:", err)
 					}
 				}
-			} else if inputBeforeErr != nil || inputAfterErr != nil {
-				_, _ = fmt.Fprintln(logFile, "verified no-op baseline unavailable: inputs could not be fingerprinted")
+			} else if inputBeforeErr != nil {
+				_, _ = fmt.Fprintf(logFile, "verified no-op baseline unavailable: inputs could not be fingerprinted before build: %v\n", inputBeforeErr)
+			} else if inputAfterErr != nil {
+				_, _ = fmt.Fprintf(logFile, "verified no-op baseline unavailable: inputs could not be fingerprinted after build: %v\n", inputAfterErr)
 			} else {
 				_, _ = fmt.Fprintln(logFile, "verified no-op baseline unavailable: inputs changed during build")
 			}

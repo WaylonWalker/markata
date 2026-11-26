@@ -426,8 +426,10 @@ because plugins can use them as assets. Unsafe Git stat settings and index flags
 also disable the shortcut. Tailwind builds must be explicitly disabled with
 `tailwind.build = false`; otherwise the external binary and installer cache can change output
 without changing the source fingerprint. Enabled icon-vendor downloads, Python docs generation,
-external link hover, non-Go Mermaid modes, and Excalidraw Chromium rendering also use external inputs
-that disable the shortcut. Pagefind search also disables the shortcut because its CLI can appear
+external link hover, Mermaid CLI/Chromium rendering, and Excalidraw Chromium rendering also use
+external inputs that disable the shortcut. Mermaid client mode remains eligible: it preserves the
+diagram source for browser rendering, and the site configuration and generated page are fingerprinted.
+Pagefind search also disables the shortcut because its CLI can appear
 after a build that skipped indexing. The Bleve backend remains eligible. Use **Force full build** to
 retry transient external fetches before the unchanged window expires. Absolute content globs are not
 eligible. External theme template and static directories are fingerprinted when present. Sites that
