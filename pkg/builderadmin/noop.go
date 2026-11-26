@@ -535,15 +535,15 @@ func resolveNoOpIgnoredCacheRoot(sourceDir, cacheMount, path string) (string, er
 	if strings.TrimSpace(cacheMount) == "" {
 		return "", fmt.Errorf("managed cache symlink %q has no configured cache mount", path)
 	}
-	mountPath := cacheMount
-	if !filepath.IsAbs(mountPath) {
-		mountPath = filepath.Join(absoluteSource, mountPath)
-	}
-	mountPath, err = filepath.Abs(mountPath)
+	mountPath, err := resolveNoOpCacheMount(absoluteSource, cacheMount)
 	if err != nil {
-		return "", fmt.Errorf("resolve cache mount: %w", err)
+		return "", err
 	}
-	expectedTarget, err := filepath.EvalSymlinks(filepath.Join(mountPath, targetName))
+	targetPath := filepath.Join(mountPath, targetName)
+	if err := requireNoOpRealDirectory(targetPath, "configured cache target"); err != nil {
+		return "", err
+	}
+	expectedTarget, err := filepath.EvalSymlinks(targetPath)
 	if err != nil {
 		return "", fmt.Errorf("resolve expected cache target: %w", err)
 	}
@@ -554,14 +554,50 @@ func resolveNoOpIgnoredCacheRoot(sourceDir, cacheMount, path string) (string, er
 	if filepath.Clean(actualTarget) != filepath.Clean(expectedTarget) {
 		return "", fmt.Errorf("cache symlink %q targets %q, want configured cache target %q", path, actualTarget, expectedTarget)
 	}
-	targetInfo, err := os.Stat(actualTarget)
+	actualInfo, err := os.Stat(actualTarget)
 	if err != nil {
 		return "", fmt.Errorf("inspect cache symlink target: %w", err)
 	}
-	if !targetInfo.IsDir() {
+	if !actualInfo.IsDir() {
 		return "", fmt.Errorf("cache symlink %q target is not a directory", path)
 	}
 	return actualTarget, nil
+}
+
+func resolveNoOpCacheMount(sourceDir, cacheMount string) (string, error) {
+	if strings.TrimSpace(cacheMount) == "" {
+		return "", fmt.Errorf("managed cache symlink has no configured cache mount")
+	}
+	mountPath := cacheMount
+	if !filepath.IsAbs(mountPath) {
+		mountPath = filepath.Join(sourceDir, mountPath)
+	}
+	mountPath, err := filepath.Abs(mountPath)
+	if err != nil {
+		return "", fmt.Errorf("resolve cache mount: %w", err)
+	}
+	if err := requireNoOpRealDirectory(mountPath, "cache mount"); err != nil {
+		return "", err
+	}
+	resolvedMount, err := filepath.EvalSymlinks(mountPath)
+	if err != nil {
+		return "", fmt.Errorf("resolve cache mount path: %w", err)
+	}
+	if filepath.Clean(resolvedMount) != filepath.Clean(mountPath) {
+		return "", fmt.Errorf("cache mount %q contains a symlink", mountPath)
+	}
+	return mountPath, nil
+}
+
+func requireNoOpRealDirectory(path, label string) error {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return fmt.Errorf("inspect %s: %w", label, err)
+	}
+	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("%s %q is not a regular directory", label, path)
+	}
+	return nil
 }
 
 func hashNoOpInputRoots(ctx context.Context, h hash.Hash, sourceRoot string, roots []string) (int64, int64, error) {

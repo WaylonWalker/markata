@@ -233,9 +233,11 @@ successful publication.
 When a dedicated cache mount is configured, Builder Admin MUST recognize only
 its `.markata` and `.markata-cache` symlinks. It MUST verify that they resolve
 to `<cache-mount>/build` and `<cache-mount>/plugin`, respectively, and
-fingerprint those target trees. A mismatched managed target, another symlink
+fingerprint those target trees. The configured cache mount and both target
+directories MUST be existing ordinary directories; symlink components in those
+paths MUST disable the shortcut. A mismatched managed target, another symlink
 root, a missing managed link, either path not being Git-ignored, or any symlink
-inside a fingerprinted tree MUST disable the shortcut.
+inside a fingerprinted tree MUST also disable the shortcut.
 
 The incremental build cache hook MUST be active and enabled. Its configured
 `build-cache.json` file MUST be included in the no-op input snapshot. Baseline

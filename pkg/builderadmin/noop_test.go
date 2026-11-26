@@ -132,6 +132,62 @@ func TestNoOpSnapshotRequiresBuilderCacheSymlinksForConfiguredMount(t *testing.T
 	}
 }
 
+func TestNoOpSnapshotRejectsCacheMountAndTargetSymlinks(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
+	for _, tc := range []struct {
+		name string
+		link string
+	}{
+		{name: "mount", link: "mount"},
+		{name: "build target", link: "build"},
+		{name: "plugin target", link: "plugin"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, sourceRoot := newNoOpFixture(t)
+			cacheMount := filepath.Join(t.TempDir(), "cache")
+			targetMount := filepath.Join(t.TempDir(), "target")
+			for _, name := range []string{"build", "plugin"} {
+				if err := os.MkdirAll(filepath.Join(targetMount, name), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			switch tc.link {
+			case "mount":
+				if err := os.Symlink(targetMount, cacheMount); err != nil {
+					t.Fatal(err)
+				}
+			case "build", "plugin":
+				if err := os.MkdirAll(cacheMount, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				for _, name := range []string{"build", "plugin"} {
+					if name == tc.link {
+						if err := os.Symlink(filepath.Join(targetMount, name), filepath.Join(cacheMount, name)); err != nil {
+							t.Fatal(err)
+						}
+						continue
+					}
+					if err := os.MkdirAll(filepath.Join(cacheMount, name), 0o755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			if err := os.Symlink(filepath.Join(cacheMount, "build"), filepath.Join(sourceRoot, ".markata")); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink(filepath.Join(cacheMount, "plugin"), filepath.Join(sourceRoot, ".markata-cache")); err != nil {
+				t.Fatal(err)
+			}
+			svc.cfg.CacheMount = cacheMount
+			if _, err := svc.noOpInputSnapshot(context.Background()); err == nil || !strings.Contains(err.Error(), "not a regular directory") {
+				t.Fatalf("cache symlink path error = %v, want regular-directory validation failure", err)
+			}
+		})
+	}
+}
+
 func TestVerifiedNoOpLeavesCurrentReleaseAndWorkspaceUntouched(t *testing.T) {
 	if !fileidentity.Available {
 		t.Skip("verified no-op requires Linux file identity")
