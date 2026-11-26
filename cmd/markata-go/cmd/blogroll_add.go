@@ -44,6 +44,7 @@ var (
 
 // Flags for blogroll add command.
 var (
+	blogrollAddManual bool
 	blogrollAddTitle       string
 	blogrollAddDescription string
 	blogrollAddCategory    string
@@ -72,15 +73,18 @@ Example:
   markata-go blogroll add https://example.com/rss.xml
   markata-go blogroll add https://example.com/atom.xml --category tech
   markata-go blogroll add https://example.com/feed --no-prompt
+  markata-go blogroll add                              # Prompt for a feed URL
+  markata-go blogroll add https://example.com/feed --manual --title "My Blog"
   markata-go blogroll add https://example.com/feed --dry-run
   markata-go blogroll add https://example.com/feed --title "My Blog" --tags "go,programming"`,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.MaximumNArgs(1),
 	RunE: runBlogrollAdd,
 }
 
 func init() {
 	blogrollCmd.AddCommand(blogrollAddCmd)
 
+	blogrollAddCmd.Flags().BoolVar(&blogrollAddManual, "manual", false, "add without fetching metadata or verifying the feed")
 	blogrollAddCmd.Flags().StringVar(&blogrollAddTitle, "title", "", "feed title (auto-fetched if not set)")
 	blogrollAddCmd.Flags().StringVar(&blogrollAddDescription, "description", "", "feed description (auto-fetched if not set)")
 	blogrollAddCmd.Flags().StringVar(&blogrollAddCategory, "category", "", "category for grouping (default: "+defaultCategory+")")
@@ -94,7 +98,17 @@ func init() {
 }
 
 func runBlogrollAdd(_ *cobra.Command, args []string) error {
-	rawInput := args[0]
+	var rawInput string
+	if len(args) == 0 {
+		if noInput || blogrollAddNoPrompt || !inputIsTerminal() || !outputIsTerminal() {
+			return newUsageError(&Diagnostic{Problem: "missing feed URL", Fix: "provide an RSS or Atom feed URL", Command: cliCommand("blogroll add https://example.com/feed.xml"), StatusCode: exitCodeUsage})
+		}
+		if err := huh.NewInput().Title("Feed URL").Description("Enter an RSS or Atom feed URL").Value(&rawInput).Run(); err != nil {
+			return err
+		}
+	} else {
+		rawInput = args[0]
+	}
 
 	// Load config and check for duplicates
 	configPath, cfg, err := loadConfigForBlogrollAdd()
@@ -120,9 +134,18 @@ func runBlogrollAdd(_ *cobra.Command, args []string) error {
 	}
 
 	// Fetch feed metadata
-	metadata, err := fetchFeedMetadataForAdd(cfg, feedURL)
-	if err != nil {
-		return err
+	metadata := &blogroll.Metadata{}
+	if !blogrollAddManual {
+		metadata, err = fetchFeedMetadataForAdd(cfg, feedURL)
+		if err != nil {
+			return &Diagnostic{
+				Problem: "Unable to fetch feed metadata",
+				Cause: err,
+				Details: []string{err.Error()},
+				Fix: "Check the feed URL and network connection, then retry. To add without verification, use --manual.",
+				Command: cliCommand("blogroll add <feed-url> --manual --title <title>"),
+			}
+		}
 	}
 
 	// Build feed values from flags and metadata
@@ -137,7 +160,7 @@ func runBlogrollAdd(_ *cobra.Command, args []string) error {
 	displayFetchedInfo(feedValues.title, feedValues.description)
 
 	// Interactive prompts if not disabled
-	if !blogrollAddNoPrompt {
+	if !blogrollAddNoPrompt && !noInput {
 		feedValues, err = promptForFeedValues(cfg, metadata, feedValues)
 		if err != nil {
 			return err
@@ -418,7 +441,7 @@ func resolveBlogrollTargetConfigPath(rootConfigPath string) (string, error) {
 	case 1:
 		return candidates[0], nil
 	default:
-		if inputIsTerminal() && outputIsTerminal() {
+		if !noInput && !blogrollAddNoPrompt && inputIsTerminal() && outputIsTerminal() {
 			return promptForBlogrollConfigPath(candidates)
 		}
 
