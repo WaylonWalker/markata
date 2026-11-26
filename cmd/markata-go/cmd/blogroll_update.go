@@ -32,10 +32,8 @@ var (
 var blogrollCmd = &cobra.Command{
 	Use:   "blogroll",
 	Short: "Manage blogroll feeds",
-	Long: `Commands for managing blogroll feeds and metadata.
-
-Subcommands:
-  update     - Update feed metadata from external sources`,
+	Long: `Manage external RSS and Atom subscriptions and their metadata.
+Use add to subscribe to a feed, or update to refresh metadata.`,
 }
 
 // blogrollUpdateCmd updates blogroll metadata.
