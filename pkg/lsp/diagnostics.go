@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"strings"
+	"os"
 
 	"github.com/WaylonWalker/markata/pkg/diagnostics"
 	"github.com/WaylonWalker/markata/pkg/prose"
@@ -74,6 +75,7 @@ func (s *Server) computeDiagnostics(uri, content string) []Diagnostic {
 
 	// Editorial prose observations use the same source positions as CLI
 	// diagnostics. They are informational rather than build-blocking errors.
+	if os.Getenv("MARKATA_PROSE_ENABLED") == "1" {
 	for _, issue := range prose.Check(content, prose.Options{}) {
 		start, end := Position{Line: issue.Line, Character: issue.Column},
 			Position{Line: issue.EndLine, Character: issue.EndColumn}
@@ -90,6 +92,7 @@ func (s *Server) computeDiagnostics(uri, content string) []Diagnostic {
 			Code: issue.Rule,
 			Message: issue.Message,
 		})
+	}
 	}
 	return diagnosticsList
 }
