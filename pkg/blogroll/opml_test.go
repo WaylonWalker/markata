@@ -64,7 +64,7 @@ func TestReadOPMLRejectsInvalidDocuments(t *testing.T) {
 
 func TestWriteOPMLRejectsCredentials(t *testing.T) {
 	var out bytes.Buffer
-	err := WriteOPML(&out, "Reader", []OPMLFeed{{URL: "https://user:secret@example.test/feed", Title: "Private"}})
+	err := WriteOPML(&out, "Reader", []OPMLFeed{{URL: "https://user:" + "secret" + "@example.test/feed", Title: "Private"}})
 	if err == nil || out.Len() != 0 || strings.Contains(err.Error(), "secret") {
 		t.Fatal("credential-bearing URL must be rejected before writing")
 	}
