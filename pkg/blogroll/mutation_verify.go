@@ -21,7 +21,7 @@ type mutationDocument struct {
 }
 
 func readMutationDocument(content string, changeEnabled bool) (mutationDocument, error) {
-	var raw map[string]any
+	raw := make(map[string]any)
 	if _, err := toml.Decode(content, &raw); err != nil {
 		return mutationDocument{}, fmt.Errorf("invalid subscription TOML: %w", err)
 	}
@@ -33,6 +33,9 @@ func readMutationDocument(content string, changeEnabled bool) (mutationDocument,
 	}
 	section, ok := root["blogroll"].(map[string]any)
 	if !ok {
+		if hasNested && len(root) == 0 {
+			delete(raw, "markata-go")
+		}
 		return doc, nil
 	}
 	doc.enabled = section["enabled"]
