@@ -96,6 +96,13 @@ func writeIgnoredRule(name, id string) (string, error) {
 	if !KnownRule(id) {
 		return "", fmt.Errorf("unknown prose rule %q", id)
 	}
+	info, statErr := os.Lstat(name)
+	if statErr == nil && info.Mode()&os.ModeSymlink != 0 {
+		return "", fmt.Errorf("prose preference file must not be a symlink: %s", name)
+	}
+	if statErr != nil && !os.IsNotExist(statErr) {
+		return "", statErr
+	}
 	var p Preferences
 	data, err := os.ReadFile(name)
 	switch {
