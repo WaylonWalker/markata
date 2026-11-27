@@ -61,8 +61,8 @@ func TestProseIgnoreCommandAndCodeActions(t *testing.T) {
 	if err := json.Unmarshal(messages[0].Result, &actions); err != nil {
 		t.Fatal(err)
 	}
-	if len(actions) != 3 || actions[0].Edit == nil || actions[0].Edit.DocumentChanges[0].Edits[0].NewText != "unique" {
-		t.Fatalf("expected replacement and two ignore actions, got %+v", actions)
+	if len(actions) != 4 || actions[0].Edit == nil || actions[0].Edit.DocumentChanges[0].Edits[0].NewText != "unique" {
+		t.Fatalf("expected replacement and three ignore actions, got %+v", actions)
 	}
 	args := make([]json.RawMessage, 4)
 	for i, value := range []interface{}{uri, "prose/intensifier", 0, 8} {
@@ -87,5 +87,43 @@ func TestProseIgnoreCommandAndCodeActions(t *testing.T) {
 		if diagnostic.Source == "markata-prose" {
 			t.Fatalf("ignored occurrence is still visible: %+v", diagnostic)
 		}
+	}
+}
+
+func TestProseLSPAlwaysIgnorePhrase(t *testing.T) {
+	t.Setenv("MARKATA_PROSE_ENABLED", "1")
+	root := t.TempDir()
+	uri := pathToURI(filepath.Join(root, "post.md"))
+	s := New(log.New(io.Discard, "", 0))
+	s.rootURI = pathToURI(root)
+	s.documents[uri] = &Document{URI: uri, Content: "Very unique and completely revolutionary.", Version: 1}
+	s.sendJSON = func(_ []byte) error { return nil }
+	args := make([]json.RawMessage, 4)
+	for i, value := range []interface{}{uri, "prose/intensifier", 0, 0} {
+		data, err := json.Marshal(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		args[i] = data
+	}
+	params, err := json.Marshal(proseExecuteParams{Command: proseIgnorePhraseCommand, Arguments: args})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.handleProseExecuteCommand(context.Background(), &Message{
+		ID: json.RawMessage("7"), Params: params,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	prefs, err := prose.LoadPreferences(filepath.Join(root, "post.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(prefs.IgnoredPhrases) != 1 || prefs.IgnoredPhrases[0].Phrase != "very unique" {
+		t.Fatalf("expected phrase-specific ignore, got %+v", prefs)
+	}
+	issues := prose.Check("Very unique and completely revolutionary.", prefs.Options())
+	if len(issues) != 1 || issues[0].Column != len("Very unique and ") {
+		t.Fatalf("phrase ignore suppressed other style checks: %+v", issues)
 	}
 }
