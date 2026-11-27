@@ -38,6 +38,24 @@ Run `markata-go build` and you'll have:
 - `/blogroll/` - Lists Simon Willison's blog
 - `/reader/` - Shows his latest posts
 
+## Discover and check public feeds
+
+Find a valid advertised RSS or Atom feed from a website, or validate a known
+feed directly before subscribing:
+
+```bash
+markata blogroll discover https://example.com --json
+markata blogroll check https://example.com/feed.xml
+markata blogroll check engineering --json
+```
+
+Discovery and checking use bounded requests to public HTTP(S) addresses on
+ports 80 and 443, including redirect validation. They do not change your
+configuration. Discovery returns the first validated advertised feed rather
+than accepting HTML or arbitrary XML/JSON as a feed. JSON Feed documents are
+recognized for discovery; the reader's RSS/Atom parsing support is unchanged.
+For trusted private feed URLs, the direct add workflow is unchanged.
+
 ## Pause and resume subscriptions from the terminal
 
 Use the exact configured handle or feed URL:
