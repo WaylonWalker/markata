@@ -976,7 +976,7 @@ func appendFeedToTOMLConfig(configPath string, feedConfig models.ExternalFeedCon
 		return fmt.Errorf("read config: %w", err)
 	}
 
-	content := string(data)
+	content := clearEmptySubscriptionList(string(data))
 	prefix := detectBlogrollTablePrefix(content)
 	var snippet strings.Builder
 

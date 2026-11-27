@@ -37,6 +37,7 @@ const (
 	subscriptionActionAdd    = "add"
 	subscriptionActionUpdate = "update"
 	subscriptionActionRemove = "remove"
+	subscriptionActionActive = "set-active"
 	subscriptionTOMLExt      = ".toml"
 	subscriptionHTTPS        = "https"
 	subscriptionHTTP         = "http"
@@ -337,9 +338,38 @@ func enableSubscriptions(content string) string {
 	return strings.TrimRight(content, "\r\n") + "\n\n[markata-go.blogroll]\nenabled = true\n"
 }
 
-//nolint:gocyclo // A single atomic operation validates, edits, verifies, and rolls back the config.
+// emptySubscriptionList preserves an explicit empty array at the effective
+// owner so deleting the final feed cannot reveal a shadowed lower layer.
+func emptySubscriptionList(content, prefix string) string {
+	if loc := blogrollTable.FindStringIndex(content); loc != nil {
+		return content[:loc[1]] + "feeds = []\n" + content[loc[1]:]
+	}
+	return strings.TrimRight(content, "\r\n") + "\n\n[" + prefix + "]\nfeeds = []\n"
+}
+
+// clearEmptySubscriptionList removes the empty-array sentinel before appending
+// a TOML array-of-tables, which cannot coexist with an inline array.
+func clearEmptySubscriptionList(content string) string {
+	loc := blogrollTable.FindStringIndex(content)
+	if loc == nil {
+		return content
+	}
+	end := len(content)
+	if next := anyTableHeader.FindStringIndex(content[loc[1]:]); next != nil {
+		end = loc[1] + next[0]
+	}
+	empty := regexp.MustCompile(`(?m)^[ \t]*feeds[ \t]*=[ \t]*\[[ \t]*\][ \t]*(#[^\r\n]*)?(?:\r?\n|$)`)
+	body := empty.ReplaceAllString(content[loc[1]:end], "$1\n")
+	return content[:loc[1]] + body + content[end:]
+}
+
 func changeSubscription(state *settingsState, req subscriptionRequest) error {
-	if req.Action != subscriptionActionAdd && req.Action != subscriptionActionUpdate && req.Action != subscriptionActionRemove {
+	return changeSubscriptionWithOptions(state, req, false)
+}
+
+//nolint:gocyclo // A single atomic operation validates, edits, verifies, and rolls back the config.
+func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest, dryRun bool) error {
+	if req.Action != subscriptionActionAdd && req.Action != subscriptionActionUpdate && req.Action != subscriptionActionRemove && req.Action != subscriptionActionActive {
 		return errors.New("invalid subscription action")
 	}
 	u, err := url.Parse(req.URL)
@@ -364,7 +394,7 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 		return err
 	}
 	fields := map[string]string{}
-	if req.Action != subscriptionActionRemove {
+	if req.Action == subscriptionActionAdd || req.Action == subscriptionActionUpdate {
 		fields, err = subscriptionFields(req)
 		if err != nil {
 			return err
@@ -389,6 +419,7 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 	content := string(original)
 	switch req.Action {
 	case subscriptionActionAdd:
+		content = clearEmptySubscriptionList(content)
 		if !state.cfg.Blogroll.Enabled {
 			content = enableSubscriptions(content)
 		}
@@ -400,7 +431,7 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 			block.WriteString(name + " = " + fields[name] + "\n")
 		}
 		content = strings.TrimRight(content, "\r\n") + block.String()
-	case subscriptionActionUpdate, subscriptionActionRemove:
+	case subscriptionActionUpdate, subscriptionActionRemove, subscriptionActionActive:
 		selected, findErr := uniqueBlock(content, req.URL)
 		if findErr != nil {
 			return findErr
@@ -412,10 +443,19 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 				replacement = subscriptionField(replacement, name, fields[name])
 			}
 		}
+		if req.Action == subscriptionActionActive {
+			replacement = subscriptionField(content[selected.start:selected.end], "active", strconv.FormatBool(req.Active))
+		}
 		content = content[:selected.start] + replacement + content[selected.end:]
+		if req.Action == subscriptionActionRemove && len(state.cfg.Blogroll.Feeds) == 1 {
+			content = emptySubscriptionList(content, detectBlogrollTablePrefix(string(original)))
+		}
 	}
 	if _, err := toml.Decode(content, &map[string]any{}); err != nil {
 		return fmt.Errorf("generated TOML was invalid: %w", err)
+	}
+	if dryRun {
+		return nil
 	}
 	// Retain the original on a verification failure. Rebuilds share
 	// serveConfigMu so they cannot observe a half-applied transaction.
@@ -434,10 +474,16 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 			f := &updated.cfg.Blogroll.Feeds[i]
 			if f.URL == req.URL {
 				present = true
+				if req.Action == subscriptionActionActive && f.IsActive() != req.Active {
+					verifyErr = errors.New("saved subscription active state did not take effect")
+				}
 				if req.Action == subscriptionActionUpdate && (f.Title != req.Title || f.Category != req.Category || string(f.Type) != req.Type || f.IsActive() != req.Active) {
 					verifyErr = errors.New("saved subscription did not take effect in composed configuration")
 				}
 			}
+		}
+		if req.Action == subscriptionActionRemove && len(updated.cfg.Blogroll.Feeds) != len(state.cfg.Blogroll.Feeds)-1 {
+			verifyErr = errors.New("removal changed the effective subscription count unexpectedly")
 		}
 		if (req.Action == subscriptionActionRemove && present) || (req.Action != subscriptionActionRemove && !present) {
 			verifyErr = errors.New("saved subscriptions were shadowed by another config file")
