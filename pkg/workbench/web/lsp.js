@@ -6,7 +6,7 @@
     let socket, uri, version = 1, sequence = 0, ready = false, disposed = false;
     let timer, autoTimer, reconnectTimer, retryDelay = 500, generation = 0;
     const pending = new Map(), marks = [];
-    const onceIgnored = new Set(), mutedRules = new Set();
+    const onceIgnored = new Set(), mutedRules = new Set(), mutedPhrases = new Set();
     let proseDiagnostics = [], allDiagnostics = [], prosePopup, proseTicket = 0;
     const pos = p => ({line:p.line, ch:p.character});
     const rpcPos = p => ({line:p.line, character:p.ch});
@@ -22,11 +22,16 @@
       const from = pos(diagnostic.range.start), to = pos(diagnostic.range.end);
       return JSON.stringify([diagnostic.code,from.line,from.ch,to.line,to.ch,editor.getRange(from,to)]);
     }
+    function prosePhraseKey(diagnostic) {
+      const from = pos(diagnostic.range.start), to = pos(diagnostic.range.end);
+      return JSON.stringify([String(diagnostic.code),editor.getRange(from,to).trim().toLowerCase()]);
+    }
     function closeProse() { proseTicket++; prosePopup?.remove(); prosePopup = undefined; }
     function refreshMarks() {
       clearMarks();
       const visible = allDiagnostics.filter(d => d.source !== 'markata-prose' ||
-        (!mutedRules.has(String(d.code)) && !onceIgnored.has(proseKey(d))));
+        (!mutedRules.has(String(d.code)) && !mutedPhrases.has(prosePhraseKey(d)) &&
+          !onceIgnored.has(proseKey(d))));
       proseDiagnostics = visible.filter(d => d.source === 'markata-prose');
       window.MarkataWorkbenchDiagnostics?.update(visible.filter(d => d.source !== 'markata-prose'));
       for (const diagnostic of visible) {
@@ -53,7 +58,8 @@
         y+bounds.height+padding > window.innerHeight ? y-bounds.height-padding : y+padding)+'px';
     }
     async function openProse(diagnostic,x,y) {
-      if (!ready || !diagnostic || mutedRules.has(String(diagnostic.code))) return;
+      if (!ready || !diagnostic || mutedRules.has(String(diagnostic.code)) ||
+        mutedPhrases.has(prosePhraseKey(diagnostic))) return;
       closeProse();
       if (timer) sync();
       const ticket = ++proseTicket, snapshot = editor.getValue(), documentVersion = version;
@@ -100,17 +106,17 @@
         refreshMarks();
         editor.focus();
       },true);
-      addProseButton(buttons,'Always ignore rule',async () => {
+      addProseButton(buttons,'Always ignore phrase',async () => {
         const button = buttons.lastElementChild;
         button.disabled = true;
         try {
           const response = await fetch('/workspace/prose/ignore-rule',{
             method:'POST',credentials:'same-origin',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({rule:String(diagnostic.code)})
+            body:JSON.stringify({rule:String(diagnostic.code),phrase:editor.getRange(from,to)})
           });
           if (!response.ok) throw new Error('Could not save writing preference');
-          mutedRules.add(String(diagnostic.code));
+          mutedPhrases.add(prosePhraseKey(diagnostic));
           closeProse();
           refreshMarks();
           sync();
