@@ -13,13 +13,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/WaylonWalker/markata/pkg/blogroll"
 	"github.com/WaylonWalker/markata/pkg/models"
@@ -257,60 +255,6 @@ func handleSubscriptionsAPI(w http.ResponseWriter, r *http.Request) {
 	subscriptionJSON(w, http.StatusOK, resp)
 }
 
-var feedHeader = regexp.MustCompile(`(?m)^[ \t]*\[\[(?:markata-go\.)?blogroll\.feeds\]\][ \t]*(?:\r?\n|$)`)
-var anyTableHeader = regexp.MustCompile(`(?m)^[ \t]*\[`)
-var feedURLLine = regexp.MustCompile(`(?m)^[ \t]*url[ \t]*=[ \t]*(?:"([^"]+)"|'([^']+)')[ \t]*(?:#.*)?$`)
-var blogrollTable = regexp.MustCompile(`(?m)^[ \t]*\[(?:markata-go\.)?blogroll\][ \t]*(?:\r?\n|$)`)
-
-type subscriptionBlock struct {
-	start, end int
-	url        string
-}
-
-func subscriptionBlocks(content string) []subscriptionBlock {
-	headers := feedHeader.FindAllStringIndex(content, -1)
-	result := make([]subscriptionBlock, 0, len(headers))
-	for _, header := range headers {
-		end := len(content)
-		if following := anyTableHeader.FindStringIndex(content[header[1]:]); following != nil {
-			end = header[1] + following[0]
-		}
-		url := ""
-		if match := feedURLLine.FindStringSubmatch(content[header[1]:end]); match != nil {
-			url = match[1]
-			if url == "" {
-				url = match[2]
-			}
-		}
-		result = append(result, subscriptionBlock{header[0], end, url})
-	}
-	return result
-}
-
-func uniqueBlock(content, address string) (subscriptionBlock, error) {
-	var selected subscriptionBlock
-	found := 0
-	for _, block := range subscriptionBlocks(content) {
-		if block.url == address {
-			selected = block
-			found++
-		}
-	}
-	if found != 1 {
-		return selected, fmt.Errorf("cannot safely identify subscription %q in its TOML file (%d matching blocks)", address, found)
-	}
-	return selected, nil
-}
-
-func subscriptionField(body, name, value string) string {
-	pattern := regexp.MustCompile(`(?m)^[ \t]*` + regexp.QuoteMeta(name) + `[ \t]*=[^\r\n]*`)
-	replacement := name + " = " + value
-	if pattern.MatchString(body) {
-		return pattern.ReplaceAllStringFunc(body, func(string) string { return replacement })
-	}
-	return strings.TrimRight(body, "\r\n") + "\n" + replacement + "\n"
-}
-
 func subscriptionFields(req subscriptionRequest) (map[string]string, error) {
 	if len(req.URL) > 2048 || len(req.Title) > 200 || len(req.Category) > 100 ||
 		len(req.Description) > 1000 || len(req.Handle) > 100 || len(req.Tags) > 600 {
@@ -331,40 +275,15 @@ func subscriptionFields(req subscriptionRequest) (map[string]string, error) {
 }
 
 func enableSubscriptions(content string) string {
-	if loc := blogrollTable.FindStringIndex(content); loc != nil {
-		end := len(content)
-		if next := anyTableHeader.FindStringIndex(content[loc[1]:]); next != nil {
-			end = loc[1] + next[0]
-		}
-		body := subscriptionField(content[loc[1]:end], "enabled", "true")
-		return content[:loc[1]] + body + content[end:]
-	}
-	return strings.TrimRight(content, "\r\n") + "\n\n[markata-go.blogroll]\nenabled = true\n"
+	return blogroll.EnableSubscriptions(content)
 }
 
-// emptySubscriptionList preserves an explicit empty array at the effective
-// owner so deleting the final feed cannot reveal a shadowed lower layer.
 func emptySubscriptionList(content, prefix string) string {
-	if loc := blogrollTable.FindStringIndex(content); loc != nil {
-		return content[:loc[1]] + "feeds = []\n" + content[loc[1]:]
-	}
-	return strings.TrimRight(content, "\r\n") + "\n\n[" + prefix + "]\nfeeds = []\n"
+	return blogroll.EmptySubscriptionList(content, prefix)
 }
 
-// clearEmptySubscriptionList removes the empty-array sentinel before appending
-// a TOML array-of-tables, which cannot coexist with an inline array.
 func clearEmptySubscriptionList(content string) string {
-	loc := blogrollTable.FindStringIndex(content)
-	if loc == nil {
-		return content
-	}
-	end := len(content)
-	if next := anyTableHeader.FindStringIndex(content[loc[1]:]); next != nil {
-		end = loc[1] + next[0]
-	}
-	empty := regexp.MustCompile(`(?m)^[ \t]*feeds[ \t]*=[ \t]*\[[ \t]*\][ \t]*(#[^\r\n]*)?(?:\r?\n|$)`)
-	body := empty.ReplaceAllString(content[loc[1]:end], "$1\n")
-	return content[:loc[1]] + body + content[end:]
+	return blogroll.ClearEmptySubscriptionList(content)
 }
 
 func changeSubscription(state *settingsState, req subscriptionRequest) error {
@@ -420,48 +339,17 @@ func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest
 	if err != nil {
 		return err
 	}
-	content := string(original)
-	switch req.Action {
-	case subscriptionActionAdd:
-		content = clearEmptySubscriptionList(content)
-		if !state.cfg.Blogroll.Enabled {
-			content = enableSubscriptions(content)
-		}
-		prefix := detectBlogrollTablePrefix(content)
-		var block strings.Builder
-		block.WriteString("\n\n[[" + prefix + ".feeds]]\n")
-		block.WriteString("url = " + strconv.Quote(req.URL) + "\n")
-		for _, name := range []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, subscriptionFieldTags, subscriptionFieldHandle, blogrollStatusActive} {
-			block.WriteString(name + " = " + fields[name] + "\n")
-		}
-		content = strings.TrimRight(content, "\r\n") + block.String()
-	case subscriptionActionUpdate, subscriptionActionRemove, subscriptionActionActive:
-		selected, findErr := uniqueBlock(content, req.URL)
-		if findErr != nil {
-			return findErr
-		}
-		replacement := ""
-		if req.Action == subscriptionActionUpdate {
-			replacement = content[selected.start:selected.end]
-			names := req.selectedFields
-			if len(names) == 0 {
-				names = []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, subscriptionFieldTags, subscriptionFieldHandle, blogrollStatusActive}
-			}
-			replacement, err = patchSubscriptionBlock(replacement, fields, names)
-			if err != nil {
-				return err
-			}
-		}
-		if req.Action == subscriptionActionActive {
-			replacement = subscriptionField(content[selected.start:selected.end], blogrollStatusActive, strconv.FormatBool(req.Active))
-		}
-		content = content[:selected.start] + replacement + content[selected.end:]
-		if req.Action == subscriptionActionRemove && len(state.cfg.Blogroll.Feeds) == 1 {
-			content = emptySubscriptionList(content, detectBlogrollTablePrefix(string(original)))
-		}
-	}
-	if _, err := toml.Decode(content, &map[string]any{}); err != nil {
-		return fmt.Errorf("generated TOML was invalid: %w", err)
+	content, err := blogroll.PlanTOMLMutation(string(original), blogroll.TOMLMutation{
+		Action:         blogroll.MutationAction(req.Action),
+		URL:            req.URL,
+		Fields:         fields,
+		SelectedFields: req.selectedFields,
+		Enabled:        state.cfg.Blogroll.Enabled,
+		Active:         req.Active,
+		RemoveLast:     len(state.cfg.Blogroll.Feeds) == 1,
+	})
+	if err != nil {
+		return err
 	}
 	if dryRun {
 		return nil
