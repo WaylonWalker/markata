@@ -799,6 +799,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         dialog = page.locator("#cms-quick-note-dialog")
         expect(dialog).to_be_visible(timeout=10000)
         expect(dialog.locator("#cms-qn-heading")).to_have_value("Weekend photos")
+        expect(dialog.locator("#cms-qn-tags")).to_have_value("photo")
         expect(dialog.locator("#cms-qn-body")).to_have_value("Two images from Android")
         expect(dialog.locator("#cms-qn-photo-list img")).to_have_count(2)
         self.assertFalse(list((self.site / "static" / "images").glob("weekend-photos*"))
@@ -816,6 +817,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
 
         post_path = page.locator("#active-file").inner_text()
         source = (self.site / post_path).read_text(encoding="utf-8")
+        self.assertIn("type: photo", source)
         self.assertIn("![Shared photo 1](/images/", source)
         self.assertIn("![Shared photo 2](/images/", source)
         self.assertIn('image: "/images/', source)
