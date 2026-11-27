@@ -104,7 +104,7 @@ func UTF16Range(source string, issue Issue) (UTF16Span, error) {
 	}
 	return UTF16Span{
 		Start: UTF16Position{Line: sl, Character: sc},
-		End: UTF16Position{Line: el, Character: ec},
+		End:   UTF16Position{Line: el, Character: ec},
 	}, nil
 }
 
