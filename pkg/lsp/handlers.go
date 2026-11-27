@@ -50,7 +50,7 @@ func (s *Server) handleInitialize(_ context.Context, msg *Message) error {
 
 	if os.Getenv("MARKATA_PROSE_ENABLED") == "1" && s.browser == nil {
 		result.Capabilities.ExecuteCommandProvider = &ExecuteCommandOptions{
-			Commands: []string{proseIgnoreOnceCommand, proseIgnoreRuleCommand},
+			Commands: []string{proseIgnoreOnceCommand, proseIgnorePhraseCommand, proseIgnoreRuleCommand},
 		}
 	}
 
