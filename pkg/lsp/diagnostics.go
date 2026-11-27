@@ -76,7 +76,11 @@ func (s *Server) computeDiagnostics(uri, content string) []Diagnostic {
 	// Editorial prose observations use the same source positions as CLI
 	// diagnostics. They are informational rather than build-blocking errors.
 	if os.Getenv("MARKATA_PROSE_ENABLED") == "1" {
-		for _, issue := range prose.Check(content, prose.Options{}) {
+		preferences, err := prose.LoadPreferences(filePath)
+		if err != nil {
+			s.logger.Printf("Cannot load prose preferences: %v", err)
+		}
+		for _, issue := range prose.Check(content, preferences.Options()) {
 			start, end := Position{Line: issue.Line, Character: issue.Column},
 				Position{Line: issue.EndLine, Character: issue.EndColumn}
 			if start.Line >= 0 && start.Line < len(lines) {
