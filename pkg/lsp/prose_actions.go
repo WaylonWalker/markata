@@ -169,76 +169,100 @@ func (s *Server) proseIssueIgnored(uri string, issue prose.Issue, content string
 	return key != "" && s.proseIgnored[uri][key]
 }
 
-// The ignore commands are available to local LSP sessions, not the browser
-// bridge, which must not provide arbitrary workspace write capabilities.
+// The ignore commands are available to native editors only. Browser requests
+// must never gain filesystem-write access through the LSP bridge.
 func (s *Server) handleProseExecuteCommand(_ context.Context, msg *Message) error {
 	if s.browser != nil || os.Getenv("MARKATA_PROSE_ENABLED") != "1" {
 		return s.sendError(msg.ID, MethodNotFound, "prose commands unavailable")
 	}
 	var params proseExecuteParams
-	if err := json.Unmarshal(msg.Params, &params); err != nil || len(params.Arguments) != 4 {
-		return s.sendError(msg.ID, InvalidParams, "invalid prose command arguments")
+	if err := json.Unmarshal(msg.Params, &params); err != nil {
+		return s.sendError(msg.ID, InvalidParams, "invalid prose command")
 	}
-	if params.Command != "markata.prose.ignoreOnce" && params.Command != "markata.prose.ignoreRule" {
-		return s.sendError(msg.ID, MethodNotFound, "unknown prose command")
+	target, err := parseProseIgnoreTarget(params)
+	if err != nil {
+		return s.sendError(msg.ID, InvalidParams, err.Error())
 	}
-	var uri, id string
-	var line, column int
-	if json.Unmarshal(params.Arguments[0], &uri) != nil ||
-		json.Unmarshal(params.Arguments[1], &id) != nil ||
-		json.Unmarshal(params.Arguments[2], &line) != nil ||
-		json.Unmarshal(params.Arguments[3], &column) != nil ||
-		uri == "" || !prose.KnownRule(id) {
-		return s.sendError(msg.ID, InvalidParams, "invalid prose rule or document")
+	content, issue, err := s.findProseIssue(target)
+	if err != nil {
+		return s.sendError(msg.ID, InvalidParams, err.Error())
 	}
-	path := uriToPath(uri)
+	if err := s.applyProseIgnore(params.Command, target, issue, content); err != nil {
+		return s.sendError(msg.ID, InternalError, err.Error())
+	}
+	if err := s.sendResponse(msg.ID, nil); err != nil {
+		return err
+	}
+	return s.publishDiagnostics(target.uri, content)
+}
+
+type proseIgnoreTarget struct {
+	uri    string
+	id     string
+	line   int
+	column int
+}
+
+func parseProseIgnoreTarget(params proseExecuteParams) (proseIgnoreTarget, error) {
+	var target proseIgnoreTarget
+	if len(params.Arguments) != 4 ||
+		(params.Command != "markata.prose.ignoreOnce" && params.Command != "markata.prose.ignoreRule") {
+		return target, fmt.Errorf("unsupported prose ignore command")
+	}
+	if json.Unmarshal(params.Arguments[0], &target.uri) != nil ||
+		json.Unmarshal(params.Arguments[1], &target.id) != nil ||
+		json.Unmarshal(params.Arguments[2], &target.line) != nil ||
+		json.Unmarshal(params.Arguments[3], &target.column) != nil ||
+		target.uri == "" || !prose.KnownRule(target.id) {
+		return target, fmt.Errorf("invalid prose rule or document")
+	}
+	return target, nil
+}
+
+func (s *Server) findProseIssue(target proseIgnoreTarget) (content string, issue prose.Issue, err error) {
+	path := uriToPath(target.uri)
 	if s.rootURI != "" {
 		root := uriToPath(s.rootURI)
-		rel, err := filepath.Rel(root, path)
-		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
-			return s.sendError(msg.ID, InvalidParams, "document is outside the LSP workspace")
+		rel, pathErr := filepath.Rel(root, path)
+		if pathErr != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+			return "", prose.Issue{}, fmt.Errorf("document is outside the LSP workspace")
 		}
 	}
 	s.docMu.RLock()
-	doc := s.documents[uri]
-	var content string
+	doc := s.documents[target.uri]
 	if doc != nil {
 		content = doc.Content
 	}
 	s.docMu.RUnlock()
 	if doc == nil {
-		return s.sendError(msg.ID, InvalidParams, "document is not open")
+		return "", prose.Issue{}, fmt.Errorf("document is not open")
 	}
 	prefs, err := prose.LoadPreferences(path)
 	if err != nil {
-		return s.sendError(msg.ID, InvalidParams, "invalid prose preferences")
+		return "", prose.Issue{}, err
 	}
-	var selected *prose.Issue
-	for _, issue := range prose.Check(content, prefs.Options()) {
-		if issue.Rule == id && issue.Line == line && issue.Column == column {
-			copyIssue := issue
-			selected = &copyIssue
-			break
+	for _, candidate := range prose.Check(content, prefs.Options()) {
+		if candidate.Rule == target.id && candidate.Line == target.line && candidate.Column == target.column {
+			return content, candidate, nil
 		}
 	}
-	if selected == nil {
-		return s.sendError(msg.ID, InvalidParams, "stale prose suggestion")
-	}
-	if params.Command == "markata.prose.ignoreRule" {
-		if _, err := prose.IgnoreRule(path, id); err != nil {
-			return s.sendError(msg.ID, InternalError, "unable to save prose preferences")
-		}
-	} else {
-		key := proseIssueKey(*selected, content)
-		s.docMu.Lock()
-		if s.proseIgnored[uri] == nil {
-			s.proseIgnored[uri] = make(map[string]bool)
-		}
-		s.proseIgnored[uri][key] = true
-		s.docMu.Unlock()
-	}
-	if err := s.sendResponse(msg.ID, nil); err != nil {
+	return "", prose.Issue{}, fmt.Errorf("stale prose suggestion")
+}
+
+func (s *Server) applyProseIgnore(command string, target proseIgnoreTarget, issue prose.Issue, content string) error {
+	if command == "markata.prose.ignoreRule" {
+		_, err := prose.IgnoreRule(uriToPath(target.uri), target.id)
 		return err
 	}
-	return s.publishDiagnostics(uri, content)
+	key := proseIssueKey(issue, content)
+	s.docMu.Lock()
+	defer s.docMu.Unlock()
+	if s.proseIgnored == nil {
+		s.proseIgnored = make(map[string]map[string]bool)
+	}
+	if s.proseIgnored[target.uri] == nil {
+		s.proseIgnored[target.uri] = make(map[string]bool)
+	}
+	s.proseIgnored[target.uri][key] = true
+	return nil
 }
