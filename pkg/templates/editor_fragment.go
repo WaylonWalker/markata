@@ -18,16 +18,20 @@ import (
 // loader. A preview request may never use a template to read outside the
 // selected template directory, including through symlinks.
 type editorFragmentLoader struct {
-	root *os.Root
+	root  *os.Root
+	reads int
 }
 
-const maxEditorFragmentBytes = 200000
+const (
+	maxEditorFragmentBytes = 200000
+	maxEditorFragmentReads = 64
+)
 
 func validEditorTemplateName(name string) bool {
-	return fs.ValidPath(name) && name != "." && !strings.Contains(name, "\\") && filepath.IsLocal(filepath.FromSlash(name))
+	return fs.ValidPath(name) && path.Ext(name) == ".html" && !strings.Contains(name, "\\") && filepath.IsLocal(filepath.FromSlash(name))
 }
 
-func (l editorFragmentLoader) Abs(base, name string) string {
+func (l *editorFragmentLoader) Abs(base, name string) string {
 	if !validEditorTemplateName(name) {
 		return ""
 	}
@@ -40,16 +44,27 @@ func (l editorFragmentLoader) Abs(base, name string) string {
 	return name
 }
 
-func (l editorFragmentLoader) Get(name string) (io.Reader, error) {
+func (l *editorFragmentLoader) Get(name string) (io.Reader, error) {
 	if !validEditorTemplateName(name) {
 		return nil, fmt.Errorf("invalid editor template name")
+	}
+	l.reads++
+	if l.reads > maxEditorFragmentReads {
+		return nil, fmt.Errorf("editor template exceeds include limit")
+	}
+	info, err := l.root.Stat(filepath.FromSlash(name))
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() {
+		return nil, fmt.Errorf("editor template is not a regular file")
 	}
 	file, err := l.root.Open(filepath.FromSlash(name))
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-	info, err := file.Stat()
+	info, err = file.Stat()
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +87,10 @@ func (l editorFragmentLoader) Get(name string) (io.Reader, error) {
 // Draft posts are not entered into the global build template caches.
 func RenderEditorFragment(root *os.Root, name string, post *models.Post, cfg *models.Config) (string, error) {
 	registerFilters()
-	set := pongo2.NewSet("editor-fragment", editorFragmentLoader{root: root})
+	set := pongo2.NewSet("editor-fragment", &editorFragmentLoader{root: root})
+	if err := set.BanTag("ssi"); err != nil {
+		return "", err
+	}
 	tpl, err := set.FromFile(name)
 	if err != nil {
 		return "", err

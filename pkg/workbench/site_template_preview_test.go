@@ -71,6 +71,23 @@ func TestSiteTemplatePreviewCompanionAndFallback(t *testing.T) {
 	if !strings.Contains(got, "My project: Done") || strings.Contains(got, "In progress") {
 		t.Fatalf("stale custom fragment: %s", got)
 	}
+	if err := os.WriteFile(filepath.Join(dir, "status.html"), []byte(`<strong>{{ post.Extra.status }}</strong>`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(fragment, []byte(`{% include "status.html" %}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got = h.renderSiteFrontmatterPreview(source, "Body", "pages/project/test.md")
+	if !strings.Contains(got, "<strong>In progress</strong>") {
+		t.Fatalf("local include missing: %s", got)
+	}
+	if err := os.WriteFile(fragment, []byte(`{% include "project.html" %}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got = h.renderSiteFrontmatterPreview(source, "Body", "pages/project/test.md")
+	if !strings.Contains(got, "Site template preview unavailable") {
+		t.Fatalf("recursive include did not fall back: %s", got)
+	}
 	if err := os.WriteFile(fragment, []byte(`{% include "../outside.html" %}`), 0o600); err != nil {
 		t.Fatal(err)
 	}

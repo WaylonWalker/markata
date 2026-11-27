@@ -2,6 +2,7 @@ package workbench
 
 import (
 	"errors"
+	"fmt"
 	"html"
 	"io/fs"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/plugins"
 	"github.com/WaylonWalker/markata/pkg/templates"
 )
@@ -36,10 +38,16 @@ func (h *Handler) renderSiteFrontmatterPreview(source, markdown, sourcePath stri
 		kind = normalizedPreviewTemplate(resolved)
 	}
 	fallback := renderFrontmatterMetadataForTemplate(metadata, markdown, kind)
-	if h.siteConfig == nil || !fs.ValidPath(resolved) || strings.Contains(resolved, "\\") {
+	if h.siteConfig == nil {
 		return fallback
 	}
+	if !fs.ValidPath(resolved) || strings.Contains(resolved, "\\") || !filepath.IsLocal(filepath.FromSlash(resolved)) {
+		return templatePreviewWarning + fallback
+	}
+	return h.renderCompanionPreview(post, resolved, markdown, fallback)
+}
 
+func (h *Handler) openPreviewTemplateRoot() (*os.Root, error) {
 	// All custom files, including includes, must stay within the selected
 	// workspace's configured template directory. Do not use the build loader,
 	// which intentionally also permits absolute paths and external themes.
@@ -48,20 +56,25 @@ func (h *Handler) renderSiteFrontmatterPreview(source, markdown, sourcePath stri
 		dir = "templates"
 	}
 	if filepath.IsAbs(dir) {
-		dir, err = filepath.Rel(h.root, dir)
+		relative, err := filepath.Rel(h.root, dir)
 		if err != nil {
-			return templatePreviewWarning + fallback
+			return nil, err
 		}
+		dir = relative
 	}
 	if !filepath.IsLocal(dir) {
-		return templatePreviewWarning + fallback
+		return nil, fmt.Errorf("unsafe editor template directory")
 	}
 	root, err := os.OpenRoot(h.root)
 	if err != nil {
-		return templatePreviewWarning + fallback
+		return nil, err
 	}
 	defer root.Close()
-	templateRoot, err := root.OpenRoot(dir)
+	return root.OpenRoot(dir)
+}
+
+func (h *Handler) renderCompanionPreview(post *models.Post, resolved, markdown, fallback string) string {
+	templateRoot, err := h.openPreviewTemplateRoot()
 	if errors.Is(err, fs.ErrNotExist) {
 		return fallback
 	}

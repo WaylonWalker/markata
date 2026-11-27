@@ -145,6 +145,23 @@ class GoEditorBrowserTest(unittest.TestCase):
         self.page.wait_for_function("""() => document.querySelector('.CodeMirror').CodeMirror.getValue()
           === 'beforefrom register after'""")
 
+    def test_template_metadata_preview_updates_without_body(self):
+        self.edit("---\ntemplate: shot\nimage: /images/first.webp\n---\n")
+        image = self.preview.locator(".workbench-frontmatter-image img")
+        expect(image).to_have_attribute("src", "/workspace/image?path=images%2Ffirst.webp")
+        self.assertEqual(self.renders[-1]["source_lines"], [])
+        self.edit("---\ntemplate: photo.html\nimage: /images/second.webp\n---\n\nCaption.")
+        expect(image).to_have_attribute("src", "/workspace/image?path=images%2Fsecond.webp")
+        expect(self.preview.get_by_text("Caption.", exact=True)).to_be_visible()
+        self.edit("---\ntemplate: link\nurl: https://example.com/article\n---\n")
+        link = self.preview.locator('a[href="https://example.com/article"]')
+        expect(link).to_have_count(1)
+        expect(image).to_have_count(0)
+        self.edit("---\ntemplate: link\nurl: https://example.com/updated\n---\n\nMy note.")
+        expect(self.preview.locator('a[href="https://example.com/updated"]')).to_have_count(1)
+        expect(link).to_have_count(0)
+        expect(self.preview.get_by_text("My note.", exact=True)).to_be_visible()
+
     def test_fragments_retain_frame_and_styles(self):
         self.edit("# Plain")
         expect(self.preview.locator("h1")).to_have_text("Plain")
