@@ -115,6 +115,24 @@ active = true                            # Optional: set false to disable withou
 max_entries = 50                         # Optional: override global max_entries_per_feed
 ```
 
+### Add a feed from the terminal
+
+Run `markata blogroll add` in an interactive terminal to enter a feed URL and review its metadata, or supply the URL directly:
+
+```bash
+markata blogroll add https://example.com/feed.xml
+markata blogroll add https://example.com/feed.xml --dry-run
+markata blogroll add https://example.com/feed.xml --no-input
+```
+
+If metadata cannot be fetched, the command reports the failure and offers an interactive manual-add confirmation. For scripts or offline use, explicitly bypass fetching and verification with:
+
+```bash
+markata blogroll add https://example.com/feed.xml --manual --title "My Blog" --no-input
+```
+
+Use the actual RSS or Atom URL for manual additions. The feed is not verified in this mode; it may fail when the reader refreshes. Use `--dry-run` to preview changes without saving, and `markata blogroll add --help` for all fields.
+
 `markata-go blogroll add <feed-url>` now uses site metadata for the suggested title, description, and tags shown in the prompt. This works better for sources like YouTube, where the feed itself often lacks useful channel-level description and tag metadata.
 
 If your site composes multiple config files with `markata-go.include`, `markata-go blogroll add` tries to append the new feed to the file that already contains the blogroll section instead of rewriting the root config file.
