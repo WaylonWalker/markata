@@ -148,3 +148,17 @@ func TestHarperCLIExpectedFindingExitStatusIsNotFatal(t *testing.T) {
 		t.Fatalf("expected Harper finding despite exit 1, got %+v", issues)
 	}
 }
+
+func TestHarperCLINonzeroExitWithoutLintsIsError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell fixture is validated on Linux and macOS")
+	}
+	binary := filepath.Join(t.TempDir(), "harper-cli-fixture")
+	script := "#!/bin/sh\nprintf '%s' '[{\"file\":\"draft.md\",\"lints\":[]}]'\nexit 1\n"
+	if err := os.WriteFile(binary, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := CheckWithHarperCLI(context.Background(), "This is fine.", HarperCLIOptions{Binary: binary}); err == nil {
+		t.Fatal("failure exit with no lints cannot be accepted as a successful check")
+	}
+}
