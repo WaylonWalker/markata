@@ -1,6 +1,7 @@
 package prose
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -77,7 +78,7 @@ func TestIgnoreRuleAtRootDoesNotWriteAncestor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(contents) != string(original) {
+	if !bytes.Equal(contents, original) {
 		t.Fatalf("ancestor preference was changed: %s", contents)
 	}
 	prefs, err := LoadPreferences(filepath.Join(root, "post.md"))
