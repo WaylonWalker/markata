@@ -172,6 +172,23 @@ active = true                            # Optional: set false to disable withou
 max_entries = 50                         # Optional: override global max_entries_per_feed
 ```
 
+### Import subscriptions
+
+Import an OPML file from another RSS reader. Preview the number of new and
+duplicate subscriptions before writing:
+
+```bash
+markata blogroll import subscriptions.opml --dry-run
+markata blogroll import subscriptions.opml
+```
+
+Exact duplicate feed URLs are skipped, including duplicates within the file.
+Existing subscriptions remain unchanged. The import writes the effective
+owning TOML file in one transaction, and rolls back if the composed
+configuration does not match the expected result. Imported feeds are
+unverified and no network requests are made. Category folders are preserved;
+new subscriptions are active and use the written reader type.
+
 ### Export your subscriptions
 
 Export the effective subscription list to an OPML 2.0 file that other feed
