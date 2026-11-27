@@ -68,6 +68,8 @@ type subscriptionRequest struct {
 	Tags        string `json:"tags"`
 	Handle      string `json:"handle"`
 	Active      bool   `json:"active"`
+	// Selected fields are supplied by the CLI, not accepted from HTTP clients.
+	selectedFields []string
 }
 
 type discoveredSubscription struct {
@@ -317,13 +319,13 @@ func subscriptionFields(req subscriptionRequest) (map[string]string, error) {
 		return nil, errors.New("feed type must be written, video, or podcast")
 	}
 	return map[string]string{
-		"title":       strconv.Quote(strings.TrimSpace(req.Title)),
-		"description": strconv.Quote(strings.TrimSpace(req.Description)),
-		"category":    strconv.Quote(strings.TrimSpace(req.Category)),
-		"type":        strconv.Quote(req.Type),
-		"tags":        "[" + formatTOMLStringArray(parseTagsBlogroll(req.Tags)) + "]",
-		"handle":      strconv.Quote(strings.TrimSpace(req.Handle)),
-		"active":      strconv.FormatBool(req.Active),
+		listSortTitle:                strconv.Quote(strings.TrimSpace(req.Title)),
+		subscriptionFieldDescription: strconv.Quote(strings.TrimSpace(req.Description)),
+		subscriptionFieldCategory:    strconv.Quote(strings.TrimSpace(req.Category)),
+		subscriptionFieldType:        strconv.Quote(req.Type),
+		subscriptionFieldTags:        "[" + formatTOMLStringArray(parseTagsBlogroll(req.Tags)) + "]",
+		subscriptionFieldHandle:      strconv.Quote(strings.TrimSpace(req.Handle)),
+		blogrollStatusActive:         strconv.FormatBool(req.Active),
 	}, nil
 }
 
@@ -400,10 +402,10 @@ func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest
 		if err != nil {
 			return err
 		}
-		if req.Action == subscriptionActionAdd {
+		if req.Action == subscriptionActionAdd || req.Action == subscriptionActionUpdate {
 			for i := range state.cfg.Blogroll.Feeds {
 				f := &state.cfg.Blogroll.Feeds[i]
-				if req.Handle != "" && f.Handle == req.Handle {
+				if f.URL != req.URL && req.Handle != "" && strings.EqualFold(f.Handle, req.Handle) {
 					return fmt.Errorf("handle %q already belongs to %s", req.Handle, f.Title)
 				}
 			}
@@ -428,7 +430,7 @@ func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest
 		var block strings.Builder
 		block.WriteString("\n\n[[" + prefix + ".feeds]]\n")
 		block.WriteString("url = " + strconv.Quote(req.URL) + "\n")
-		for _, name := range []string{"title", "description", "category", "type", "tags", "handle", "active"} {
+		for _, name := range []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, subscriptionFieldTags, subscriptionFieldHandle, blogrollStatusActive} {
 			block.WriteString(name + " = " + fields[name] + "\n")
 		}
 		content = strings.TrimRight(content, "\r\n") + block.String()
@@ -440,12 +442,17 @@ func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest
 		replacement := ""
 		if req.Action == subscriptionActionUpdate {
 			replacement = content[selected.start:selected.end]
-			for _, name := range []string{"title", "description", "category", "type", "tags", "handle", "active"} {
-				replacement = subscriptionField(replacement, name, fields[name])
+			names := req.selectedFields
+			if len(names) == 0 {
+				names = []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, subscriptionFieldTags, subscriptionFieldHandle, blogrollStatusActive}
+			}
+			replacement, err = patchSubscriptionBlock(replacement, fields, names)
+			if err != nil {
+				return err
 			}
 		}
 		if req.Action == subscriptionActionActive {
-			replacement = subscriptionField(content[selected.start:selected.end], "active", strconv.FormatBool(req.Active))
+			replacement = subscriptionField(content[selected.start:selected.end], blogrollStatusActive, strconv.FormatBool(req.Active))
 		}
 		content = content[:selected.start] + replacement + content[selected.end:]
 		if req.Action == subscriptionActionRemove && len(state.cfg.Blogroll.Feeds) == 1 {
@@ -478,7 +485,7 @@ func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest
 				if req.Action == subscriptionActionActive && f.IsActive() != req.Active {
 					verifyErr = errors.New("saved subscription active state did not take effect")
 				}
-				if req.Action == subscriptionActionUpdate && (f.Title != req.Title || f.Category != req.Category || string(f.Type) != req.Type || f.IsActive() != req.Active) {
+				if req.Action == subscriptionActionUpdate && !subscriptionUpdateMatches(f, req) {
 					verifyErr = errors.New("saved subscription did not take effect in composed configuration")
 				}
 			}

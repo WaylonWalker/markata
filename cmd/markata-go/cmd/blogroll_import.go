@@ -15,12 +15,6 @@ import (
 	"github.com/WaylonWalker/markata/pkg/models"
 )
 
-const (
-	blogrollImportType = "type"
-	blogrollImportCategory    = "category"
-	blogrollImportDescription = "description"
-)
-
 func init() {
 	blogrollCmd.AddCommand(newBlogrollImportCmd())
 }
@@ -144,7 +138,7 @@ func renderOPMLImport(content string, feeds []blogroll.OPMLFeed, enabled bool) (
 		}
 		result.WriteString("\n\n[[" + prefix + ".feeds]]\n")
 		result.WriteString("url = " + strconv.Quote(feed.URL) + "\n")
-		for _, field := range []string{listSortTitle, blogrollImportDescription, blogrollImportCategory, blogrollImportType, blogrollStatusActive} {
+		for _, field := range []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, blogrollStatusActive} {
 			result.WriteString(field + " = " + fields[field] + "\n")
 		}
 		if feed.SiteURL != "" {
