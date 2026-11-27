@@ -182,7 +182,7 @@ func normalizePhrase(phrase string) string {
 // ValidPhrase checks an exact known prose pattern. It is used by the browser
 // preference endpoint to reject arbitrary strings and unbounded values.
 func ValidPhrase(id, phrase string) bool {
-	if len(phrase) == 0 || len(phrase) > 256 || strings.TrimSpace(phrase) != phrase {
+	if phrase == "" || len(phrase) > 256 || strings.TrimSpace(phrase) != phrase {
 		return false
 	}
 	for _, r := range rules {
@@ -190,7 +190,7 @@ func ValidPhrase(id, phrase string) bool {
 			continue
 		}
 		matches := r.re.FindStringIndex(phrase)
-		return matches != nil && matches[0] == 0 && matches[1] == len(phrase)
+		return len(matches) == 2 && matches[0] == 0 && matches[1] == len(phrase)
 	}
 	return false
 }
