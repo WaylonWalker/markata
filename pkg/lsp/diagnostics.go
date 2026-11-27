@@ -90,7 +90,7 @@ func (s *Server) computeDiagnostics(uri, content string) []Diagnostic {
 				end.Character = utf16Column(lines[end.Line], end.Character)
 			}
 			diagnosticsList = append(diagnosticsList, Diagnostic{
-				Range: Range{Start: start, End: end},
+				Range:    Range{Start: start, End: end},
 				Severity: DiagnosticSeverityHint,
 				Source:   "markata-prose",
 				Code:     issue.Rule,
