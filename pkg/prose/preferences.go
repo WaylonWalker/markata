@@ -62,12 +62,9 @@ func LoadPreferences(path string) (Preferences, error) {
 	return p, nil
 }
 
-// IgnoreRule persists a rule preference in the nearest configuration or
-// creates a configuration alongside the supplied directory's Markdown files.
+// IgnoreRule persists a rule preference in the nearest project configuration.
+// This discovery is intended for trusted local CLI and native LSP workflows.
 func IgnoreRule(path, id string) (string, error) {
-	if id == "" {
-		return "", fmt.Errorf("rule ID cannot be empty")
-	}
 	name, err := FindPreferences(path)
 	if err != nil {
 		return "", err
@@ -75,9 +72,39 @@ func IgnoreRule(path, id string) (string, error) {
 	if name == "" {
 		name = filepath.Join(filepath.Dir(path), PreferencesFile)
 	}
-	p, err := LoadPreferences(path)
+	return writeIgnoredRule(name, id)
+}
+
+// IgnoreRuleAtRoot confines browser preference writes to a server-selected
+// workspace root. Unlike IgnoreRule, this never searches parent directories.
+func IgnoreRuleAtRoot(root, id string) (string, error) {
+	dir, err := filepath.Abs(root)
 	if err != nil {
 		return "", err
+	}
+	info, err := os.Stat(dir)
+	if err != nil {
+		return "", err
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("prose preference root is not a directory: %s", dir)
+	}
+	return writeIgnoredRule(filepath.Join(dir, PreferencesFile), id)
+}
+
+func writeIgnoredRule(name, id string) (string, error) {
+	if !KnownRule(id) {
+		return "", fmt.Errorf("unknown prose rule %q", id)
+	}
+	var p Preferences
+	data, err := os.ReadFile(name)
+	switch {
+	case err == nil:
+		if err := json.Unmarshal(data, &p); err != nil {
+			return "", fmt.Errorf("parse prose preferences %s: %w", name, err)
+		}
+	case !os.IsNotExist(err):
+		return "", fmt.Errorf("read prose preferences %s: %w", name, err)
 	}
 	for _, existing := range p.IgnoredRules {
 		if existing == id {
@@ -85,17 +112,17 @@ func IgnoreRule(path, id string) (string, error) {
 		}
 	}
 	p.IgnoredRules = append(p.IgnoredRules, id)
-	data, err := json.MarshalIndent(p, "", "  ")
+	output, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {
 		return "", err
 	}
-	data = append(data, '\n')
+	output = append(output, '\n')
 	temp, err := os.CreateTemp(filepath.Dir(name), ".markata-prose-*")
 	if err != nil {
 		return "", err
 	}
 	defer os.Remove(temp.Name())
-	if _, err := temp.Write(data); err != nil {
+	if _, err := temp.Write(output); err != nil {
 		temp.Close()
 		return "", err
 	}
