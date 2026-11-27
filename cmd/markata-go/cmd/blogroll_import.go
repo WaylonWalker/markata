@@ -57,13 +57,13 @@ func newBlogrollImportCmd() *cobra.Command {
 }
 
 // planOPMLImport skips exact duplicate URLs without changing existing feeds.
-func planOPMLImport(existing []models.ExternalFeedConfig, incoming []blogroll.OPMLFeed) ([]blogroll.OPMLFeed, int) {
+func planOPMLImport(existing []models.ExternalFeedConfig, incoming []blogroll.OPMLFeed) (add []blogroll.OPMLFeed, skipped int) {
 	seen := make(map[string]bool, len(existing)+len(incoming))
 	for i := range existing {
 		seen[existing[i].URL] = true
 	}
-	add := make([]blogroll.OPMLFeed, 0, len(incoming))
-	skipped := 0
+	add = make([]blogroll.OPMLFeed, 0, len(incoming))
+	skipped = 0
 	for i := range incoming {
 		feed := &incoming[i]
 		if seen[feed.URL] {
@@ -78,7 +78,7 @@ func planOPMLImport(existing []models.ExternalFeedConfig, incoming []blogroll.OP
 
 // importBlogrollOPML writes the complete import in one atomic transaction,
 // then reloads effective config and rolls back if the import was shadowed.
-func importBlogrollOPML(state *settingsState, incoming []blogroll.OPMLFeed, dryRun bool) (int, int, error) {
+func importBlogrollOPML(state *settingsState, incoming []blogroll.OPMLFeed, dryRun bool) (added int, skipped int, err error) {
 	add, skipped := planOPMLImport(state.cfg.Blogroll.Feeds, incoming)
 	if len(add) == 0 {
 		return 0, skipped, nil
@@ -138,7 +138,7 @@ func renderOPMLImport(content string, feeds []blogroll.OPMLFeed, enabled bool) (
 		}
 		result.WriteString("\n\n[[" + prefix + ".feeds]]\n")
 		result.WriteString("url = " + strconv.Quote(feed.URL) + "\n")
-		for _, field := range []string{"title", "description", "category", "type", "active"} {
+		for _, field := range []string{"title", "description", "category", "type", blogrollStatusActive} {
 			result.WriteString(field + " = " + fields[field] + "\n")
 		}
 		if feed.SiteURL != "" {
