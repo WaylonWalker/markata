@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/WaylonWalker/markata/pkg/prose"
 	"github.com/spf13/cobra"
+
+	"github.com/WaylonWalker/markata/pkg/prose"
 )
 
 var proseJSON bool
