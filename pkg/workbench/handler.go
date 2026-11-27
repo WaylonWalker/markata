@@ -822,7 +822,8 @@ func (h *Handler) serveProseIgnoreRule(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 4096)
 	var req struct {
-		Rule string `json:"rule"`
+		Rule   string `json:"rule"`
+		Phrase string `json:"phrase,omitempty"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -835,14 +836,20 @@ func (h *Handler) serveProseIgnoreRule(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusBadRequest, "expected one prose ignore request")
 		return
 	}
-	if !prose.KnownRule(req.Rule) {
-		fail(w, http.StatusBadRequest, "unknown prose rule")
+	if !prose.KnownRule(req.Rule) || (req.Phrase != "" && !prose.ValidPhrase(req.Rule, req.Phrase)) {
+		fail(w, http.StatusBadRequest, "unknown prose rule or invalid phrase")
 		return
 	}
 	h.workspaceWriteMu.Lock()
 	defer h.workspaceWriteMu.Unlock()
 	// Site root is server-owned; clients cannot pick paths outside it.
-	if _, err := prose.IgnoreRuleAtRoot(h.root, req.Rule); err != nil {
+	var err error
+	if req.Phrase == "" {
+		_, err = prose.IgnoreRuleAtRoot(h.root, req.Rule)
+	} else {
+		_, err = prose.IgnorePhraseAtRoot(h.root, req.Rule, req.Phrase)
+	}
+	if err != nil {
 		fail(w, http.StatusUnprocessableEntity, "could not save prose preference")
 		return
 	}
