@@ -33,6 +33,7 @@ import (
 	"github.com/WaylonWalker/markata/pkg/lsp"
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/plugins"
+	"github.com/WaylonWalker/markata/pkg/prose"
 	"github.com/WaylonWalker/markata/pkg/visualizations"
 )
 
@@ -808,13 +809,64 @@ func dataStylesheetLink(css []byte) string {
 	return `<link rel="stylesheet" href="data:text/css;base64,` + base64.StdEncoding.EncodeToString(css) + `">`
 }
 
+// serveProseIgnoreRule is the only persistence bridge for web prose ignores.
+// It never accepts a filesystem path or arbitrary configuration mutation.
+func (h *Handler) serveProseIgnoreRule(w http.ResponseWriter, r *http.Request) {
+	if !h.sameOriginWorkspaceMutation(r) {
+		fail(w, http.StatusForbidden, "same-origin workspace writes are required")
+		return
+	}
+	if r.Header.Get("Content-Type") != "application/json" {
+		fail(w, http.StatusUnsupportedMediaType, "send Content-Type: application/json")
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 4096)
+	var req struct {
+		Rule   string `json:"rule"`
+		Phrase string `json:"phrase,omitempty"`
+	}
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&req); err != nil {
+		fail(w, http.StatusBadRequest, "invalid prose ignore request")
+		return
+	}
+	var extra any
+	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
+		fail(w, http.StatusBadRequest, "expected one prose ignore request")
+		return
+	}
+	if !prose.KnownRule(req.Rule) || (req.Phrase != "" && !prose.ValidPhrase(req.Rule, req.Phrase)) {
+		fail(w, http.StatusBadRequest, "unknown prose rule or invalid phrase")
+		return
+	}
+	h.workspaceWriteMu.Lock()
+	defer h.workspaceWriteMu.Unlock()
+	// Site root is server-owned; clients cannot pick paths outside it.
+	var err error
+	if req.Phrase == "" {
+		_, err = prose.IgnoreRuleAtRoot(h.root, req.Rule)
+	} else {
+		_, err = prose.IgnorePhraseAtRoot(h.root, req.Rule, req.Phrase)
+	}
+	if err != nil {
+		fail(w, http.StatusUnprocessableEntity, "could not save prose preference")
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	if _, err := io.WriteString(w, "{\"ok\":true}"); err != nil {
+		return
+	}
+}
+
 func isWorkspaceRoute(routePath, method string) bool {
 	switch {
 	case routePath == "/workspace" || routePath == "/workspace/templates" || routePath == "/workspace/content-number" || routePath == "/workspace/image" || routePath == "/workspace/index-status" || routePath == "/workspace/changes":
 		return method == http.MethodGet
 	case routePath == "/workspace/new-post" || routePath == "/workspace/dropper-upload":
 		return method == http.MethodPost
-	case routePath == "/workspace/link-metadata":
+	case routePath == "/workspace/link-metadata" || routePath == "/workspace/prose/ignore-rule":
 		return method == http.MethodPost
 	case routePath == "/workspace/template-settings":
 		return method == http.MethodPost
@@ -955,6 +1007,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Path == "/workspace/dropper-upload" {
 		h.serveWorkspaceDropperUpload(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/prose/ignore-rule" {
+		h.serveProseIgnoreRule(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/new-post" {

@@ -47,8 +47,9 @@ type Server struct {
 	images         []imageindex.Image
 
 	// documents tracks open documents by URI
-	documents map[string]*Document
-	docMu     sync.RWMutex
+	documents    map[string]*Document
+	proseIgnored map[string]map[string]bool
+	docMu        sync.RWMutex
 
 	// initialized indicates whether the server has been initialized
 	initialized bool
@@ -74,9 +75,10 @@ type Document struct {
 // New creates a new LSP server.
 func New(logger *log.Logger) *Server {
 	return &Server{
-		logger:    logger,
-		index:     NewIndex(logger),
-		documents: make(map[string]*Document),
+		logger:       logger,
+		index:        NewIndex(logger),
+		documents:    make(map[string]*Document),
+		proseIgnored: make(map[string]map[string]bool),
 	}
 }
 
@@ -172,9 +174,11 @@ func (s *Server) methodHandlers() map[string]methodHandler {
 		"textDocument/didSave":   s.handleDidSave,
 
 		// Language features
-		"textDocument/completion": s.handleCompletion,
-		"textDocument/hover":      s.handleHover,
-		"textDocument/definition": s.handleDefinition,
+		"textDocument/completion":  s.handleCompletion,
+		"textDocument/hover":       s.handleHover,
+		"textDocument/definition":  s.handleDefinition,
+		"textDocument/codeAction":  s.handleProseCodeAction,
+		"workspace/executeCommand": s.handleProseExecuteCommand,
 
 		// Workspace
 		"workspace/didChangeWatchedFiles": s.handleDidChangeWatchedFiles,

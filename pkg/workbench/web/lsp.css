@@ -2,4 +2,30 @@
 li.CodeMirror-hint{color:inherit;padding:4px 8px;max-width:34rem}
 li.CodeMirror-hint-active{background:var(--color-primary,#245fc5);color:var(--color-background,#fff)}
 .markata-lsp-diagnostic{text-decoration:underline wavy var(--color-error,#b42318);text-underline-offset:3px}
+.markata-lsp-prose-hint{text-decoration:underline wavy var(--color-warning,#a77a29);text-decoration-thickness:1px;text-underline-offset:3px}
 #language-status{white-space:nowrap}
+
+.markata-lsp-prose-hint{cursor:pointer}
+.markata-prose-popover{
+  position:fixed;z-index:1600;box-sizing:border-box;
+  width:max-content;max-width:min(360px,calc(100vw - 24px));
+  max-height:calc(100dvh - 24px);overflow:auto;
+  padding:14px;border:1px solid var(--color-border,#b9bec5);border-radius:12px;
+  background:var(--color-surface,#fff);color:var(--color-text,#203348);
+  box-shadow:0 12px 38px rgba(0,0,0,.18);
+  font:inherit;font-size:14px;line-height:1.45
+}
+.markata-prose-popover strong{display:block;font-weight:650;margin:0 0 7px}
+.markata-prose-popover p{margin:0 0 12px;max-width:35ch;overflow-wrap:anywhere}
+.markata-prose-actions{display:flex;flex-wrap:wrap;gap:7px}
+.markata-prose-button{
+  cursor:pointer;border:1px solid var(--color-primary,#245fc5);border-radius:7px;
+  padding:7px 10px;min-height:36px;background:var(--color-primary,#245fc5);
+  color:var(--color-background,#fff);font:inherit;font-weight:550
+}
+.markata-prose-button.markata-prose-secondary{
+  color:var(--color-text,#203348);background:transparent;
+  border-color:var(--color-border,#b9bec5)
+}
+.markata-prose-button:focus-visible{outline:2px solid var(--color-primary,#245fc5);outline-offset:2px}
+.markata-prose-button:disabled{opacity:.55;cursor:wait}

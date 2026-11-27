@@ -154,11 +154,18 @@ type ServerInfo struct {
 
 // ServerCapabilities represents the server's capabilities.
 type ServerCapabilities struct {
-	TextDocumentSync   *TextDocumentSyncOptions `json:"textDocumentSync,omitempty"`
-	CompletionProvider *CompletionOptions       `json:"completionProvider,omitempty"`
-	HoverProvider      bool                     `json:"hoverProvider,omitempty"`
-	DefinitionProvider bool                     `json:"definitionProvider,omitempty"`
-	Workspace          *WorkspaceOptions        `json:"workspace,omitempty"`
+	TextDocumentSync       *TextDocumentSyncOptions `json:"textDocumentSync,omitempty"`
+	CompletionProvider     *CompletionOptions       `json:"completionProvider,omitempty"`
+	HoverProvider          bool                     `json:"hoverProvider,omitempty"`
+	DefinitionProvider     bool                     `json:"definitionProvider,omitempty"`
+	CodeActionProvider     bool                     `json:"codeActionProvider,omitempty"`
+	ExecuteCommandProvider *ExecuteCommandOptions   `json:"executeCommandProvider,omitempty"`
+	Workspace              *WorkspaceOptions        `json:"workspace,omitempty"`
+}
+
+// ExecuteCommandOptions advertises native prose ignore actions.
+type ExecuteCommandOptions struct {
+	Commands []string `json:"commands"`
 }
 
 // TextDocumentSyncOptions represents text document sync options.

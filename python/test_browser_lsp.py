@@ -18,10 +18,13 @@ from editor_test_support import load_editor, serve_editor
 
 
 @contextmanager
-def go_editor(root):
+def go_editor(root, prose_enabled=False):
+    env = dict(os.environ)
+    if prose_enabled:
+        env["MARKATA_PROSE_ENABLED"] = "1"
     process = subprocess.Popen([os.environ["MARKATA_WORKBENCH_BINARY"], "--listen", "127.0.0.1:0",
                                 "--workspace", str(root)], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
-                               text=True)
+                               text=True, env=env)
     try:
         # The command prints its actual OS-assigned address after initialization.
         while line := process.stderr.readline():
@@ -351,6 +354,62 @@ class BrowserLSPTest(unittest.TestCase):
                                          "[[gre" if move_only else "# Newer draft")
                 finally:
                     context.close()
+
+    def test_go_prose_suggestions_accept_and_ignore(self):
+        with tempfile.TemporaryDirectory(prefix="markata-prose-editor-") as folder:
+            root = Path(folder)
+            (root / "markata-go.toml").write_text(
+                "[markata-go.glob]\npatterns=['*.md']\n", encoding="utf-8"
+            )
+            (root / "draft.md").write_text("# Prose check", encoding="utf-8")
+            with go_editor(root, prose_enabled=True) as url, self.browser.new_context() as context:
+                page = context.new_page()
+                errors = []
+                page.on("pageerror", lambda error: errors.append(str(error)))
+                page.goto(url)
+                expect(page.locator("#language-status")).to_contain_text("LSP connected")
+                page.evaluate("""() => {
+                    const cm = document.querySelector('.CodeMirror').CodeMirror;
+                    cm.setValue('This is very unique.');
+                    cm.setCursor(0, 12);
+                    cm.focus();
+                }""")
+                expect(page.locator(".markata-lsp-prose-hint")).to_be_visible()
+                page.locator(".markata-lsp-prose-hint").first.click()
+                popup = page.locator(".markata-prose-popover")
+                expect(popup).to_be_visible()
+                popup.get_by_role("button", name="Replace with unique").click()
+                self.assertEqual(
+                    page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()"),
+                    "This is unique.",
+                )
+                page.evaluate("""() => {
+                    const cm = document.querySelector('.CodeMirror').CodeMirror;
+                    cm.setValue('This is very unique.');
+                    cm.setCursor(0, 12);
+                    cm.focus();
+                }""")
+                expect(page.locator(".markata-lsp-prose-hint")).to_be_visible()
+                page.locator(".markata-lsp-prose-hint").first.click()
+                popup.get_by_role("button", name="Ignore once").click()
+                expect(page.locator(".markata-lsp-prose-hint")).to_have_count(0)
+
+                # Reload clears session-only ignores; project ignores remain.
+                page.reload()
+                expect(page.locator("#language-status")).to_contain_text("LSP connected")
+                page.evaluate("""() => {
+                    const cm = document.querySelector('.CodeMirror').CodeMirror;
+                    cm.setValue('This is very unique.');
+                    cm.setCursor(0, 12);
+                    cm.focus();
+                }""")
+                expect(page.locator(".markata-lsp-prose-hint")).to_be_visible()
+                page.keyboard.press("Alt+Enter")
+                popup.get_by_role("button", name="Always ignore phrase").click()
+                expect(page.locator(".markata-lsp-prose-hint")).to_have_count(0)
+                preferences = json.loads((root / ".markata-prose.json").read_text(encoding="utf-8"))
+                self.assertIn({"rule": "prose/intensifier", "phrase": "very unique"}, preferences["ignored_phrases"])
+                self.assertEqual(errors, [])
 
     def test_lsp_failure_preserves_editing_and_preview(self):
         for name, url in [("Python", self.python_url), ("Go", self.go_url)]:

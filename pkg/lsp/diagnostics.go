@@ -1,9 +1,11 @@
 package lsp
 
 import (
+	"os"
 	"strings"
 
 	"github.com/WaylonWalker/markata/pkg/diagnostics"
+	"github.com/WaylonWalker/markata/pkg/prose"
 )
 
 // indexResolver adapts the Index to the diagnostics.Resolver interface.
@@ -71,6 +73,34 @@ func (s *Server) computeDiagnostics(uri, content string) []Diagnostic {
 		diagnosticsList = append(diagnosticsList, diag)
 	}
 
+	// Editorial prose observations use the same source positions as CLI
+	// diagnostics. They are informational rather than build-blocking errors.
+	if os.Getenv("MARKATA_PROSE_ENABLED") == "1" {
+		preferences, err := prose.LoadPreferences(filePath)
+		if err != nil {
+			s.logger.Printf("Cannot load prose preferences: %v", err)
+		}
+		for _, issue := range prose.Check(content, preferences.Options()) {
+			if s.proseIssueIgnored(uri, issue, content) {
+				continue
+			}
+			start, end := Position{Line: issue.Line, Character: issue.Column},
+				Position{Line: issue.EndLine, Character: issue.EndColumn}
+			if start.Line >= 0 && start.Line < len(lines) {
+				start.Character = utf16Column(lines[start.Line], start.Character)
+			}
+			if end.Line >= 0 && end.Line < len(lines) {
+				end.Character = utf16Column(lines[end.Line], end.Character)
+			}
+			diagnosticsList = append(diagnosticsList, Diagnostic{
+				Range:    Range{Start: start, End: end},
+				Severity: DiagnosticSeverityHint,
+				Source:   "markata-prose",
+				Code:     issue.Rule,
+				Message:  issue.Message,
+			})
+		}
+	}
 	return diagnosticsList
 }
 
