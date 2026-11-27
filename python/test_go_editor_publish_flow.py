@@ -774,19 +774,20 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             localStorage.setItem('markata-editor-keymap', 'vim');
         }""")
         page.goto(self.url)
-        page.wait_for_selector(".CodeMirror")
+        page.locator('#mobile-nav [data-mobile-tab="write"]').click()
+        expect(page.locator(".CodeMirror")).to_be_visible()
         page.evaluate("""() => {
             const cm = document.querySelector('.CodeMirror').CodeMirror;
-            cm.setValue('hello world');
+            cm.setValue('hello world\\nsecond line');
             cm.setCursor(0,0);
             cm.focus();
             if (cm.state.vim.insertMode) CodeMirror.Vim.handleKey(cm, '<Esc>');
         }""")
         page.keyboard.press("y")
-        page.keyboard.press("w")
-        page.wait_for_function("async () => (await navigator.clipboard.readText()) === 'hello '")
+        page.keyboard.press("y")
+        page.wait_for_function("async () => (await navigator.clipboard.readText()) === 'hello world\\n'")
         page.keyboard.press("p")
-        page.wait_for_function("() => document.querySelector('.CodeMirror').CodeMirror.getValue() !== 'hello world'")
+        page.wait_for_function("() => document.querySelector('.CodeMirror').CodeMirror.getValue() === 'hello world\\nhello world\\nsecond line'")
         expect(page.locator("#editor-add-image")).to_be_visible()
         page.route("**/workspace/dropper-upload", lambda route: route.fulfill(
             status=200, content_type="application/json", body='{"url":"https://example.com/photo.png"}'))
