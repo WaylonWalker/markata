@@ -29,24 +29,37 @@ editorial suggestions. File I/O failures still return errors.
 
 ## Neovim / LSP
 
-Set `MARKATA_PROSE_ENABLED=1` when starting `markata lsp` to opt in.\nThe existing LSP server then emits the same findings as *hint* severity
+Set `MARKATA_PROSE_ENABLED=1` when starting `markata lsp` to opt in.
+The existing LSP server then emits the same findings as *hint* severity
 with `markata-prose` as source. Standard Neovim diagnostics can display them.
 No extra plugin is necessary. Rule-level project ignores are shared with the CLI. With `MARKATA_PROSE_ENABLED=1`, native LSP sessions also expose standard `textDocument/codeAction` fixes: Replace (when a deterministic suggestion exists), Ignore this occurrence (until the document closes or position changes), and Always ignore this rule (saved to project preferences). For example, `very unique` can be replaced with `unique` as a single undoable text edit. Personal dictionaries are not implemented yet.
 
 ## Editor
 
-The browser workbench already consumes Markata LSP diagnostics. Prose hints are
-now available in that diagnostic stream; Google Docs-like squiggles and
-Accept / Ignore / Always ignore actions are **not implemented yet**. Those
-require editor UI work, stable edit actions, and a shared persisted vocabulary.
+When the editor server starts with `MARKATA_PROSE_ENABLED=1`, the browser
+workbench shows quiet amber squiggles for style hints rather than mixing them
+with structural error diagnostics. Click or tap a squiggle, or press
+`Alt+Enter` with the cursor on a hint, to review it in a small popover.
+
+- **Accept** uses a versioned LSP text edit when the rule provides an explicit
+  safe replacement. The edit is a single CodeMirror operation, preserving undo.
+- **Ignore once** hides the current observation in the browser session.
+- **Always ignore rule** persists the rule ID to the workspace-root
+  `.markata-prose.json` using an authenticated/same-origin route. The route
+  accepts known rule IDs only and cannot select a filesystem path.
+
+This is an initial editor UI, **not** Harper spelling/grammar or a personal
+word dictionary. Always ignore currently suppresses an entire *rule*, not
+just a word or phrase. The browser LSP remains read-only; persistence happens
+through the workbench's separately authorized route.
 
 ## Next increments
 
 1. Extend project rule ignores with user dictionaries and per-occurrence ignore semantics.
 2. Add spelling and grammar via an evaluated Harper adapter.
 3. Expand LSP code actions beyond the first deterministic replacement and rule-level ignores.
-4. Add unobtrusive inline decorations and accessible suggestion popovers in
-   Editor, with a single undoable edit per correction.
+4. Expand the initial Editor popover to support spelling dictionaries,
+   phrase-level ignores, keyboard navigation and reliable mobile behavior.
 5. Evaluate Vale style packs and document-level repetition metrics, with
    false-positive tests and browser/runtime parity checks.
 
