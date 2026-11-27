@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	blogrollImportType = "type"
 	blogrollImportCategory    = "category"
 	blogrollImportDescription = "description"
 )
@@ -143,7 +144,7 @@ func renderOPMLImport(content string, feeds []blogroll.OPMLFeed, enabled bool) (
 		}
 		result.WriteString("\n\n[[" + prefix + ".feeds]]\n")
 		result.WriteString("url = " + strconv.Quote(feed.URL) + "\n")
-		for _, field := range []string{listSortTitle, blogrollImportDescription, blogrollImportCategory, "type", blogrollStatusActive} {
+		for _, field := range []string{listSortTitle, blogrollImportDescription, blogrollImportCategory, blogrollImportType, blogrollStatusActive} {
 			result.WriteString(field + " = " + fields[field] + "\n")
 		}
 		if feed.SiteURL != "" {
