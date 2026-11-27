@@ -17,9 +17,9 @@ func newBlogrollListCmd() *cobra.Command {
 	var asJSON bool
 	var filter string
 	cmd := &cobra.Command{
-		Use:     "list",
-		Short:   "List external subscriptions and their configuration sources",
-		Long:    `List configured blogroll subscriptions without making network requests or modifying configuration.`,
+		Use:   "list",
+		Short: "List external subscriptions and their configuration sources",
+		Long:  `List configured blogroll subscriptions without making network requests or modifying configuration.`,
 		Example: `  markata blogroll list
   markata blogroll list --filter engineering
   markata blogroll list --json`,
