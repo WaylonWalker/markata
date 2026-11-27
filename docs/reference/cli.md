@@ -60,6 +60,43 @@ markata-go build pages/sample.md
 markata-go serve pages/sample.md
 ```
 
+## Inspect the installed CLI
+
+Generate a machine-readable inventory from the actual command tree of your
+installed release. This requires no site configuration or network access.
+
+```bash
+markata cli inventory > commands.json
+```
+
+The JSON includes nested command paths, aliases, hidden and deprecated
+commands, registered argument validators, examples and declared flags
+(including inherited flags). This is an inventory, not a certification
+that every runtime behavior or error has been audited.
+
+### Manage external subscriptions
+
+The blogroll is a list of external subscriptions, distinct from the feeds
+generated from your own posts.
+
+| Command | Purpose |
+| --- | --- |
+| `markata blogroll add [url]` | Subscribe to a website or feed; prompts when omitted |
+| `markata blogroll list --json` | Inspect configured subscriptions |
+| `markata blogroll discover <url>` | Find advertised public feeds |
+| `markata blogroll check <handle-or-url>` | Validate a public feed |
+| `markata blogroll edit <handle-or-url> --title "Title"` | Change selected metadata |
+| `markata blogroll enable <handle-or-url>` | Resume a subscription |
+| `markata blogroll disable <handle-or-url>` | Pause a subscription |
+| `markata blogroll remove <handle-or-url> --yes` | Confirm removal |
+| `markata blogroll import subscriptions.opml --dry-run` | Preview an OPML import |
+| `markata blogroll export subscriptions.opml` | Export OPML |
+| `markata blogroll update` | Refresh feed metadata |
+
+Use `markata blogroll <command> --help` for flags and
+[the blogroll guide](/docs/guides/blogroll/) for examples and limitations.
+Add, edit, pause/resume, remove and import support dry runs.
+
 ## Agent-first setup: `--skill`
 
 `markata --skill` prints a self-contained setup guide **from the installed
