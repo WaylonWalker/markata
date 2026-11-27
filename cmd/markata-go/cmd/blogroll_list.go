@@ -9,6 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	blogrollListCommand = "list"
+	blogrollStatusActive = "active"
+)
+
 func init() {
 	blogrollCmd.AddCommand(newBlogrollListCmd())
 }
@@ -17,7 +22,7 @@ func newBlogrollListCmd() *cobra.Command {
 	var asJSON bool
 	var filter string
 	cmd := &cobra.Command{
-		Use:   "list",
+		Use:   blogrollListCommand,
 		Short: "List external subscriptions and their configuration sources",
 		Long:  `List configured blogroll subscriptions without making network requests or modifying configuration.`,
 		Example: `  markata blogroll list
@@ -77,7 +82,7 @@ func renderBlogrollList(w io.Writer, response subscriptionResponse, filter strin
 		if title == "" {
 			title = feed.URL
 		}
-		status := "active"
+		status := blogrollStatusActive
 		if !feed.IsActive() {
 			status = "paused"
 		}
