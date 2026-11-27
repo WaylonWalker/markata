@@ -235,10 +235,7 @@ func (p *LinkAvatarsPlugin) Render(m *lifecycle.Manager) error {
 	// Thread-safe icon cache for concurrent access
 	var iconCache sync.Map
 
-	posts := m.FilterPosts(func(post *models.Post) bool {
-		if post.Skip || post.ArticleHTML == "" {
-			return false
-		}
+	posts := m.FilterPosts(func(*models.Post) bool {
 		return true
 	})
 
@@ -253,6 +250,29 @@ func (p *LinkAvatarsPlugin) Render(m *lifecycle.Manager) error {
 			posts = filtered
 		}
 	}
+
+	if cache != nil {
+		emptyHash := buildcache.ContentHash("")
+		for _, post := range posts {
+			if !post.Skip && post.ArticleHTML != "" {
+				continue
+			}
+			if _, ok := cache.GetCachedLinkAvatarsHTML(post.Path, emptyHash); ok {
+				continue
+			}
+			// Empty ArticleHTML is still a completed transform input. Persist an
+			// empty result so no-op verification can distinguish it from a cache
+			// entry that has never passed through this plugin.
+			cache.CacheLinkAvatarsHTML(post.Path, emptyHash, "")
+		}
+	}
+	filteredPosts := posts[:0]
+	for _, post := range posts {
+		if !post.Skip && post.ArticleHTML != "" {
+			filteredPosts = append(filteredPosts, post)
+		}
+	}
+	posts = filteredPosts
 
 	// Phase 1: Restore cached results for unchanged posts
 	var needProcessing []*models.Post

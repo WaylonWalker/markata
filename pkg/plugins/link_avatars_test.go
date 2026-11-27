@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/WaylonWalker/markata/pkg/buildcache"
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/models"
 )
@@ -82,6 +83,47 @@ func TestLinkAvatars_Render_LocalModeInjectsAndCaches(t *testing.T) {
 	iconPath := filepath.Join(outputDir, "assets", "markata", "link-avatars", "example.com.png")
 	if _, err := os.Stat(iconPath); err != nil {
 		t.Fatalf("expected cached icon at %s: %v", iconPath, err)
+	}
+}
+
+func TestLinkAvatars_Render_CachesEmptyArticleResult(t *testing.T) {
+	outputDir := t.TempDir()
+	config := &lifecycle.Config{
+		OutputDir: outputDir,
+		Extra: map[string]interface{}{
+			"models_config": &models.Config{URL: "https://mysite.test"},
+			"link_avatars":  map[string]any{"enabled": true, "mode": "local"},
+		},
+	}
+
+	manager := lifecycle.NewManager()
+	manager.SetConfig(config)
+	cache := buildcache.New(t.TempDir())
+	manager.Cache().Set("build_cache", cache)
+	skipped := &models.Post{Path: "pages/skipped.md", Skip: true, ArticleHTML: "<p>must stay unchanged</p>"}
+	manager.SetPosts([]*models.Post{
+		{Path: "pages/archive/year.md", Content: "template-only"},
+		skipped,
+	})
+
+	plugin := NewLinkAvatarsPlugin()
+	if err := plugin.Configure(manager); err != nil {
+		t.Fatalf("Configure() error = %v", err)
+	}
+	if err := plugin.Render(manager); err != nil {
+		t.Fatalf("Render() error = %v", err)
+	}
+
+	got, ok := cache.GetCachedLinkAvatarsHTML("pages/archive/year.md", buildcache.ContentHash(""))
+	if !ok || got != "" {
+		t.Fatalf("empty article cache = (%q, %t), want (empty, true)", got, ok)
+	}
+	got, ok = cache.GetCachedLinkAvatarsHTML("pages/skipped.md", buildcache.ContentHash(""))
+	if !ok || got != "" {
+		t.Fatalf("skipped article cache = (%q, %t), want (empty, true)", got, ok)
+	}
+	if skipped.ArticleHTML != "<p>must stay unchanged</p>" {
+		t.Fatalf("skipped article HTML changed to %q", skipped.ArticleHTML)
 	}
 }
 

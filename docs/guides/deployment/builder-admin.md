@@ -459,9 +459,12 @@ release pointer, every release entry's file identity, and the running builder ex
 records an unchanged result. Builder Admin treats published releases as immutable between atomic
 promotions; concurrent edits by other writers are outside this guarantee.
 
-For local or hosted link avatars, each renderable Markdown post must also have a persisted transform
-result. Self-hosted CDN assets must be present in the verified asset cache. If either cache is
-incomplete, Builder Admin runs a full build so remote data or assets can be retried.
+For local or hosted link avatars, every Markdown path selected by the site's content globs must
+have a persisted transform result. Builder Admin checks the paths and cache entries without
+re-parsing Markdown; its source snapshot verifies source file identities and changed paths. Skipped posts and
+posts with empty article HTML have an explicit empty-input result. Missing or invalid cache entries
+make Builder Admin run a full build so remote favicon data can be retried.
+Self-hosted CDN assets must be present in the verified asset cache.
 
 Then inspect the build row for status, queue wait, build duration, trigger, and release.
 

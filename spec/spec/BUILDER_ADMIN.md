@@ -271,12 +271,19 @@ become available or auto-install later and produce a new index. The Bleve
 backend MAY use the shortcut when its configured source and cache roots match.
 
 When build-time link avatars are enabled, baseline creation MUST verify that
-every renderable Markdown post has a persisted link-avatar transform result.
-Missing transform coverage MUST disable baseline creation because the plugin
-can fetch remote favicon data during a full render. Browser-only avatar mode
-does not require this check. Self-hosted CDN assets MUST have complete verified
-cache entries before a baseline is recorded; missing assets can become
-available on a later build and change output.
+every configured Markdown source path has a persisted link-avatar transform
+result. Verification MUST enumerate paths without parsing Markdown because the
+source snapshot already verifies file identities and changed paths. Posts with skipped or empty
+`ArticleHTML` MUST persist an empty result keyed by the hash of the empty input,
+and verification MUST accept only that exact empty-result marker. Missing
+transform coverage MUST disable baseline creation because the plugin can fetch
+remote favicon data during a full render. Browser-only avatar mode does not
+require this check. The service MAY reuse parsed coverage data while the regular
+build-cache file identity remains unchanged; a cache replacement during a load
+MUST fail closed.
+Self-hosted CDN assets MUST have complete verified cache entries before a
+baseline is recorded; missing assets can become available on a later build and
+change output.
 
 When Markdown contains mention candidates and mention metadata is enabled, the
 shortcut MUST be disabled until it can prove complete fresh cache coverage for
