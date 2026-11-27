@@ -44,6 +44,7 @@ func TestProseIgnoreRouteRejectsCrossOriginAndUnknownRules(t *testing.T) {
 	}{
 		{name: "cross-origin", origin: "https://example.org", body: `{"rule":"prose/cliche"}`},
 		{name: "unknown rule", origin: "http://localhost", body: `{"rule":"example/unknown"}`},
+		{name: "invalid phrase", origin: "http://localhost", body: `{"rule":"prose/cliche","phrase":"arbitrary text"}`},
 		{name: "arbitrary path", origin: "http://localhost", body: `{"rule":"prose/cliche","path":"../../other"}`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -63,5 +64,29 @@ func TestProseIgnoreRouteRejectsCrossOriginAndUnknownRules(t *testing.T) {
 				t.Fatalf("unexpected prose preference file after rejected request: %v", err)
 			}
 		})
+	}
+}
+
+func TestProseIgnoreRouteOnlySuppressesSelectedPhrase(t *testing.T) {
+	root := t.TempDir()
+	h := &Handler{root: root}
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost,
+		"http://localhost/workspace/prose/ignore-rule",
+		strings.NewReader(`{"rule":"prose/intensifier","phrase":"very unique"}`))
+	req.RemoteAddr = "127.0.0.1:42000"
+	req.Header.Set("Origin", "http://localhost")
+	req.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	h.ServeHTTP(response, req)
+	if response.Code != http.StatusOK {
+		t.Fatalf("phrase ignore returned HTTP %d: %s", response.Code, response.Body.String())
+	}
+	prefs, err := prose.LoadPreferences(filepath.Join(root, "post.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	issues := prose.Check("Very unique. Completely revolutionary.", prefs.Options())
+	if len(issues) != 1 || issues[0].Column != len("Very unique. ") {
+		t.Fatalf("phrase ignore blocked different pattern: %+v", issues)
 	}
 }
