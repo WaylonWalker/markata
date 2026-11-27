@@ -43,6 +43,11 @@
     }
     row('writing','Wrap long lines','Keep long paragraphs within the source pane.',controls['setting-wrap']);
     row('writing','Editor keymap','Vim, Emacs and Sublime text editing. Application shortcuts have their own category.',controls.keymap);
+    const vimClipboard = document.createElement('input');
+    vimClipboard.type='checkbox'; vimClipboard.id='setting-vim-clipboard';
+    try { vimClipboard.checked=localStorage.getItem('markata-vim-system-clipboard') !== 'false'; } catch { vimClipboard.checked=true; }
+    vimClipboard.addEventListener('change',()=>{try {localStorage.setItem('markata-vim-system-clipboard',String(vimClipboard.checked));} catch {}});
+    row('writing','Vim system clipboard','Yank, delete and paste use the system clipboard, including image uploads. Turn off for private Vim registers.',vimClipboard);
     const font = document.createElement('input'); font.id='setting-font-size'; font.type='range'; font.min='12'; font.max='24'; font.step='1';
     try { font.value=localStorage.getItem('markata-editor-font-size') || '14'; } catch { font.value='14'; }
     const applyFont = () => {

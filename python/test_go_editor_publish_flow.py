@@ -760,6 +760,42 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertEqual(errors, [])
 
 
+    def test_vim_system_clipboard_and_image_picker(self):
+        context = self.browser.new_context(viewport={"width": 390, "height": 844})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        page.add_init_script("""() => {
+            let text = 'external';
+            Object.defineProperty(navigator, 'clipboard', {value: {
+                writeText: async value => { text = value; },
+                readText: async () => text,
+                read: async () => [{types:['text/plain'], getType: async () => new Blob([text], {type:'text/plain'})}]
+            }});
+            localStorage.setItem('markata-editor-keymap', 'vim');
+        }""")
+        page.goto(self.url)
+        page.locator('#mobile-nav [data-mobile-tab="write"]').click()
+        expect(page.locator(".CodeMirror")).to_be_visible()
+        page.evaluate("""() => {
+            const cm = document.querySelector('.CodeMirror').CodeMirror;
+            cm.setValue('hello world\\nsecond line');
+            cm.setCursor(0,0);
+            cm.focus();
+            if (cm.state.vim.insertMode) CodeMirror.Vim.handleKey(cm, '<Esc>');
+        }""")
+        page.keyboard.press("y")
+        page.keyboard.press("y")
+        page.wait_for_function("async () => (await navigator.clipboard.readText()) === 'hello world\\n'")
+        page.keyboard.press("p")
+        page.wait_for_function("() => document.querySelector('.CodeMirror').CodeMirror.getValue() === 'hello world\\nhello world\\nsecond line'")
+        expect(page.locator("#editor-add-image")).to_be_visible()
+        page.route("**/workspace/dropper-upload", lambda route: route.fulfill(
+            status=200, content_type="application/json", body='{"url":"https://example.com/photo.png"}'))
+        with page.expect_file_chooser() as chooser:
+            page.locator("#editor-add-image").click()
+        chooser.value.set_files({"name":"photo.png","mimeType":"image/png","buffer":b"test image"})
+        page.wait_for_function("() => document.querySelector('.CodeMirror').CodeMirror.getValue().includes('https://example.com/photo.png')")
+
     def test_pwa_android_multi_photo_share_capture_and_save(self):
         context = self.browser.new_context(viewport={"width": 390, "height": 844})
         self.addCleanup(context.close)
@@ -799,6 +835,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         dialog = page.locator("#cms-quick-note-dialog")
         expect(dialog).to_be_visible(timeout=10000)
         expect(dialog.locator("#cms-qn-heading")).to_have_value("Weekend photos")
+        expect(dialog.locator("#cms-qn-tags")).to_have_value("photo")
         expect(dialog.locator("#cms-qn-body")).to_have_value("Two images from Android")
         expect(dialog.locator("#cms-qn-photo-list img")).to_have_count(2)
         self.assertFalse(list((self.site / "static" / "images").glob("weekend-photos*"))
@@ -816,6 +853,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
 
         post_path = page.locator("#active-file").inner_text()
         source = (self.site / post_path).read_text(encoding="utf-8")
+        self.assertIn("type: photo", source)
         self.assertIn("![Shared photo 1](/images/", source)
         self.assertIn("![Shared photo 2](/images/", source)
         self.assertIn('image: "/images/', source)

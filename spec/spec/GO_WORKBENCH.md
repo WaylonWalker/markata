@@ -86,12 +86,7 @@ resolved if that document is opened again. If the author removes the placeholder
 the editor MUST preserve the current source and report the uploaded Markdown so
 it can be recovered.
 
-In Vim normal or visual mode, `p` and `P` MUST check the browser clipboard for
-an image before invoking Vim's register paste. A clipboard image MUST use the
-same upload placeholder and Dropper flow as a native paste event. When no image
-is available, the editor MUST replay the original Vim paste command. Clipboard
-read failures MUST be reported accessibly and MUST preserve Vim's register paste
-behavior. `Ctrl+V` MUST retain Vim's blockwise visual-selection behavior.
+By default Vim yank, delete and change MUST synchronize the unnamed register to the system clipboard; plain `p` and `P` MUST accept clipboard text and images, falling back to the local register if clipboard access is denied. Named private registers MUST remain available. A persisted Writing setting MUST allow opting out of system clipboard synchronization. Native browser image paste MUST remain available in either mode. `Ctrl+V` MUST retain Vim blockwise visual selection. The source toolbar and command palette MUST offer an Insert Image via Dropper action opening the native file picker, uploading through the existing guarded endpoint and inserting Markdown at the saved selection.
 
 `POST /workspace/dropper-upload` MUST accept one multipart `image` file only
 for same-origin loopback workspace requests. It MUST enforce the existing

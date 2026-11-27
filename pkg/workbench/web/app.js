@@ -185,58 +185,102 @@ function imageFromClipboard(clipboardData) {
     || [...(clipboardData?.types || [])].some(isImageType));
   return {file, advertisesImage};
 }
-async function readClipboardImage() {
-  const clipboardItems = await navigator.clipboard?.read?.();
-  for (const item of clipboardItems || []) {
-    const type = [...(item.types || [])].find(value => typeof value === 'string' && value.toLowerCase().startsWith('image/'));
-    if (!type) continue;
-    const normalizedType = type.toLowerCase();
-    const extension = normalizedType === 'image/jpeg' ? 'jpg' : normalizedType.slice('image/'.length).replace(/[^a-z0-9]+/g, '-');
-    return new File([await item.getType(type)], `pasted-image.${extension || 'image'}`, {type:normalizedType});
-  }
-  return null;
+// Default to Neovim's unnamedplus-like workflow, retaining local registers
+// when the browser denies clipboard access or the user opts out.
+function vimClipboardEnabled() {
+  try { return localStorage.getItem('markata-vim-system-clipboard') !== 'false'; }
+  catch { return true; }
 }
-// Vim's p/P commands do not emit a browser paste event. Check the system
-// clipboard first, then replay the original command when it has no image.
+const vimRegisters = window.CodeMirror.Vim.getRegisterController();
+const pushVimText = vimRegisters.pushText;
+let clipboardWrite = Promise.resolve();
+let lastClipboardWrite = null;
+vimRegisters.pushText = function(name, operator, text, linewise, blockwise) {
+  pushVimText.call(this, name, operator, text, linewise, blockwise);
+  if (!vimClipboardEnabled() || (name && !['"','+','*'].includes(name)) || !['yank','delete','change'].includes(operator)) return;
+  const value = this.unnamedRegister.toString();
+  try {
+    clipboardWrite = Promise.resolve(navigator.clipboard?.writeText(value))
+      .then(() => { if (navigator.clipboard?.writeText) lastClipboardWrite = value; })
+      .catch(() => { lastClipboardWrite = null; });
+  } catch { lastClipboardWrite = null; }
+};
+function imageTarget() {
+  const from = editor.getCursor('from'), to = editor.getCursor('to');
+  return {from, to, originalText: editor.getRange(from,to),
+    documentAtPaste: activeImageUploadDocument(), sourceAtPaste: editor.getValue()};
+}
+function targetStillCurrent(target) {
+  return target.documentAtPaste === activeImageUploadDocument() && target.sourceAtPaste === editor.getValue();
+}
 editor.getWrapperElement().addEventListener('keydown', event => {
-  if (event.target !== editor.getInputField() || editor.getOption('keyMap') !== 'vim'
-      || event.ctrlKey || event.metaKey || event.altKey || !['p','P'].includes(event.key)) return;
   const vim = editor.state.vim;
-  if (!vim || vim.insertMode) return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  const from = editor.getCursor('from');
-  const to = editor.getCursor('to');
-  const visualSelection = Boolean(vim.visualMode);
-  const value = editor.getValue();
-  const position = event.key === 'p'
-    ? Math.min(value.length, editor.indexFromPos(to) + (visualSelection ? 0 : 1))
-    : editor.indexFromPos(from);
-  const insertion = visualSelection ? {from, to} : {from:editor.posFromIndex(position),to:editor.posFromIndex(position)};
-  const target = {
-    ...insertion,
-    originalText: editor.getRange(insertion.from, insertion.to),
-    documentAtPaste: activeImageUploadDocument(),
-    sourceAtPaste: value,
-  };
-  setImageUploadStatus('Checking the clipboard for an image…');
-  const replayVimPaste = () => window.CodeMirror?.Vim?.handleKey(editor, event.key);
-  void readClipboardImage().then(file => {
-    if (!file) {
-      setImageUploadStatus('');
-      replayVimPaste();
-      return;
+  if (!vimClipboardEnabled() || event.target !== editor.getInputField() ||
+      editor.getOption('keyMap') !== 'vim' || !vim || vim.insertMode ||
+      event.ctrlKey || event.metaKey || event.altKey || !['p','P'].includes(event.key)) return;
+  // Explicit named registers retain their native behavior.
+  if (vim.inputState?.registerName && !['"','+','*'].includes(vim.inputState.registerName)) return;
+  if (!navigator.clipboard?.read && !navigator.clipboard?.readText) return;
+  event.preventDefault(); event.stopImmediatePropagation();
+  const target = imageTarget(), key = event.key;
+  const replay = () => window.CodeMirror.Vim.handleKey(editor,key);
+  const cursor = editor.getCursor();
+  const stillCurrent = () => targetStillCurrent(target) && editor.state.vim === vim &&
+    !vim.insertMode && editor.getCursor().line === cursor.line && editor.getCursor().ch === cursor.ch;
+  void (async () => {
+    let text;
+    try {
+      await clipboardWrite;
+      if (navigator.clipboard.read) {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const type = item.types.find(t => t.startsWith('image/'));
+          if (type) {
+            const blob = await item.getType(type);
+            if (!stillCurrent()) return;
+            if (!['image/png','image/jpeg','image/gif','image/webp'].includes(type)) {
+              setImageUploadStatus('Choose a PNG, JPEG, GIF, or WebP image.', 'error'); return;
+            }
+            if (!vim.visualMode && key === 'p') {
+              const pos = {line:target.to.line,ch:Math.min(editor.getLine(target.to.line).length,target.to.ch+1)};
+              target.from = target.to = pos; target.originalText = '';
+            }
+            void uploadPastedImage(new File([blob],'clipboard-image.'+type.split('/')[1],{type}),target);
+            return;
+          }
+          if (item.types.includes('text/plain')) text = await (await item.getType('text/plain')).text();
+        }
+      } else text = await navigator.clipboard.readText();
+    } catch {
+      try { text = await navigator.clipboard.readText(); } catch {}
     }
-    if (editor.getValue() !== target.sourceAtPaste || activeImageUploadDocument() !== target.documentAtPaste) {
-      setImageUploadStatus('The editor changed while reading the clipboard. Paste the image again.', 'error');
-      return;
+    if (!stillCurrent()) { setImageUploadStatus('Editor changed during clipboard read. Paste again.', 'error'); return; }
+    const register = vimRegisters.unnamedRegister;
+    if (text !== undefined && (text !== lastClipboardWrite || text !== register.toString())) {
+      register.setText(text, text.endsWith('\n'), false);
     }
-    void uploadPastedImage(file, target);
-  }).catch(() => {
-    setImageUploadStatus('Vim could not read the image clipboard. Use browser Paste or allow clipboard access.', 'error');
-    replayVimPaste();
-  });
+    replay();
+  })();
 }, true);
+const imagePicker = document.querySelector('#editor-image-picker');
+let pickerTarget;
+function openEditorImagePicker() {
+  pickerTarget = imageTarget();
+  imagePicker.value = '';
+  imagePicker.click();
+}
+document.querySelector('#editor-add-image').addEventListener('click', openEditorImagePicker);
+imagePicker.addEventListener('change', () => {
+  const file = imagePicker.files?.[0];
+  if (!file) return;
+  if (!pickerTarget || !targetStillCurrent(pickerTarget)) {
+    setImageUploadStatus('Editor changed while choosing an image. Choose it again.', 'error'); return;
+  }
+  if (!['image/png','image/jpeg','image/gif','image/webp'].includes(file.type.toLowerCase())) {
+    setImageUploadStatus('Choose a PNG, JPEG, GIF, or WebP image.', 'error'); return;
+  }
+  void uploadPastedImage(file,pickerTarget);
+});
 editor.getWrapperElement().addEventListener('paste', event => {
   const {file, advertisesImage} = imageFromClipboard(event.clipboardData);
   if (!file) {
@@ -799,6 +843,7 @@ function focusExplorer() {
 }
 const registerApp = (id,label,category,bindings,run,description='') =>
   appShortcuts.register({id,label,category,bindings,run,description});
+registerApp('workbench.addImage','Insert Image via Dropper','Writing',{},openEditorImagePicker,'Choose a photo or image file and insert Markdown at the cursor');
 // Make editor motion keymaps discoverable without opening Settings. The
 // palette executes the same change event as the existing settings control.
 for (const [value, name] of [['default','Default'],['vim','Vim'],['emacs','Emacs'],['sublime','Sublime']]) {

@@ -142,9 +142,16 @@ func TestHandler_PWAManifestAndFlowsServed(t *testing.T) {
 	if target["action"] != "/share-target" || target["method"] != "POST" || target["enctype"] != "multipart/form-data" {
 		t.Fatalf("share target must be a multipart POST: %#v", target)
 	}
-	files, ok := target["files"].([]any)
+	params, ok := target["params"].(map[string]any)
+	if !ok {
+		t.Fatal("share target missing params")
+	}
+	if _, misplaced := target["files"]; misplaced {
+		t.Fatal("share files must be nested in params")
+	}
+	files, ok := params["files"].([]any)
 	if !ok || len(files) != 1 {
-		t.Fatalf("share target must accept one image collection: %#v", target["files"])
+		t.Fatalf("share target must accept one image collection: %#v", params["files"])
 	}
 	fields, isMap := files[0].(map[string]any)
 	if !isMap {
