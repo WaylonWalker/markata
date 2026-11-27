@@ -154,6 +154,22 @@ active = true                            # Optional: set false to disable withou
 max_entries = 50                         # Optional: override global max_entries_per_feed
 ```
 
+### Export your subscriptions
+
+Export the effective subscription list to an OPML 2.0 file that other feed
+readers can import. This works offline and includes paused subscriptions.
+
+```bash
+markata blogroll export subscriptions.opml
+markata blogroll export > subscriptions.opml
+```
+
+The explicit filename form refuses to overwrite an existing file. Standard
+OPML retains feed and website URLs, titles, descriptions, and category folders.
+Markata-specific fields (such as handles, reader types and pause state) are
+not retained by this portable format. Exports may include private feed URLs;
+keep them private if they contain access tokens.
+
 ### Add a feed from the terminal
 
 Run `markata blogroll add` in an interactive terminal to enter a feed URL and review its metadata, or supply the URL directly:
