@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/url"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -41,8 +42,11 @@ type TOMLMutation struct {
 // The same result can be previewed in an editor, discarded or written by a
 // transaction adapter that verifies the effective composed configuration.
 func PlanTOMLMutation(original string, req TOMLMutation) (string, error) {
+	u, err := url.Parse(req.URL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil {
+		return "", errors.New("expected an absolute HTTP(S) feed URL without credentials")
+	}
 	var proposed string
-	var err error
 	switch req.Action {
 	case MutationAdd:
 		proposed, err = planAddSubscription(original, req)
@@ -54,8 +58,8 @@ func PlanTOMLMutation(original string, req TOMLMutation) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, err := toml.Decode(proposed, &map[string]any{}); err != nil {
-		return "", fmt.Errorf("generated TOML was invalid: %w", err)
+	if err := verifyMutationDocument(original, proposed, req); err != nil {
+		return "", err
 	}
 	return proposed, nil
 }
@@ -67,7 +71,9 @@ func blogrollTablePrefix(content string) string {
 	return "markata-go.blogroll"
 }
 
-var mutationFields = []string{"title", "description", "category", "type", "tags", "handle", "active"}
+const mutationFieldActive = "active"
+
+var mutationFields = []string{"title", "description", "category", "type", "tags", "handle", mutationFieldActive}
 
 func planAddSubscription(original string, req TOMLMutation) (string, error) {
 	content := ClearEmptySubscriptionList(original)
@@ -101,7 +107,7 @@ func planExistingSubscription(content string, req TOMLMutation) (string, error) 
 		}
 		replacement, err = PatchSubscriptionBlock(content[selected.Start:selected.End], req.Fields, names)
 	case MutationActive:
-		replacement, err = PatchSubscriptionBlock(content[selected.Start:selected.End], map[string]string{"active": strconv.FormatBool(req.Active)}, []string{"active"})
+		replacement, err = PatchSubscriptionBlock(content[selected.Start:selected.End], map[string]string{mutationFieldActive: strconv.FormatBool(req.Active)}, []string{mutationFieldActive})
 	}
 	if err != nil {
 		return "", err
@@ -118,11 +124,13 @@ var anyTableHeader = regexp.MustCompile(`(?m)^[ \t]*\[`)
 var feedURLLine = regexp.MustCompile(`(?m)^[ \t]*url[ \t]*=[ \t]*(?:"([^"]+)"|'([^']+)')[ \t]*(?:#.*)?$`)
 var blogrollTable = regexp.MustCompile(`(?m)^[ \t]*\[(?:markata-go\.)?blogroll\][ \t]*(?:\r?\n|$)`)
 
+// SubscriptionBlock identifies the byte range of a feed table.
 type SubscriptionBlock struct {
 	Start, End int
 	URL        string
 }
 
+// SubscriptionBlocks locates feed table boundaries in a TOML document.
 func SubscriptionBlocks(content string) []SubscriptionBlock {
 	headers := feedHeader.FindAllStringIndex(content, -1)
 	result := make([]SubscriptionBlock, 0, len(headers))
@@ -143,6 +151,7 @@ func SubscriptionBlocks(content string) []SubscriptionBlock {
 	return result
 }
 
+// UniqueSubscriptionBlock refuses missing or ambiguous feed table matches.
 func UniqueSubscriptionBlock(content, address string) (SubscriptionBlock, error) {
 	var selected SubscriptionBlock
 	found := 0
@@ -158,6 +167,7 @@ func UniqueSubscriptionBlock(content, address string) (SubscriptionBlock, error)
 	return selected, nil
 }
 
+// SetSubscriptionField sets a simple field in a table body.
 func SetSubscriptionField(body, name, value string) string {
 	pattern := regexp.MustCompile(`(?m)^[ \t]*` + regexp.QuoteMeta(name) + `[ \t]*=[^\r\n]*`)
 	replacement := name + " = " + value
@@ -167,6 +177,7 @@ func SetSubscriptionField(body, name, value string) string {
 	return strings.TrimRight(body, "\r\n") + "\n" + replacement + "\n"
 }
 
+// EnableSubscriptions enables the blogroll table in a TOML document.
 func EnableSubscriptions(content string) string {
 	if loc := blogrollTable.FindStringIndex(content); loc != nil {
 		end := len(content)
@@ -176,7 +187,7 @@ func EnableSubscriptions(content string) string {
 		body := SetSubscriptionField(content[loc[1]:end], "enabled", "true")
 		return content[:loc[1]] + body + content[end:]
 	}
-	return strings.TrimRight(content, "\r\n") + "\n\n[markata-go.blogroll]\nenabled = true\n"
+	return strings.TrimRight(content, "\r\n") + "\n\n[" + blogrollTablePrefix(content) + "]\nenabled = true\n"
 }
 
 // EmptySubscriptionList preserves an explicit empty array at the effective
