@@ -76,23 +76,23 @@ func (s *Server) computeDiagnostics(uri, content string) []Diagnostic {
 	// Editorial prose observations use the same source positions as CLI
 	// diagnostics. They are informational rather than build-blocking errors.
 	if os.Getenv("MARKATA_PROSE_ENABLED") == "1" {
-	for _, issue := range prose.Check(content, prose.Options{}) {
-		start, end := Position{Line: issue.Line, Character: issue.Column},
-			Position{Line: issue.EndLine, Character: issue.EndColumn}
-		if start.Line >= 0 && start.Line < len(lines) {
-			start.Character = utf16Column(lines[start.Line], start.Character)
+		for _, issue := range prose.Check(content, prose.Options{}) {
+			start, end := Position{Line: issue.Line, Character: issue.Column},
+				Position{Line: issue.EndLine, Character: issue.EndColumn}
+			if start.Line >= 0 && start.Line < len(lines) {
+				start.Character = utf16Column(lines[start.Line], start.Character)
+			}
+			if end.Line >= 0 && end.Line < len(lines) {
+				end.Character = utf16Column(lines[end.Line], end.Character)
+			}
+			diagnosticsList = append(diagnosticsList, Diagnostic{
+				Range: Range{Start: start, End: end},
+				Severity: DiagnosticSeverityHint,
+				Source: "markata-prose",
+				Code: issue.Rule,
+				Message: issue.Message,
+			})
 		}
-		if end.Line >= 0 && end.Line < len(lines) {
-			end.Character = utf16Column(lines[end.Line], end.Character)
-		}
-		diagnosticsList = append(diagnosticsList, Diagnostic{
-			Range: Range{Start: start, End: end},
-			Severity: DiagnosticSeverityHint,
-			Source: "markata-prose",
-			Code: issue.Rule,
-			Message: issue.Message,
-		})
-	}
 	}
 	return diagnosticsList
 }
