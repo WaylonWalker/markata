@@ -185,58 +185,8 @@ function imageFromClipboard(clipboardData) {
     || [...(clipboardData?.types || [])].some(isImageType));
   return {file, advertisesImage};
 }
-async function readClipboardImage() {
-  const clipboardItems = await navigator.clipboard?.read?.();
-  for (const item of clipboardItems || []) {
-    const type = [...(item.types || [])].find(value => typeof value === 'string' && value.toLowerCase().startsWith('image/'));
-    if (!type) continue;
-    const normalizedType = type.toLowerCase();
-    const extension = normalizedType === 'image/jpeg' ? 'jpg' : normalizedType.slice('image/'.length).replace(/[^a-z0-9]+/g, '-');
-    return new File([await item.getType(type)], `pasted-image.${extension || 'image'}`, {type:normalizedType});
-  }
-  return null;
-}
-// Vim's p/P commands do not emit a browser paste event. Check the system
-// clipboard first, then replay the original command when it has no image.
-editor.getWrapperElement().addEventListener('keydown', event => {
-  if (event.target !== editor.getInputField() || editor.getOption('keyMap') !== 'vim'
-      || event.ctrlKey || event.metaKey || event.altKey || !['p','P'].includes(event.key)) return;
-  const vim = editor.state.vim;
-  if (!vim || vim.insertMode) return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  const from = editor.getCursor('from');
-  const to = editor.getCursor('to');
-  const visualSelection = Boolean(vim.visualMode);
-  const value = editor.getValue();
-  const position = event.key === 'p'
-    ? Math.min(value.length, editor.indexFromPos(to) + (visualSelection ? 0 : 1))
-    : editor.indexFromPos(from);
-  const insertion = visualSelection ? {from, to} : {from:editor.posFromIndex(position),to:editor.posFromIndex(position)};
-  const target = {
-    ...insertion,
-    originalText: editor.getRange(insertion.from, insertion.to),
-    documentAtPaste: activeImageUploadDocument(),
-    sourceAtPaste: value,
-  };
-  setImageUploadStatus('Checking the clipboard for an image…');
-  const replayVimPaste = () => window.CodeMirror?.Vim?.handleKey(editor, event.key);
-  void readClipboardImage().then(file => {
-    if (!file) {
-      setImageUploadStatus('');
-      replayVimPaste();
-      return;
-    }
-    if (editor.getValue() !== target.sourceAtPaste || activeImageUploadDocument() !== target.documentAtPaste) {
-      setImageUploadStatus('The editor changed while reading the clipboard. Paste the image again.', 'error');
-      return;
-    }
-    void uploadPastedImage(file, target);
-  }).catch(() => {
-    setImageUploadStatus('Vim could not read the image clipboard. Use browser Paste or allow clipboard access.', 'error');
-    replayVimPaste();
-  });
-}, true);
+// Vim p/P operate on registers synchronously. Native browser paste below
+// handles system clipboard images without intercepting Vim commands.
 editor.getWrapperElement().addEventListener('paste', event => {
   const {file, advertisesImage} = imageFromClipboard(event.clipboardData);
   if (!file) {
