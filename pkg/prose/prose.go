@@ -107,7 +107,7 @@ func maskNonProse(source string) string {
 			} else if count >= 3 {
 				inFence, fenceChar, fenceLen = true, marker, count
 				mask(offset, offset+len(line))
-			} else if strings.HasPrefix(trim, "    ") || strings.HasPrefix(line, "\t") {
+			} else if strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "\t") {
 				mask(offset, offset+len(line))
 			}
 		}
