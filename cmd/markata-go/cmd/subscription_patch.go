@@ -9,7 +9,17 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+
 	"github.com/WaylonWalker/markata/pkg/models"
+)
+
+const (
+	subscriptionFieldDescription = "description"
+	subscriptionFieldCategory    = "category"
+	subscriptionFieldType        = "type"
+	subscriptionFieldTags        = "tags"
+	subscriptionFieldHandle      = "handle"
+	subscriptionFieldActive      = "active"
 )
 
 // patchSubscriptionBlock applies only the selected fields and checks that the
@@ -94,16 +104,16 @@ func subscriptionInlineComment(value string) string {
 func subscriptionUpdateMatches(feed *models.ExternalFeedConfig, req subscriptionRequest) bool {
 	names := req.selectedFields
 	if len(names) == 0 {
-		names = []string{"title", "description", "category", "type", "tags", "handle", "active"}
+		names = []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, subscriptionFieldTags, subscriptionFieldHandle, subscriptionFieldActive}
 	}
 	actual := map[string]bool{
-		"title":       feed.Title == strings.TrimSpace(req.Title),
-		"description": feed.Description == strings.TrimSpace(req.Description),
-		"category":    feed.Category == strings.TrimSpace(req.Category),
-		"type":        string(feed.Type) == req.Type,
-		"tags":        slices.Equal(feed.Tags, parseTagsBlogroll(req.Tags)),
-		"handle":      feed.Handle == strings.TrimSpace(req.Handle),
-		"active":      feed.IsActive() == req.Active,
+		listSortTitle:                feed.Title == strings.TrimSpace(req.Title),
+		subscriptionFieldDescription: feed.Description == strings.TrimSpace(req.Description),
+		subscriptionFieldCategory:    feed.Category == strings.TrimSpace(req.Category),
+		subscriptionFieldType:        string(feed.Type) == req.Type,
+		subscriptionFieldTags:        slices.Equal(feed.Tags, parseTagsBlogroll(req.Tags)),
+		subscriptionFieldHandle:      feed.Handle == strings.TrimSpace(req.Handle),
+		subscriptionFieldActive:      feed.IsActive() == req.Active,
 	}
 	for _, name := range names {
 		if !actual[name] {

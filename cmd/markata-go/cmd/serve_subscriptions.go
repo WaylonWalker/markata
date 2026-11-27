@@ -60,21 +60,21 @@ type subscriptionResponse struct {
 type subscriptionRequest struct {
 	Action      string `json:"action"`
 	URL         string `json:"url"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Category    string `json:"category"`
-	Type        string `json:"type"`
-	Tags        string `json:"tags"`
-	Handle      string `json:"handle"`
-	Active      bool   `json:"active"`
+	Title       string `json:listSortTitle`
+	Description string `json:subscriptionFieldDescription`
+	Category    string `json:subscriptionFieldCategory`
+	Type        string `json:subscriptionFieldType`
+	Tags        string `json:subscriptionFieldTags`
+	Handle      string `json:subscriptionFieldHandle`
+	Active      bool   `json:subscriptionFieldActive`
 	// Selected fields are supplied by the CLI, not accepted from HTTP clients.
 	selectedFields []string
 }
 
 type discoveredSubscription struct {
 	URL         string `json:"url"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	Title       string `json:listSortTitle`
+	Description string `json:subscriptionFieldDescription`
 	SiteURL     string `json:"site_url"`
 	Error       string `json:"error,omitempty"`
 }
@@ -318,13 +318,13 @@ func subscriptionFields(req subscriptionRequest) (map[string]string, error) {
 		return nil, errors.New("feed type must be written, video, or podcast")
 	}
 	return map[string]string{
-		"title":       strconv.Quote(strings.TrimSpace(req.Title)),
-		"description": strconv.Quote(strings.TrimSpace(req.Description)),
-		"category":    strconv.Quote(strings.TrimSpace(req.Category)),
-		"type":        strconv.Quote(req.Type),
-		"tags":        "[" + formatTOMLStringArray(parseTagsBlogroll(req.Tags)) + "]",
-		"handle":      strconv.Quote(strings.TrimSpace(req.Handle)),
-		"active":      strconv.FormatBool(req.Active),
+		listSortTitle:                strconv.Quote(strings.TrimSpace(req.Title)),
+		subscriptionFieldDescription: strconv.Quote(strings.TrimSpace(req.Description)),
+		subscriptionFieldCategory:    strconv.Quote(strings.TrimSpace(req.Category)),
+		subscriptionFieldType:        strconv.Quote(req.Type),
+		subscriptionFieldTags:        "[" + formatTOMLStringArray(parseTagsBlogroll(req.Tags)) + "]",
+		subscriptionFieldHandle:      strconv.Quote(strings.TrimSpace(req.Handle)),
+		subscriptionFieldActive:      strconv.FormatBool(req.Active),
 	}, nil
 }
 
@@ -429,7 +429,7 @@ func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest
 		var block strings.Builder
 		block.WriteString("\n\n[[" + prefix + ".feeds]]\n")
 		block.WriteString("url = " + strconv.Quote(req.URL) + "\n")
-		for _, name := range []string{"title", "description", "category", "type", "tags", "handle", "active"} {
+		for _, name := range []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, subscriptionFieldTags, subscriptionFieldHandle, subscriptionFieldActive} {
 			block.WriteString(name + " = " + fields[name] + "\n")
 		}
 		content = strings.TrimRight(content, "\r\n") + block.String()
@@ -443,7 +443,7 @@ func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest
 			replacement = content[selected.start:selected.end]
 			names := req.selectedFields
 			if len(names) == 0 {
-				names = []string{"title", "description", "category", "type", "tags", "handle", "active"}
+				names = []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, subscriptionFieldTags, subscriptionFieldHandle, subscriptionFieldActive}
 			}
 			replacement, err = patchSubscriptionBlock(replacement, fields, names)
 			if err != nil {
@@ -451,7 +451,7 @@ func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest
 			}
 		}
 		if req.Action == subscriptionActionActive {
-			replacement = subscriptionField(content[selected.start:selected.end], "active", strconv.FormatBool(req.Active))
+			replacement = subscriptionField(content[selected.start:selected.end], subscriptionFieldActive, strconv.FormatBool(req.Active))
 		}
 		content = content[:selected.start] + replacement + content[selected.end:]
 		if req.Action == subscriptionActionRemove && len(state.cfg.Blogroll.Feeds) == 1 {
@@ -680,7 +680,7 @@ func discoverSubscription(ctx context.Context, address string) (discoveredSubscr
 	}
 	var feeds []string
 	doc.Find("link[rel~='alternate']").Each(func(_ int, s *goquery.Selection) {
-		typ, _ := s.Attr("type")
+		typ, _ := s.Attr(subscriptionFieldType)
 		if !strings.Contains(typ, "rss+xml") && !strings.Contains(typ, "atom+xml") && !strings.Contains(typ, "feed+json") {
 			return
 		}
