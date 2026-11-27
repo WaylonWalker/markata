@@ -10,10 +10,17 @@ import (
 // PreferencesFile is discovered by walking upward from a Markdown file.
 const PreferencesFile = ".markata-prose.json"
 
-// Preferences contains project-level rules shared by CLI and LSP.
-// Personal dictionaries and per-occurrence ignores are a future extension.
+// IgnoredPhrase identifies one accepted phrase without suppressing its entire rule.
+type IgnoredPhrase struct {
+	Rule   string `json:"rule"`
+	Phrase string `json:"phrase"`
+}
+
+// Preferences holds project-level rule and phrase exceptions shared by all
+// writing surfaces. Personal dictionaries are a separate future feature.
 type Preferences struct {
-	IgnoredRules []string `json:"ignored_rules"`
+	IgnoredRules   []string        `json:"ignored_rules"`
+	IgnoredPhrases []IgnoredPhrase `json:"ignored_phrases,omitempty"`
 }
 
 func (p Preferences) Options() Options {
@@ -21,7 +28,14 @@ func (p Preferences) Options() Options {
 	for _, id := range p.IgnoredRules {
 		ignored[id] = true
 	}
-	return Options{IgnoredRules: ignored}
+	phrases := make(map[string]map[string]bool)
+	for _, entry := range p.IgnoredPhrases {
+		if phrases[entry.Rule] == nil {
+			phrases[entry.Rule] = make(map[string]bool)
+		}
+		phrases[entry.Rule][normalizePhrase(entry.Phrase)] = true
+	}
+	return Options{IgnoredRules: ignored, IgnoredPhrases: phrases}
 }
 
 // FindPreferences locates the nearest project preferences file.
@@ -51,20 +65,10 @@ func LoadPreferences(path string) (Preferences, error) {
 	if err != nil || name == "" {
 		return Preferences{}, err
 	}
-	data, err := os.ReadFile(name)
-	if err != nil {
-		return Preferences{}, fmt.Errorf("read prose preferences %s: %w", name, err)
-	}
-	var p Preferences
-	if err := json.Unmarshal(data, &p); err != nil {
-		return Preferences{}, fmt.Errorf("parse prose preferences %s: %w", name, err)
-	}
-	return p, nil
+	return readPreferences(name)
 }
 
-// IgnoreRule persists a rule preference in the nearest project configuration.
-// This discovery is intended for trusted local CLI and native LSP workflows.
-func IgnoreRule(path, id string) (string, error) {
+func preferencesPath(path string) (string, error) {
 	name, err := FindPreferences(path)
 	if err != nil {
 		return "", err
@@ -72,12 +76,10 @@ func IgnoreRule(path, id string) (string, error) {
 	if name == "" {
 		name = filepath.Join(filepath.Dir(path), PreferencesFile)
 	}
-	return writeIgnoredRule(name, id)
+	return name, nil
 }
 
-// IgnoreRuleAtRoot confines browser preference writes to a server-selected
-// workspace root. Unlike IgnoreRule, this never searches parent directories.
-func IgnoreRuleAtRoot(root, id string) (string, error) {
+func rootPreferencesPath(root string) (string, error) {
 	dir, err := filepath.Abs(root)
 	if err != nil {
 		return "", err
@@ -89,48 +91,118 @@ func IgnoreRuleAtRoot(root, id string) (string, error) {
 	if !info.IsDir() {
 		return "", fmt.Errorf("prose preference root is not a directory: %s", dir)
 	}
-	return writeIgnoredRule(filepath.Join(dir, PreferencesFile), id)
+	return filepath.Join(dir, PreferencesFile), nil
+}
+
+// IgnoreRule persists a rule-wide exception in a local project configuration.
+func IgnoreRule(path, id string) (string, error) {
+	name, err := preferencesPath(path)
+	if err != nil {
+		return "", err
+	}
+	return writeIgnoredRule(name, id)
+}
+
+// IgnoreRuleAtRoot confines browser rule writes to a server-selected root.
+func IgnoreRuleAtRoot(root, id string) (string, error) {
+	name, err := rootPreferencesPath(root)
+	if err != nil {
+		return "", err
+	}
+	return writeIgnoredRule(name, id)
+}
+
+// IgnorePhrase accepts a specific phrase in the nearest local project config.
+func IgnorePhrase(path, id, phrase string) (string, error) {
+	name, err := preferencesPath(path)
+	if err != nil {
+		return "", err
+	}
+	return writeIgnoredPhrase(name, id, phrase)
+}
+
+// IgnorePhraseAtRoot accepts a specific phrase at a server-selected root.
+func IgnorePhraseAtRoot(root, id, phrase string) (string, error) {
+	name, err := rootPreferencesPath(root)
+	if err != nil {
+		return "", err
+	}
+	return writeIgnoredPhrase(name, id, phrase)
 }
 
 func writeIgnoredRule(name, id string) (string, error) {
 	if !KnownRule(id) {
 		return "", fmt.Errorf("unknown prose rule %q", id)
 	}
+	return updatePreferences(name, func(p *Preferences) bool {
+		for _, existing := range p.IgnoredRules {
+			if existing == id {
+				return false
+			}
+		}
+		p.IgnoredRules = append(p.IgnoredRules, id)
+		return true
+	})
+}
+
+func writeIgnoredPhrase(name, id, phrase string) (string, error) {
+	if !ValidPhrase(id, phrase) {
+		return "", fmt.Errorf("unknown or invalid prose phrase for %q", id)
+	}
+	normalized := normalizePhrase(phrase)
+	return updatePreferences(name, func(p *Preferences) bool {
+		for _, existing := range p.IgnoredPhrases {
+			if existing.Rule == id && normalizePhrase(existing.Phrase) == normalized {
+				return false
+			}
+		}
+		p.IgnoredPhrases = append(p.IgnoredPhrases, IgnoredPhrase{Rule: id, Phrase: normalized})
+		return true
+	})
+}
+
+func readPreferences(name string) (Preferences, error) {
 	info, statErr := os.Lstat(name)
 	if statErr == nil && info.Mode()&os.ModeSymlink != 0 {
-		return "", fmt.Errorf("prose preference file must not be a symlink: %s", name)
+		return Preferences{}, fmt.Errorf("prose preference file must not be a symlink: %s", name)
 	}
 	if statErr != nil && !os.IsNotExist(statErr) {
-		return "", statErr
+		return Preferences{}, statErr
+	}
+	data, err := os.ReadFile(name)
+	if os.IsNotExist(err) {
+		return Preferences{}, nil
+	}
+	if err != nil {
+		return Preferences{}, fmt.Errorf("read prose preferences %s: %w", name, err)
 	}
 	var p Preferences
-	data, err := os.ReadFile(name)
-	switch {
-	case err == nil:
-		if err := json.Unmarshal(data, &p); err != nil {
-			return "", fmt.Errorf("parse prose preferences %s: %w", name, err)
-		}
-	case !os.IsNotExist(err):
-		return "", fmt.Errorf("read prose preferences %s: %w", name, err)
+	if err := json.Unmarshal(data, &p); err != nil {
+		return Preferences{}, fmt.Errorf("parse prose preferences %s: %w", name, err)
 	}
-	for _, existing := range p.IgnoredRules {
-		if existing == id {
-			return name, nil
-		}
-	}
-	p.IgnoredRules = append(p.IgnoredRules, id)
-	output, err := json.MarshalIndent(p, "", "  ")
+	return p, nil
+}
+
+func updatePreferences(name string, apply func(*Preferences) bool) (string, error) {
+	p, err := readPreferences(name)
 	if err != nil {
 		return "", err
 	}
-	output = append(output, '\n')
+	if !apply(&p) {
+		return name, nil
+	}
+	data, err := json.MarshalIndent(p, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	data = append(data, '\n')
 	temp, err := os.CreateTemp(filepath.Dir(name), ".markata-prose-*")
 	if err != nil {
 		return "", err
 	}
 	defer os.Remove(temp.Name())
-	if _, err := temp.Write(output); err != nil {
-		temp.Close()
+	if _, err := temp.Write(data); err != nil {
+		_ = temp.Close()
 		return "", err
 	}
 	if err := temp.Close(); err != nil {
