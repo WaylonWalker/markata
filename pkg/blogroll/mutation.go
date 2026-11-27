@@ -169,12 +169,7 @@ func UniqueSubscriptionBlock(content, address string) (SubscriptionBlock, error)
 
 // SetSubscriptionField sets a simple field in a table body.
 func SetSubscriptionField(body, name, value string) string {
-	pattern := regexp.MustCompile(`(?m)^[ \t]*` + regexp.QuoteMeta(name) + `[ \t]*=[^\r\n]*`)
-	replacement := name + " = " + value
-	if pattern.MatchString(body) {
-		return pattern.ReplaceAllStringFunc(body, func(string) string { return replacement })
-	}
-	return strings.TrimRight(body, "\r\n") + "\n" + replacement + "\n"
+	return replaceSubscriptionField(body, name, value)
 }
 
 // EnableSubscriptions enables the blogroll table in a TOML document.
@@ -293,4 +288,3 @@ func subscriptionInlineComment(value string) string {
 	}
 	return ""
 }
-
