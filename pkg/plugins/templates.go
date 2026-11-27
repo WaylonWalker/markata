@@ -131,6 +131,33 @@ func (p *TemplatesPlugin) Configure(m *lifecycle.Manager) error {
 	return nil
 }
 
+// ResolveDraftTemplate applies the production frontmatter and HTML template
+// selection rules without loading source from disk, running a build, or
+// decrypting source. The editor owns the unsaved metadata.
+func ResolveDraftTemplate(metadata map[string]interface{}, sourcePath string, cfg *models.Config) (*models.Post, string, error) {
+	post := models.NewPost(sourcePath)
+	if err := NewLoadPlugin().applyMetadata(post, metadata); err != nil {
+		return nil, "", err
+	}
+	p := NewTemplatesPlugin()
+	slugMode := ""
+	var slugRules []models.SlugRule
+	if cfg != nil {
+		p.config = &lifecycle.Config{Extra: map[string]interface{}{
+			"template_presets": cfg.TemplatePresets,
+			"default_templates": cfg.DefaultTemplates,
+		}}
+		p.layoutConfig = &cfg.Layout
+		slugMode = cfg.GlobConfig.SlugMode
+		slugRules = cfg.GlobConfig.SlugRules
+	}
+	if !post.Has("_slug_explicit") {
+		post.GenerateSlugWithMode(models.SlugModeForPath(sourcePath, slugMode, slugRules))
+	}
+	post.GenerateHref()
+	return post, p.resolveTemplate(post), nil
+}
+
 // resolveTemplate determines the template to use for a post (HTML format).
 // This is a convenience wrapper for resolveTemplateForFormat with "html" format.
 // Priority: frontmatter per-format -> preset -> simple template -> layout config -> global default
