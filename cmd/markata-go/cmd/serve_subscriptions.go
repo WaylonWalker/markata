@@ -60,21 +60,21 @@ type subscriptionResponse struct {
 type subscriptionRequest struct {
 	Action      string `json:"action"`
 	URL         string `json:"url"`
-	Title       string `json:listSortTitle`
-	Description string `json:subscriptionFieldDescription`
-	Category    string `json:subscriptionFieldCategory`
-	Type        string `json:subscriptionFieldType`
-	Tags        string `json:subscriptionFieldTags`
-	Handle      string `json:subscriptionFieldHandle`
-	Active      bool   `json:blogrollStatusActive`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Category    string `json:"category"`
+	Type        string `json:"type"`
+	Tags        string `json:"tags"`
+	Handle      string `json:"handle"`
+	Active      bool   `json:"active"`
 	// Selected fields are supplied by the CLI, not accepted from HTTP clients.
 	selectedFields []string
 }
 
 type discoveredSubscription struct {
 	URL         string `json:"url"`
-	Title       string `json:listSortTitle`
-	Description string `json:subscriptionFieldDescription`
+	Title       string `json:"title"`
+	Description string `json:"description"`
 	SiteURL     string `json:"site_url"`
 	Error       string `json:"error,omitempty"`
 }
