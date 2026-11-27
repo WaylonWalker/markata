@@ -224,9 +224,18 @@ func (p *MDVideoPlugin) processPost(post *models.Post) error {
 // replaceDropperSTLImages turns trusted Dropper STL image links into lightweight
 // posters that open the interactive Dropper viewer when selected. The model
 // itself stays out of the page until the reader follows the link.
-func replaceDropperSTLImages(articleHTML string) string {
+func replaceDropperSTLImages(articleHTML string, trustedDomains ...[]string) string {
 	if !strings.Contains(articleHTML, "<img") {
 		return articleHTML
+	}
+	previewURLs := dropperSTLPreviewURLs
+	if len(trustedDomains) > 0 {
+		domains := trustedDomains[0]
+		previewURLs = func(raw string) (string, string, bool) {
+			return dropperSTLPreviewURLsWithTrust(raw, func(candidate string) bool {
+				return templates.IsTrustedMediaURLForDomains(candidate, domains)
+			})
+		}
 	}
 	articleHTML = linkedSTLImageRegex.ReplaceAllStringFunc(articleHTML, func(match string) string {
 		parts := linkedSTLImageRegex.FindStringSubmatch(match)
@@ -238,7 +247,7 @@ func replaceDropperSTLImages(articleHTML string) string {
 		if len(srcMatch) < 2 {
 			return match
 		}
-		posterURL, viewerURL, ok := dropperSTLPreviewURLs(html.UnescapeString(srcMatch[1]))
+		posterURL, viewerURL, ok := previewURLs(html.UnescapeString(srcMatch[1]))
 		if !ok {
 			return match
 		}
@@ -257,7 +266,7 @@ func replaceDropperSTLImages(articleHTML string) string {
 			return match
 		}
 		source := html.UnescapeString(srcMatch[1])
-		posterURL, viewerURL, ok := dropperSTLPreviewURLs(source)
+		posterURL, viewerURL, ok := previewURLs(source)
 		if !ok {
 			return match
 		}
@@ -300,8 +309,12 @@ func dropperSTLViewerAnchor(viewerURL, alt, content string) string {
 // dropperSTLPreviewURLs returns the Dropper poster and interactive viewer URLs
 // for an absolute, trusted Dropper /file/*.stl URL.
 func dropperSTLPreviewURLs(raw string) (posterURL, viewerURL string, ok bool) {
+	return dropperSTLPreviewURLsWithTrust(raw, templates.IsTrustedMediaURL)
+}
+
+func dropperSTLPreviewURLsWithTrust(raw string, isTrustedMediaURL func(string) bool) (posterURL, viewerURL string, ok bool) {
 	u, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil || !u.IsAbs() || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || !templates.IsTrustedMediaURL(raw) {
+	if err != nil || !u.IsAbs() || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || !isTrustedMediaURL(raw) {
 		return "", "", false
 	}
 	path := u.Path

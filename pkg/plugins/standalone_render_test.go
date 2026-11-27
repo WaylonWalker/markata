@@ -121,6 +121,24 @@ func TestRenderStandalone_LinkedDropperSTLImageKeepsAuthoredLink(t *testing.T) {
 	}
 }
 
+func TestRenderStandalone_DropperSTLImageUsesConfiguredTrustedDomains(t *testing.T) {
+	config := models.NewConfig()
+	config.Templates.Media.TrustedDomains = []string{"models.example.test"}
+	r, err := RenderStandalone("![Part](https://models.example.test/file/part.stl)", StandaloneOptions{Config: config})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`class="md-3d-model"`,
+		`href="https://models.example.test/view/part.stl"`,
+		`src="https://models.example.test/fmt/file/part.stl.webp?height=576&amp;width=768"`,
+	} {
+		if !strings.Contains(r.HTML, want) {
+			t.Errorf("standalone renderer output is missing %q: %s", want, r.HTML)
+		}
+	}
+}
+
 func TestRenderStandalone_RawHTMLPolicy(t *testing.T) {
 	source := `<script>alert(1)</script>`
 	safe, err := RenderStandalone(source, StandaloneOptions{})

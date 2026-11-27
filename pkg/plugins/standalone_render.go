@@ -121,7 +121,11 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 	}
 	post.ArticleHTML = article
 	if mdVideoEnabled(options.Config) {
-		post.ArticleHTML = replaceDropperSTLImages(post.ArticleHTML)
+		if options.Config == nil {
+			post.ArticleHTML = replaceDropperSTLImages(post.ArticleHTML)
+		} else {
+			post.ArticleHTML = replaceDropperSTLImages(post.ArticleHTML, options.Config.Templates.Media.TrustedDomains)
+		}
 	}
 	r := &StandaloneResult{omitAssetContent: options.OmitAssetContent, SchemaVersion: StandaloneSchemaVersion, Features: map[string]bool{featureFenceMermaid: false, featureFenceChartJS: false, excalidrawName: false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
 	if err := r.renderDiagrams(post, options); err != nil {

@@ -44,6 +44,22 @@ func TestResponsiveSrcsetSkipsLocalAndUntrustedURLs(t *testing.T) {
 	}
 }
 
+func TestIsTrustedMediaURLForDomainsUsesConfigWithoutChangingGlobalAllowlist(t *testing.T) {
+	custom := []string{"models.example.test"}
+	if !IsTrustedMediaURLForDomains("https://models.example.test/file/part.stl", custom) {
+		t.Fatal("configured custom media domain should be trusted")
+	}
+	if IsTrustedMediaURLForDomains("https://dropper.waylonwalker.com/file/part.stl", custom) {
+		t.Fatal("non-configured domain should not be trusted when a custom allowlist is set")
+	}
+	if !IsTrustedMediaURLForDomains("https://dropper.waylonwalker.com/file/part.stl", nil) {
+		t.Fatal("empty custom allowlist should use the default trusted domains")
+	}
+	if IsTrustedMediaURL("https://models.example.test/file/part.stl") {
+		t.Fatal("domain-specific check must not mutate the process-wide allowlist")
+	}
+}
+
 func TestResponsiveSrcsetRequiresTwoDistinctPositiveWidths(t *testing.T) {
 	for _, widths := range [][]int{{320}, {0, -1}, {320, 320}} {
 		if got := ResponsiveSrcset("https://dropper.waylonwalker.com/photo.jpg", widths); got != "" {

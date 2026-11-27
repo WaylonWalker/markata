@@ -179,6 +179,24 @@ func IsTrustedMediaURL(raw string) bool {
 	return isTrustedURL(u)
 }
 
+// IsTrustedMediaURLForDomains reports whether raw is allowed by the supplied
+// domain list without changing the process-wide media allowlist. An empty list
+// uses the default trusted domains.
+func IsTrustedMediaURLForDomains(raw string, domains []string) bool {
+	u, err := url.Parse(raw)
+	if err != nil || u == nil {
+		return false
+	}
+	if u.Host == "" {
+		return true
+	}
+	if len(domains) == 0 {
+		domains = models.DefaultTrustedMediaDomains
+	}
+	_, ok := buildTrustedMediaDomainSet(domains)[strings.ToLower(u.Hostname())]
+	return ok
+}
+
 // PosterURLFromMap resolves the first poster alias value or derives a .webp poster for trusted video URLs.
 func PosterURLFromMap(data map[string]interface{}, mediaURL string) string {
 	if data == nil {
