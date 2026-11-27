@@ -390,6 +390,36 @@ func TestHandler_RenderMarksContainerSourceLines(t *testing.T) {
 	}
 }
 
+func TestHandler_RenderDropperSTLImageInPreviewAndDocument(t *testing.T) {
+	h := newHandler(t)
+	response := request(h, `{"markdown":"![Part](https://dropper.waylonwalker.com/file/part.stl?token=secret)"}`)
+	if response.Code != http.StatusOK {
+		t.Fatalf("render returned %d: %s", response.Code, response.Body.String())
+	}
+	var result renderResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	for _, rendered := range []string{result.HTML, dereferenceDocument(result.Document)} {
+		for _, want := range []string{
+			`class="md-3d-model"`,
+			`href="https://dropper.waylonwalker.com/view/part.stl?token=secret"`,
+			`src="https://dropper.waylonwalker.com/fmt/file/part.stl.webp?height=576&amp;token=secret&amp;width=768"`,
+		} {
+			if !strings.Contains(rendered, want) {
+				t.Errorf("editor rendering is missing %q: %s", want, rendered)
+			}
+		}
+	}
+}
+
+func dereferenceDocument(document *string) string {
+	if document == nil {
+		return ""
+	}
+	return *document
+}
+
 func TestHandler_RequestContract(t *testing.T) {
 	h := newHandler(t)
 	cases := []struct {

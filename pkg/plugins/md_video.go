@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/WaylonWalker/markata/pkg/lifecycle"
@@ -153,6 +154,13 @@ var srcAttrRegex = regexp.MustCompile(`src="([^"]*)"`)
 // altAttrRegex extracts the alt attribute value.
 var altAttrRegex = regexp.MustCompile(`alt="([^"]*)"`)
 
+const (
+	dropperSTLPosterWidth  = 768
+	dropperSTLPosterHeight = 576
+)
+
+var dropperSTLTransformQueryKeys = strings.Fields("w h width height format fit crop quality q at start end time t")
+
 // processPost processes a single post's HTML for video image tags.
 func (p *MDVideoPlugin) processPost(post *models.Post) error {
 	// Skip posts marked as skip or with no HTML content
@@ -175,6 +183,9 @@ func (p *MDVideoPlugin) processPost(post *models.Post) error {
 	if !strings.Contains(post.ArticleHTML, "<img") {
 		return nil
 	}
+
+	// Replace Dropper-hosted STL images before checking for video extensions.
+	post.ArticleHTML = replaceDropperSTLImages(post.ArticleHTML)
 
 	// Replace img tags that have video extensions
 	result := imgTagRegex.ReplaceAllStringFunc(post.ArticleHTML, func(match string) string {
@@ -203,6 +214,76 @@ func (p *MDVideoPlugin) processPost(post *models.Post) error {
 
 	post.ArticleHTML = result
 	return nil
+}
+
+// replaceDropperSTLImages turns trusted Dropper STL image links into lightweight
+// posters that open the interactive Dropper viewer when selected. The model
+// itself stays out of the page until the reader follows the link.
+func replaceDropperSTLImages(articleHTML string) string {
+	if !strings.Contains(articleHTML, "<img") {
+		return articleHTML
+	}
+	return imgTagRegex.ReplaceAllStringFunc(articleHTML, func(match string) string {
+		srcMatch := srcAttrRegex.FindStringSubmatch(match)
+		if len(srcMatch) < 2 {
+			return match
+		}
+		source := html.UnescapeString(srcMatch[1])
+		posterURL, viewerURL, ok := dropperSTLPreviewURLs(source)
+		if !ok {
+			return match
+		}
+
+		alt := ""
+		if altMatch := altAttrRegex.FindStringSubmatch(match); len(altMatch) >= 2 {
+			alt = html.UnescapeString(altMatch[1])
+		}
+		accessibleLabel := "Open interactive 3D view"
+		if alt != "" {
+			accessibleLabel += " of " + alt
+		}
+		return `<a class="md-3d-model" href="` + html.EscapeString(viewerURL) + `" target="_blank" rel="noopener noreferrer" aria-label="` + html.EscapeString(accessibleLabel) + `">` +
+			`<img src="` + html.EscapeString(posterURL) + `" alt="` + html.EscapeString(alt) + `" width="` + strconv.Itoa(dropperSTLPosterWidth) + `" height="` + strconv.Itoa(dropperSTLPosterHeight) + `" loading="lazy" decoding="async">` +
+			`<span>Open interactive 3D view</span></a>`
+	})
+}
+
+// dropperSTLPreviewURLs returns the Dropper poster and interactive viewer URLs
+// for an absolute, trusted Dropper /file/*.stl URL.
+func dropperSTLPreviewURLs(raw string) (posterURL, viewerURL string, ok bool) {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || !u.IsAbs() || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || !templates.IsTrustedMediaURL(raw) {
+		return "", "", false
+	}
+	path := u.Path
+	fileRoute := strings.LastIndex(path, "/file/")
+	if fileRoute < 0 {
+		return "", "", false
+	}
+	filename := strings.TrimPrefix(path[fileRoute+len("/file/"):], "/")
+	if filename == "" || !strings.EqualFold(filepath.Ext(filename), ".stl") {
+		return "", "", false
+	}
+
+	query := u.Query()
+	for _, key := range dropperSTLTransformQueryKeys {
+		query.Del(key)
+	}
+	posterURLParts := *u
+	posterURLParts.Path = path[:fileRoute] + "/fmt" + path[fileRoute:] + ".webp"
+	posterQuery := query
+	posterQuery.Set("width", strconv.Itoa(dropperSTLPosterWidth))
+	posterQuery.Set("height", strconv.Itoa(dropperSTLPosterHeight))
+	posterURLParts.RawQuery = posterQuery.Encode()
+
+	viewerURLParts := *u
+	viewerURLParts.Path = path[:fileRoute] + "/view/" + filename
+	viewerQuery := u.Query()
+	for _, key := range dropperSTLTransformQueryKeys {
+		viewerQuery.Del(key)
+	}
+	viewerURLParts.RawQuery = viewerQuery.Encode()
+	return posterURLParts.String(), viewerURLParts.String(), true
 }
 
 func (p *MDVideoPlugin) normalizeVideoTag(post *models.Post, tag, block string) string {

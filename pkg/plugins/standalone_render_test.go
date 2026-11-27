@@ -80,6 +80,23 @@ func TestRenderStandalone_PlainAndLinked(t *testing.T) {
 	}
 }
 
+func TestRenderStandalone_DropperSTLImage(t *testing.T) {
+	r, err := RenderStandalone("![Part](https://dropper.waylonwalker.com/file/part.stl?token=secret)", StandaloneOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`class="md-3d-model"`,
+		`href="https://dropper.waylonwalker.com/view/part.stl?token=secret"`,
+		`src="https://dropper.waylonwalker.com/fmt/file/part.stl.webp?height=576&amp;token=secret&amp;width=768"`,
+		`Open interactive 3D view`,
+	} {
+		if !strings.Contains(r.HTML, want) {
+			t.Errorf("standalone renderer output is missing %q: %s", want, r.HTML)
+		}
+	}
+}
+
 func TestRenderStandalone_RawHTMLPolicy(t *testing.T) {
 	source := `<script>alert(1)</script>`
 	safe, err := RenderStandalone(source, StandaloneOptions{})

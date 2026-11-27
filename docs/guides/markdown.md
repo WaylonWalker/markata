@@ -247,6 +247,19 @@ multiple lines in the source.</p>
 <p><a href="https://example.com"><img src="/images/photo.jpg" alt="Clickable image"></a></p>
 ```
 
+#### Dropper-hosted STL models
+
+Use Markdown image syntax for an STL file hosted by a trusted Dropper domain:
+
+```markdown
+![Bracket](https://dropper.waylonwalker.com/file/bracket.stl)
+```
+
+Markata renders a WebP poster from Dropper's 3D preview API. The poster links
+to the interactive Dropper viewer, which opens in a new tab. The site build and
+the editor preview use the same rendering. Local STL files and untrusted hosts
+stay unchanged.
+
 ### Unordered Lists
 
 **Input:**

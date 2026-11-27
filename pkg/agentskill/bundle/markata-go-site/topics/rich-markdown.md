@@ -71,6 +71,18 @@ frontmatter.title, avoid duplicating it as the first body H1.
    it; custom `preserve` lists replace the defaults. Verify the *published*
    code.css still has `.md-code-copy` and `.md-code-enhanced` positioning.
 
+## Dropper-hosted STL models
+
+Use Markdown image syntax for STL files on a trusted Dropper host:
+
+```markdown
+![Part name](https://dropper.waylonwalker.com/file/part.stl)
+```
+
+Markata renders a WebP poster from Dropper's preview API. The poster opens the
+interactive viewer in a new tab. The site build and editor preview use the same
+rendering. Local STL files and files on untrusted hosts stay unchanged.
+
 ## Native Markdown tabs
 
 For install alternatives and code examples in different languages, prefer

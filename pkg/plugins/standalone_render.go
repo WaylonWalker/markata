@@ -120,6 +120,7 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 		return nil, fmt.Errorf("render markdown: %w", err)
 	}
 	post.ArticleHTML = article
+	post.ArticleHTML = replaceDropperSTLImages(post.ArticleHTML)
 	r := &StandaloneResult{omitAssetContent: options.OmitAssetContent, SchemaVersion: StandaloneSchemaVersion, Features: map[string]bool{featureFenceMermaid: false, featureFenceChartJS: false, excalidrawName: false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
 	if err := r.renderDiagrams(post, options); err != nil {
 		return nil, err
