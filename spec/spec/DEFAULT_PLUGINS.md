@@ -113,6 +113,11 @@ exclude_patterns = ["**/draft-*", "**/wip-*"]
 4. Deduplicate (same file from multiple patterns)
 5. Store in `core.files`
 
+When the root `.gitignore` is enabled, a rule without `/` matches that name at
+any depth. A rule with `/` matches relative to the content root and excludes
+that path and its descendants. The basename of a path-qualified rule MUST NOT
+be applied to unrelated paths at other depths.
+
 **Hook behavior:**
 
 ```

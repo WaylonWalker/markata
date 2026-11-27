@@ -1233,6 +1233,11 @@ src = "/js/analytics.js"
 | `use_gitignore` | bool | `true` | Respect .gitignore when finding files |
 | `slug_mode` | string | `"flat"` | Slug derivation mode: `flat` or `path` |
 
+With `use_gitignore = true`, a rule without `/`, such as `output`, matches that
+name at any depth. A path-qualified rule, such as `.github/scripts/archive`,
+matches that path from the content root and its descendants. It does not ignore
+other directories just because they share the final name `archive`.
+
 ```toml
 [markata-go.glob]
 patterns = ["posts/**/*.md", "pages/*.md", "docs/**/*.md"]

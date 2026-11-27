@@ -131,6 +131,76 @@ func TestGlobPlugin_SkipsIgnoredDirectoriesDuringWalk(t *testing.T) {
 	}
 }
 
+func TestGlobPlugin_PathQualifiedIgnoreDoesNotMatchSameBasenameElsewhere(t *testing.T) {
+	tmpDir := t.TempDir()
+	ignoredDir := filepath.Join(tmpDir, ".github", "scripts", "archive")
+	contentDir := filepath.Join(tmpDir, "pages", "archive")
+	for path, contents := range map[string]string{
+		filepath.Join(ignoredDir, "generated.md"):      "# generated",
+		filepath.Join(contentDir, "year.md"):           "# archive page",
+		filepath.Join(tmpDir, "root-only.md"):          "# root only",
+		filepath.Join(tmpDir, "pages", "root-only.md"): "# nested same basename",
+		filepath.Join(tmpDir, ".gitignore"):            ".github/scripts/archive\n/root-only.md\n",
+	} {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("MkdirAll(%s) error = %v", path, err)
+		}
+		if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+			t.Fatalf("WriteFile(%s) error = %v", path, err)
+		}
+	}
+
+	m := lifecycle.NewManager()
+	m.Config().ContentDir = tmpDir
+	m.Config().GlobPatterns = []string{"**/*.md"}
+
+	plugin := NewGlobPlugin()
+	if err := plugin.Configure(m); err != nil {
+		t.Fatalf("Configure() error = %v", err)
+	}
+	if err := plugin.Glob(m); err != nil {
+		t.Fatalf("Glob() error = %v", err)
+	}
+
+	want := []string{"pages/archive/year.md", "pages/root-only.md"}
+	if got := m.Files(); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Files() = %v, want %v", got, want)
+	}
+}
+
+func TestGlobPlugin_BasenameIgnoreMatchesAtAnyDepth(t *testing.T) {
+	tmpDir := t.TempDir()
+	for path, contents := range map[string]string{
+		filepath.Join(tmpDir, "posts", "output", "generated.md"): "# generated",
+		filepath.Join(tmpDir, "pages", "keep.md"):                "# keep",
+		filepath.Join(tmpDir, ".gitignore"):                      "output\n",
+	} {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("MkdirAll(%s) error = %v", path, err)
+		}
+		if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+			t.Fatalf("WriteFile(%s) error = %v", path, err)
+		}
+	}
+
+	m := lifecycle.NewManager()
+	m.Config().ContentDir = tmpDir
+	m.Config().GlobPatterns = []string{"**/*.md"}
+
+	plugin := NewGlobPlugin()
+	if err := plugin.Configure(m); err != nil {
+		t.Fatalf("Configure() error = %v", err)
+	}
+	if err := plugin.Glob(m); err != nil {
+		t.Fatalf("Glob() error = %v", err)
+	}
+
+	want := []string{"pages/keep.md"}
+	if got := m.Files(); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Files() = %v, want %v", got, want)
+	}
+}
+
 func TestGlobPlugin_PropagatesContentDirectoryErrors(t *testing.T) {
 	m := lifecycle.NewManager()
 	m.Config().ContentDir = filepath.Join(t.TempDir(), "missing")

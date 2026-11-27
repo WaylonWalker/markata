@@ -113,6 +113,11 @@ patterns = ["posts/**/*.md", "pages/*.md"]
 use_gitignore = true
 ```
 
+With `use_gitignore = true`, a `.gitignore` rule without `/`, such as
+`output`, matches that name at any depth. A rule with `/`, such as
+`.github/scripts/archive`, matches that path from the site root and its
+descendants. It does not ignore another directory named `archive` elsewhere.
+
 ## Safe Defaults For New Sites
 
 ```toml

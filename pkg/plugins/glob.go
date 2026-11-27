@@ -121,11 +121,13 @@ func (p *GlobPlugin) prepareIgnoreRules() {
 	p.ignoreRules = make([]ignoreRule, 0, len(p.gitignorePatterns))
 	for _, pattern := range p.gitignorePatterns {
 		pattern = filepath.ToSlash(strings.TrimSuffix(pattern, "/"))
+		anchored := strings.HasPrefix(pattern, "/")
+		pattern = strings.TrimPrefix(pattern, "/")
 		p.ignoreRules = append(p.ignoreRules, ignoreRule{
 			pattern:  pattern,
 			filename: filepath.Base(pattern),
 			meta:     strings.ContainsAny(pattern, "*?[{"),
-			pathRule: strings.Contains(pattern, "/"),
+			pathRule: anchored || strings.Contains(pattern, "/"),
 		})
 	}
 }
@@ -175,9 +177,15 @@ func (p *GlobPlugin) isIgnored(path string) bool {
 		// matched file. This is particularly important for large sites with
 		// generated output and dependency directories.
 		if !rule.meta {
-			if normalizedPath == pattern || strings.HasPrefix(normalizedPath, pattern+"/") ||
-				filename == rule.filename || strings.HasSuffix(normalizedPath, "/"+pattern) ||
-				strings.HasSuffix(normalizedPath, "/"+pattern+"/") {
+			if rule.pathRule {
+				// A path-qualified rule is relative to the root .gitignore. Do not
+				// also apply its basename at every depth; that turns a rule such as
+				// .github/scripts/archive into an ignore for every archive directory.
+				if normalizedPath == pattern || strings.HasPrefix(normalizedPath, pattern+"/") {
+					return true
+				}
+			} else if filename == rule.filename {
+				// A rule without a slash matches this name at any depth.
 				return true
 			}
 			continue
