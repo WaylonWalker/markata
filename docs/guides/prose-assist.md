@@ -68,3 +68,23 @@ Editorial checks must never block builds or publishing by default. Prose
 analysis must also preserve Markdown and code source locations. The initial
 lightweight masks intentionally prefer omitting possible findings in protected
 regions to reporting inside syntax; richer Markdown parsing will follow.
+
+## Diagnostic contract (v1)
+
+CLI JSON includes the legacy line and byte-column fields plus new
+`contract_version`, `provider`, `severity`, `start_byte`, `end_byte`,
+and optional `edits` fields. Offsets describe half-open UTF-8 byte ranges
+in the **original Markdown source**, never the masked prose copy. A safe
+replacement uses a single edit with matching byte offsets and must be
+applied only to the same document version.
+
+The LSP converts those authoritative byte offsets into UTF-16 line/character
+coordinates for Neovim and CodeMirror. Invalid UTF-8 boundaries are rejected;
+they are not silently rounded to the nearest character. Frontmatter,
+fences, inline code, and link destinations remain protected from the initial
+editorial rules. Full Markdown AST parity, embedded HTML and nested syntax
+coverage remain in issue #2156.
+
+The stable contract deliberately distinguishes issue severity from authorship:
+a style hint is an observation to consider, **not** a prediction about
+whether an AI wrote the text.

@@ -17,7 +17,10 @@ func TestProseLSPRangeUsesUTF16Columns(t *testing.T) {
 	if len(issues) != 1 {
 		t.Fatalf("expected one style issue, got %+v", issues)
 	}
-	got := proseLSPRange(source, issues[0])
+	got, ok := proseLSPRange(source, issues[0])
+	if !ok {
+		t.Fatal("valid prose range rejected")
+	}
 	if got.Start.Character != 6 {
 		t.Fatalf("expected UTF-16 column 6, got %+v", got)
 	}
@@ -125,5 +128,18 @@ func TestProseLSPAlwaysIgnorePhrase(t *testing.T) {
 	issues := prose.Check("Very unique and completely revolutionary.", prefs.Options())
 	if len(issues) != 1 || issues[0].Column != len("Very unique and ") {
 		t.Fatalf("phrase ignore suppressed other style checks: %+v", issues)
+	}
+}
+
+func TestProseRejectsInvalidByteOffsets(t *testing.T) {
+	source := "🌱 We very unique."
+	issues := prose.Check(source, prose.Options{})
+	if len(issues) != 1 {
+		t.Fatalf("expected one issue, got %+v", issues)
+	}
+	issue := issues[0]
+	issue.StartByte = 1 // middle of the emoji's UTF-8 encoding
+	if _, ok := proseLSPRange(source, issue); ok {
+		t.Fatal("invalid UTF-8 boundary must not produce a code action")
 	}
 }
