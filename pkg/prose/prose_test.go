@@ -40,3 +40,20 @@ func TestNoFalseAIAuthorshipClaim(t *testing.T) {
 		}
 	}
 }
+
+func TestIgnorePhraseKeepsOtherPatternsInSameRule(t *testing.T) {
+	source := "This is Very Unique, and completely revolutionary."
+	ignored := Options{IgnoredPhrases: map[string]map[string]bool{
+		"prose/intensifier": {"very unique": true},
+	}}
+	issues := Check(source, ignored)
+	if len(issues) != 1 || issues[0].Rule != "prose/intensifier" ||
+		issues[0].Column != len("This is Very Unique, and ") {
+		t.Fatalf("phrase ignore should retain unrelated pattern: %+v", issues)
+	}
+	if !ValidPhrase("prose/intensifier", "Very Unique") ||
+		ValidPhrase("prose/cliche", "very unique") ||
+		ValidPhrase("prose/intensifier", "arbitrary text") {
+		t.Fatal("phrase validation must match a whole known pattern")
+	}
+}
