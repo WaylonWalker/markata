@@ -61,10 +61,10 @@ var (
 var blogrollAddCmd = &cobra.Command{
 	Use:   "add [url]",
 	Short: "Add a new external feed to blogroll",
-	Long: `Add a new RSS/Atom feed to your blogroll by providing the feed URL.
+	Long: `Add a new RSS/Atom feed to your blogroll from a feed or website URL.
 
 The command will:
-1. Fetch feed metadata (unless --manual is used)
+1. Verify the feed or discover advertised feeds (unless --manual is used)
 2. Extract metadata (title, description, site URL)
 3. Prompt for optional fields (category, tags)
 4. Add the feed to your config
@@ -97,13 +97,13 @@ func init() {
 	blogrollAddCmd.Flags().BoolVar(&blogrollAddNoPrompt, "no-prompt", false, "skip interactive prompts, use defaults")
 }
 
-func runBlogrollAdd(_ *cobra.Command, args []string) error {
+func runBlogrollAdd(cmd *cobra.Command, args []string) error {
 	var rawInput string
 	if len(args) == 0 {
 		if noInput || blogrollAddNoPrompt || !inputIsTerminal() || !outputIsTerminal() {
 			return newUsageError(&Diagnostic{Problem: "missing feed URL", Fix: "provide an RSS or Atom feed URL", Command: cliCommand("blogroll add https://example.com/feed.xml"), StatusCode: exitCodeUsage})
 		}
-		if err := huh.NewForm(huh.NewGroup(huh.NewInput().Title("Feed URL").Description("Enter an RSS or Atom feed URL").Value(&rawInput))).WithTheme(createHuhThemeForPalette(currentCLIPalette)).Run(); err != nil {
+		if err := huh.NewForm(huh.NewGroup(huh.NewInput().Title("Website or feed URL").Description("Enter a website or RSS/Atom feed URL").Value(&rawInput))).WithTheme(createHuhThemeForPalette(currentCLIPalette)).Run(); err != nil {
 			return err
 		}
 	} else {
@@ -136,15 +136,14 @@ func runBlogrollAdd(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Fetch feed metadata
 	metadata := &blogroll.Metadata{}
 	if !blogrollAddManual {
-		metadata, err = fetchFeedMetadataForAdd(cfg, feedURL)
+		feedURL, metadata, err = resolveBlogrollAddFeed(cmd, cfg, feedURL)
 		if err != nil {
-			metadata, err = recoverBlogrollMetadata(err)
-			if err != nil {
-				return err
-			}
+			return err
+		}
+		if err := checkDuplicateFeedURL(cfg, feedURL); err != nil {
+			return err
 		}
 	}
 
