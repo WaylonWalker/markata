@@ -37,6 +37,7 @@ const (
 	subscriptionActionAdd    = "add"
 	subscriptionActionUpdate = "update"
 	subscriptionActionRemove = "remove"
+	subscriptionActionActive = "set-active"
 	subscriptionTOMLExt      = ".toml"
 	subscriptionHTTPS        = "https"
 	subscriptionHTTP         = "http"
@@ -337,9 +338,13 @@ func enableSubscriptions(content string) string {
 	return strings.TrimRight(content, "\r\n") + "\n\n[markata-go.blogroll]\nenabled = true\n"
 }
 
-//nolint:gocyclo // A single atomic operation validates, edits, verifies, and rolls back the config.
 func changeSubscription(state *settingsState, req subscriptionRequest) error {
-	if req.Action != subscriptionActionAdd && req.Action != subscriptionActionUpdate && req.Action != subscriptionActionRemove {
+	return changeSubscriptionWithOptions(state, req, false)
+}
+
+//nolint:gocyclo // A single atomic operation validates, edits, verifies, and rolls back the config.
+func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest, dryRun bool) error {
+	if req.Action != subscriptionActionAdd && req.Action != subscriptionActionUpdate && req.Action != subscriptionActionRemove && req.Action != subscriptionActionActive {
 		return errors.New("invalid subscription action")
 	}
 	u, err := url.Parse(req.URL)
@@ -364,7 +369,7 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 		return err
 	}
 	fields := map[string]string{}
-	if req.Action != subscriptionActionRemove {
+	if req.Action == subscriptionActionAdd || req.Action == subscriptionActionUpdate {
 		fields, err = subscriptionFields(req)
 		if err != nil {
 			return err
@@ -400,7 +405,7 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 			block.WriteString(name + " = " + fields[name] + "\n")
 		}
 		content = strings.TrimRight(content, "\r\n") + block.String()
-	case subscriptionActionUpdate, subscriptionActionRemove:
+	case subscriptionActionUpdate, subscriptionActionRemove, subscriptionActionActive:
 		selected, findErr := uniqueBlock(content, req.URL)
 		if findErr != nil {
 			return findErr
@@ -412,10 +417,16 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 				replacement = subscriptionField(replacement, name, fields[name])
 			}
 		}
+		if req.Action == subscriptionActionActive {
+			replacement = subscriptionField(content[selected.start:selected.end], "active", strconv.FormatBool(req.Active))
+		}
 		content = content[:selected.start] + replacement + content[selected.end:]
 	}
 	if _, err := toml.Decode(content, &map[string]any{}); err != nil {
 		return fmt.Errorf("generated TOML was invalid: %w", err)
+	}
+	if dryRun {
+		return nil
 	}
 	// Retain the original on a verification failure. Rebuilds share
 	// serveConfigMu so they cannot observe a half-applied transaction.
@@ -434,6 +445,9 @@ func changeSubscription(state *settingsState, req subscriptionRequest) error {
 			f := &updated.cfg.Blogroll.Feeds[i]
 			if f.URL == req.URL {
 				present = true
+				if req.Action == subscriptionActionActive && f.IsActive() != req.Active {
+					verifyErr = errors.New("saved subscription active state did not take effect")
+				}
 				if req.Action == subscriptionActionUpdate && (f.Title != req.Title || f.Category != req.Category || string(f.Type) != req.Type || f.IsActive() != req.Active) {
 					verifyErr = errors.New("saved subscription did not take effect in composed configuration")
 				}
