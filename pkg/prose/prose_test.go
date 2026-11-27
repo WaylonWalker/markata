@@ -16,7 +16,9 @@ func TestCheckProseAndProtectedMarkdown(t *testing.T) {
 func TestIgnoreRule(t *testing.T) {
 	source := "It is important to note that this is very unique."
 	all := Check(source, Options{})
-	if len(all) != 2 { t.Fatalf("expected two issues, got %+v", all) }
+	if len(all) != 2 {
+		t.Fatalf("expected two issues, got %+v", all)
+	}
 	filtered := Check(source, Options{IgnoredRules: map[string]bool{"prose/wordiness": true}})
 	if len(filtered) != 1 || filtered[0].Rule != "prose/intensifier" {
 		t.Fatalf("unexpected filtered issues: %+v", filtered)
@@ -33,6 +35,8 @@ func TestUTF8ByteOffset(t *testing.T) {
 
 func TestNoFalseAIAuthorshipClaim(t *testing.T) {
 	for _, issue := range Check("A rich tapestry.", Options{}) {
-		if issue.Rule == "" || issue.Message == "" { t.Fatalf("missing details: %+v", issue) }
+		if issue.Rule == "" || issue.Message == "" {
+			t.Fatalf("missing details: %+v", issue)
+		}
 	}
 }
