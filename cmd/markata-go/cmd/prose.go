@@ -14,19 +14,23 @@ var proseJSON bool
 var proseIgnore []string
 
 var proseCmd = &cobra.Command{
-	Use: "prose",
+	Use:   "prose",
 	Short: "Check writing style without changing your text",
 }
 
 var proseCheckCmd = &cobra.Command{
-	Use: "check <markdown-file>",
+	Use:   "check <markdown-file>",
 	Short: "Show non-blocking prose suggestions in a Markdown file",
-	Args: cobra.ExactArgs(1),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		content, err := os.ReadFile(args[0])
-		if err != nil { return fmt.Errorf("read %s: %w", args[0], err) }
+		if err != nil {
+			return fmt.Errorf("read %s: %w", args[0], err)
+		}
 		ignored := make(map[string]bool, len(proseIgnore))
-		for _, rule := range proseIgnore { ignored[strings.TrimSpace(rule)] = true }
+		for _, rule := range proseIgnore {
+			ignored[strings.TrimSpace(rule)] = true
+		}
 		issues := prose.Check(string(content), prose.Options{IgnoredRules: ignored})
 		if proseJSON {
 			return json.NewEncoder(cmd.OutOrStdout()).Encode(issues)
@@ -37,8 +41,11 @@ var proseCheckCmd = &cobra.Command{
 				return err
 			}
 		}
-		if len(issues) == 0 { _, err = fmt.Fprintln(cmd.OutOrStdout(), "No prose suggestions."); return err }
-		return nil // Editorial observations never block publishing or CI by default.
+		if len(issues) == 0 {
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), "No prose suggestions.")
+			return err
+		}
+		return nil
 	},
 }
 
