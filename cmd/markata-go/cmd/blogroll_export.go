@@ -60,7 +60,7 @@ func writeNewOPMLFile(path string, content io.Reader) error {
 	closeErr := f.Close()
 	if writeErr != nil || closeErr != nil {
 		if err := os.Remove(path); err != nil {
-			return fmt.Errorf("write OPML export failed: %v; remove incomplete export: %w", writeErr, err)
+			return fmt.Errorf("write OPML export failed: %w; remove incomplete export: %w", writeErr, err)
 		}
 		if writeErr != nil {
 			return fmt.Errorf("write OPML export: %w", writeErr)
