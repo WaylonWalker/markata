@@ -33,11 +33,11 @@ var proseCheckCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		ignored := preferences.Options().IgnoredRules
+		options := preferences.Options()
 		for _, rule := range proseIgnore {
-			ignored[strings.TrimSpace(rule)] = true
+			options.IgnoredRules[strings.TrimSpace(rule)] = true
 		}
-		issues := prose.Check(string(content), prose.Options{IgnoredRules: ignored})
+		issues := prose.Check(string(content), options)
 		if proseJSON {
 			return json.NewEncoder(cmd.OutOrStdout()).Encode(issues)
 		}
