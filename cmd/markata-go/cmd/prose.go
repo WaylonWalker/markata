@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/WaylonWalker/markata/pkg/prose"
@@ -27,7 +28,11 @@ var proseCheckCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("read %s: %w", args[0], err)
 		}
-		ignored := make(map[string]bool, len(proseIgnore))
+		preferences, err := prose.LoadPreferences(args[0])
+		if err != nil {
+			return err
+		}
+		ignored := preferences.Options().IgnoredRules
 		for _, rule := range proseIgnore {
 			ignored[strings.TrimSpace(rule)] = true
 		}
@@ -49,9 +54,32 @@ var proseCheckCmd = &cobra.Command{
 	},
 }
 
+var proseIgnoreCmd = &cobra.Command{
+	Use:   "ignore <rule-id> [markdown-file]",
+	Short: "Always ignore a style rule in this project",
+	Args:  cobra.RangeArgs(1, 2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		path := "untitled.md"
+		if len(args) > 1 {
+			path = args[1]
+		}
+		absolute, err := filepath.Abs(path)
+		if err != nil {
+			return err
+		}
+		name, err := prose.IgnoreRule(absolute, args[0])
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintf(cmd.OutOrStdout(), "Ignored %s in %s\n", args[0], name)
+		return err
+	},
+}
+
 func init() {
 	proseCheckCmd.Flags().BoolVar(&proseJSON, "json", false, "emit stable JSON diagnostics for tools and agents")
 	proseCheckCmd.Flags().StringSliceVar(&proseIgnore, "ignore-rule", nil, "suppress a rule ID (repeatable)")
 	proseCmd.AddCommand(proseCheckCmd)
+	proseCmd.AddCommand(proseIgnoreCmd)
 	rootCmd.AddCommand(proseCmd)
 }
