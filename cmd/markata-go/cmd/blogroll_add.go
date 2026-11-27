@@ -44,6 +44,7 @@ var (
 
 // Flags for blogroll add command.
 var (
+	blogrollAddManual      bool
 	blogrollAddTitle       string
 	blogrollAddDescription string
 	blogrollAddCategory    string
@@ -58,12 +59,12 @@ var (
 
 // blogrollAddCmd adds a new feed to the blogroll.
 var blogrollAddCmd = &cobra.Command{
-	Use:   "add <url>",
+	Use:   "add [url]",
 	Short: "Add a new external feed to blogroll",
 	Long: `Add a new RSS/Atom feed to your blogroll by providing the feed URL.
 
 The command will:
-1. Fetch and validate the feed
+1. Fetch feed metadata (unless --manual is used)
 2. Extract metadata (title, description, site URL)
 3. Prompt for optional fields (category, tags)
 4. Add the feed to your config
@@ -72,15 +73,18 @@ Example:
   markata-go blogroll add https://example.com/rss.xml
   markata-go blogroll add https://example.com/atom.xml --category tech
   markata-go blogroll add https://example.com/feed --no-prompt
+  markata-go blogroll add                              # Prompt for a feed URL
+  markata-go blogroll add https://example.com/feed --manual --title "My Blog"
   markata-go blogroll add https://example.com/feed --dry-run
   markata-go blogroll add https://example.com/feed --title "My Blog" --tags "go,programming"`,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.MaximumNArgs(1),
 	RunE: runBlogrollAdd,
 }
 
 func init() {
 	blogrollCmd.AddCommand(blogrollAddCmd)
 
+	blogrollAddCmd.Flags().BoolVar(&blogrollAddManual, "manual", false, "add without fetching metadata or verifying the feed")
 	blogrollAddCmd.Flags().StringVar(&blogrollAddTitle, "title", "", "feed title (auto-fetched if not set)")
 	blogrollAddCmd.Flags().StringVar(&blogrollAddDescription, "description", "", "feed description (auto-fetched if not set)")
 	blogrollAddCmd.Flags().StringVar(&blogrollAddCategory, "category", "", "category for grouping (default: "+defaultCategory+")")
@@ -94,7 +98,17 @@ func init() {
 }
 
 func runBlogrollAdd(_ *cobra.Command, args []string) error {
-	rawInput := args[0]
+	var rawInput string
+	if len(args) == 0 {
+		if noInput || blogrollAddNoPrompt || !inputIsTerminal() || !outputIsTerminal() {
+			return newUsageError(&Diagnostic{Problem: "missing feed URL", Fix: "provide an RSS or Atom feed URL", Command: cliCommand("blogroll add https://example.com/feed.xml"), StatusCode: exitCodeUsage})
+		}
+		if err := huh.NewForm(huh.NewGroup(huh.NewInput().Title("Feed URL").Description("Enter an RSS or Atom feed URL").Value(&rawInput))).WithTheme(createHuhThemeForPalette(currentCLIPalette)).Run(); err != nil {
+			return err
+		}
+	} else {
+		rawInput = args[0]
+	}
 
 	// Load config and check for duplicates
 	configPath, cfg, err := loadConfigForBlogrollAdd()
@@ -102,9 +116,12 @@ func runBlogrollAdd(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	feedURL, err := normalizeBlogrollAddInput(cfg, rawInput)
-	if err != nil {
-		return err
+	feedURL := strings.TrimSpace(rawInput)
+	if !blogrollAddManual {
+		feedURL, err = normalizeBlogrollAddInput(cfg, rawInput)
+		if err != nil {
+			return err
+		}
 	}
 	if blogrollAddType != "" && parseReaderFeedType(blogrollAddType) == "" {
 		return fmt.Errorf("invalid --type %q: expected written, video, or podcast", blogrollAddType)
@@ -120,28 +137,34 @@ func runBlogrollAdd(_ *cobra.Command, args []string) error {
 	}
 
 	// Fetch feed metadata
-	metadata, err := fetchFeedMetadataForAdd(cfg, feedURL)
-	if err != nil {
-		return err
+	metadata := &blogroll.Metadata{}
+	if !blogrollAddManual {
+		metadata, err = fetchFeedMetadataForAdd(cfg, feedURL)
+		if err != nil {
+			metadata, err = recoverBlogrollMetadata(err)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	// Build feed values from flags and metadata
 	feedValues := buildFeedValues(metadata, feedURL)
 
-	// Check for duplicate handle
-	if err := checkDuplicateHandle(cfg, feedValues.handle, feedValues.title); err != nil {
-		return err
-	}
-
 	// Display fetched info
 	displayFetchedInfo(feedValues.title, feedValues.description)
 
 	// Interactive prompts if not disabled
-	if !blogrollAddNoPrompt {
+	if !blogrollAddNoPrompt && !noInput {
 		feedValues, err = promptForFeedValues(cfg, metadata, feedValues)
 		if err != nil {
 			return err
 		}
+	}
+
+	// Check the final handle, including any edits made in the prompt.
+	if err := checkDuplicateHandle(cfg, feedValues.handle, feedValues.title); err != nil {
+		return err
 	}
 
 	// Build the feed config
@@ -158,6 +181,32 @@ func runBlogrollAdd(_ *cobra.Command, args []string) error {
 
 	// Add feed to config and write
 	return saveFeedToConfig(configPath, cfg, feedConfig)
+}
+
+// recoverBlogrollMetadata permits a deliberate manual add, never an implicit bypass.
+func recoverBlogrollMetadata(cause error) (*blogroll.Metadata, error) {
+	diagnostic := &Diagnostic{
+		Problem: "Unable to fetch feed metadata",
+		Cause:   cause,
+		Details: []string{cause.Error()},
+		Fix:     "Check the feed URL and network connection, then retry. To add without verification, use --manual.",
+		Command: cliCommand("blogroll add https://example.com/feed.xml --manual --title 'My Feed'"),
+	}
+	if noInput || blogrollAddNoPrompt || !inputIsTerminal() || !outputIsTerminal() {
+		return nil, diagnostic
+	}
+	manual := false
+	form := huh.NewForm(huh.NewGroup(huh.NewConfirm().
+		Title("Unable to fetch feed metadata").
+		Description(cause.Error() + "\nAdd this feed without verification?").
+		Value(&manual))).WithTheme(createHuhThemeForPalette(currentCLIPalette))
+	if err := form.Run(); err != nil {
+		return nil, err
+	}
+	if !manual {
+		return nil, diagnostic
+	}
+	return &blogroll.Metadata{}, nil
 }
 
 type youtubeOEmbedResponse struct {
@@ -418,7 +467,7 @@ func resolveBlogrollTargetConfigPath(rootConfigPath string) (string, error) {
 	case 1:
 		return candidates[0], nil
 	default:
-		if inputIsTerminal() && outputIsTerminal() {
+		if !noInput && !blogrollAddNoPrompt && inputIsTerminal() && outputIsTerminal() {
 			return promptForBlogrollConfigPath(candidates)
 		}
 
@@ -927,7 +976,7 @@ func appendFeedToTOMLConfig(configPath string, feedConfig models.ExternalFeedCon
 		return fmt.Errorf("read config: %w", err)
 	}
 
-	content := string(data)
+	content := clearEmptySubscriptionList(string(data))
 	prefix := detectBlogrollTablePrefix(content)
 	var snippet strings.Builder
 

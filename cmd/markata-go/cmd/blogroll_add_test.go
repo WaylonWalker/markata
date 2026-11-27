@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -779,4 +780,65 @@ func containsStringValue(values []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func TestBlogrollAddMissingURLNoInput(t *testing.T) {
+	old := noInput
+	noInput = true
+	t.Cleanup(func() { noInput = old })
+
+	err := runBlogrollAdd(blogrollAddCmd, nil)
+	if err == nil {
+		t.Fatal("expected missing URL error")
+	}
+	if message := FormatError(err); !strings.Contains(message, "missing feed URL") || !strings.Contains(message, "blogroll add https://example.com/feed.xml") {
+		t.Fatalf("expected actionable diagnostic, got %q", message)
+	}
+}
+
+func TestRecoverBlogrollMetadataNoInput(t *testing.T) {
+	old := noInput
+	noInput = true
+	t.Cleanup(func() { noInput = old })
+
+	cause := errors.New("HTTP 403")
+	metadata, err := recoverBlogrollMetadata(cause)
+	if metadata != nil || !errors.Is(err, cause) {
+		t.Fatalf("expected failure preserving cause, got %v, %v", metadata, err)
+	}
+	if message := FormatError(err); !strings.Contains(message, "HTTP 403") || !strings.Contains(message, "--manual") {
+		t.Fatalf("expected recovery instructions, got %q", message)
+	}
+}
+
+func TestBlogrollAddManualNoInput(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	path := filepath.Join(dir, "markata-go.toml")
+	initial := "[markata-go.blogroll]\nenabled = true\n"
+	if err := os.WriteFile(path, []byte(initial), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	oldConfig, oldInput, oldManual, oldTitle, oldDryRun := cfgFile, noInput, blogrollAddManual, blogrollAddTitle, blogrollAddDryRun
+	t.Cleanup(func() {
+		cfgFile, noInput, blogrollAddManual, blogrollAddTitle, blogrollAddDryRun = oldConfig, oldInput, oldManual, oldTitle, oldDryRun
+	})
+	cfgFile, noInput, blogrollAddManual, blogrollAddTitle, blogrollAddDryRun = path, true, true, "Manual Feed", true
+	// A direct feed URL on a reserved domain must not need network access.
+	feedURL := "https://example.invalid/feed.xml"
+	if err := runBlogrollAdd(blogrollAddCmd, []string{feedURL}); err != nil {
+		t.Fatalf("manual dry-run: %v", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || string(data) != initial {
+		t.Fatalf("dry run modified config: %s, %v", data, err)
+	}
+	blogrollAddDryRun = false
+	if err := runBlogrollAdd(blogrollAddCmd, []string{feedURL}); err != nil {
+		t.Fatalf("manual add: %v", err)
+	}
+	data, err = os.ReadFile(path)
+	if err != nil || !strings.Contains(string(data), feedURL) || !strings.Contains(string(data), "Manual Feed") {
+		t.Fatalf("manual feed missing: %s, %v", data, err)
+	}
 }

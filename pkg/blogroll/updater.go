@@ -148,7 +148,7 @@ func (u *Updater) FetchMetadataWithResource(ctx context.Context, feedURL, resour
 
 	// If we couldn't get any metadata, return an error
 	if siteErr != nil && feedErr != nil {
-		return nil, fmt.Errorf("failed to fetch metadata from %s: %w", feedURL, siteErr)
+		return nil, fmt.Errorf("failed to fetch metadata from %s: feed: %w; website: %w", feedURL, feedErr, siteErr)
 	}
 
 	// Set the site URL if not already set

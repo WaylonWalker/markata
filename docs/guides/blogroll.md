@@ -53,6 +53,30 @@ The inventory shows active or paused state, reader type and configuration source
 JSON output includes the effective blogroll enabled state, source editability and
 the target configuration file when available.
 
+## Pause and resume subscriptions from the terminal
+
+Use the exact configured handle or feed URL:
+
+```bash
+markata blogroll disable engineering --dry-run
+markata blogroll disable engineering
+markata blogroll enable engineering
+```
+
+Disabling a subscription excludes it from fetching without deleting its metadata.
+These commands change only the selected feed's active field in its effective
+owning TOML config file. Ambiguous handles and read-only sources are rejected.
+The global blogroll enabled setting is not changed.
+
+To permanently remove a subscription, preview and confirm the change:
+
+```bash
+markata blogroll remove engineering --dry-run
+markata blogroll remove engineering --yes
+```
+
+Omit `--yes` in an interactive terminal to review and confirm the removal.
+
 ## Manage subscriptions in your browser
 
 Start the local development server with `markata-go serve`, then open
@@ -129,6 +153,24 @@ image_url = "https://example.com/logo.png" # Optional: logo/icon
 active = true                            # Optional: set false to disable without removing
 max_entries = 50                         # Optional: override global max_entries_per_feed
 ```
+
+### Add a feed from the terminal
+
+Run `markata blogroll add` in an interactive terminal to enter a feed URL and review its metadata, or supply the URL directly:
+
+```bash
+markata blogroll add https://example.com/feed.xml
+markata blogroll add https://example.com/feed.xml --dry-run
+markata blogroll add https://example.com/feed.xml --no-input
+```
+
+If metadata cannot be fetched, the command reports the failure and offers an interactive manual-add confirmation. For scripts or offline use, explicitly bypass fetching and verification with:
+
+```bash
+markata blogroll add https://example.com/feed.xml --manual --title "My Blog" --no-input
+```
+
+Use the actual RSS or Atom URL for manual additions. The feed is not verified in this mode; it may fail when the reader refreshes. Use `--dry-run` to preview changes without saving, and `markata blogroll add --help` for all fields.
 
 `markata-go blogroll add <feed-url>` now uses site metadata for the suggested title, description, and tags shown in the prompt. This works better for sources like YouTube, where the feed itself often lacks useful channel-level description and tag metadata.
 
