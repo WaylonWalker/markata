@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // PreferencesFile is discovered by walking upward from a Markdown file.
@@ -16,11 +19,12 @@ type IgnoredPhrase struct {
 	Phrase string `json:"phrase"`
 }
 
-// Preferences holds project-level rule and phrase exceptions shared by all
-// writing surfaces. Personal dictionaries are a separate future feature.
+// Preferences holds project-level rules, phrase exceptions and accepted terms.
+// A private per-user dictionary is a separate future feature.
 type Preferences struct {
 	IgnoredRules   []string        `json:"ignored_rules"`
 	IgnoredPhrases []IgnoredPhrase `json:"ignored_phrases,omitempty"`
+	AcceptedWords  []string        `json:"accepted_words,omitempty"`
 }
 
 func (p Preferences) Options() Options {
@@ -35,7 +39,11 @@ func (p Preferences) Options() Options {
 		}
 		phrases[entry.Rule][normalizePhrase(entry.Phrase)] = true
 	}
-	return Options{IgnoredRules: ignored, IgnoredPhrases: phrases}
+	words := make(map[string]bool, len(p.AcceptedWords))
+	for _, word := range p.AcceptedWords {
+		words[strings.ToLower(word)] = true
+	}
+	return Options{IgnoredRules: ignored, IgnoredPhrases: phrases, AcceptedWords: words}
 }
 
 // FindPreferences locates the nearest project preferences file.
@@ -128,6 +136,79 @@ func IgnorePhraseAtRoot(root, id, phrase string) (string, error) {
 		return "", err
 	}
 	return writeIgnoredPhrase(name, id, phrase)
+}
+
+// AddWord adds an accepted spelling term to the nearest project preferences.
+func AddWord(path, word string) (string, error) {
+	name, err := preferencesPath(path)
+	if err != nil {
+		return "", err
+	}
+	return writeAcceptedWord(name, word, true)
+}
+
+// RemoveWord revokes an accepted word without changing rule/phrase ignores.
+func RemoveWord(path, word string) (string, error) {
+	name, err := preferencesPath(path)
+	if err != nil {
+		return "", err
+	}
+	return writeAcceptedWord(name, word, false)
+}
+
+// AddWordAtRoot confines browser dictionary writes to a server-selected root.
+func AddWordAtRoot(root, word string) (string, error) {
+	name, err := rootPreferencesPath(root)
+	if err != nil {
+		return "", err
+	}
+	return writeAcceptedWord(name, word, true)
+}
+
+// CanonicalWord validates user-entered technical vocabulary and folds case.
+// Single tokens may include common identifier characters but no separators,
+// controls, whitespace, or paths. This is not a grammar-rule ignore.
+func CanonicalWord(word string) (string, error) {
+	if word == "" || len(word) > 128 || !utf8.ValidString(word) || strings.TrimSpace(word) != word {
+		return "", fmt.Errorf("invalid dictionary word")
+	}
+	for _, r := range word {
+		switch {
+		case unicode.IsLetter(r), unicode.IsNumber(r), unicode.IsMark(r):
+		case strings.ContainsRune("-_'+.#", r):
+		default:
+			return "", fmt.Errorf("invalid dictionary character")
+		}
+	}
+	return strings.ToLower(word), nil
+}
+
+func writeAcceptedWord(name, word string, add bool) (string, error) {
+	normalized, err := CanonicalWord(word)
+	if err != nil {
+		return "", err
+	}
+	return updatePreferences(name, func(p *Preferences) bool {
+		index := -1
+		for i, existing := range p.AcceptedWords {
+			if strings.ToLower(existing) == normalized {
+				index = i
+				break
+			}
+		}
+		if add {
+			if index >= 0 {
+				return false
+			}
+			p.AcceptedWords = append(p.AcceptedWords, normalized)
+			return true
+		}
+		if index < 0 {
+			return false
+		}
+		p.AcceptedWords = append(p.AcceptedWords[:index], p.AcceptedWords[index+1:]...)
+		return true
+	})
 }
 
 func writeIgnoredRule(name, id string) (string, error) {
