@@ -866,7 +866,8 @@ func isWorkspaceRoute(routePath, method string) bool {
 		return method == http.MethodGet
 	case routePath == "/workspace/new-post" || routePath == "/workspace/dropper-upload":
 		return method == http.MethodPost
-	case routePath == "/workspace/link-metadata" || routePath == "/workspace/prose/ignore-rule":
+	case routePath == "/workspace/link-metadata" || routePath == "/workspace/prose/ignore-rule" ||
+		routePath == "/workspace/prose/dictionary/add":
 		return method == http.MethodPost
 	case routePath == "/workspace/template-settings":
 		return method == http.MethodPost
@@ -1011,6 +1012,10 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Path == "/workspace/prose/ignore-rule" {
 		h.serveProseIgnoreRule(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/prose/dictionary/add" {
+		h.serveProseDictionaryAdd(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/new-post" {
