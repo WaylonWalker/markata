@@ -56,7 +56,7 @@ func Check(source string, options Options) []Issue {
 				Column:     sc,
 				EndLine:    el,
 				EndColumn:  ec,
-				Suggestion: r.suggestion,
+				Suggestion: suggestionFor(r, source[loc[0]:loc[1]]),
 			})
 		}
 	}
@@ -140,4 +140,31 @@ func fenceMarker(line string) (marker byte, count int) {
 		count++
 	}
 	return marker, count
+}
+
+// KnownRule reports whether an identifier names one of our built-in rules.
+func KnownRule(id string) bool {
+	for _, r := range rules {
+		if r.id == id {
+			return true
+		}
+	}
+	return false
+}
+
+// suggestionFor returns only deterministic, explicit editorial replacements.
+// Other observations remain explanations rather than automatic rewrites.
+func suggestionFor(r rule, matched string) string {
+	if r.id != "prose/intensifier" {
+		return ""
+	}
+	parts := strings.SplitN(matched, " ", 2)
+	if len(parts) != 2 {
+		return ""
+	}
+	result := parts[1]
+	if parts[0] != strings.ToLower(parts[0]) {
+		result = strings.ToUpper(result[:1]) + result[1:]
+	}
+	return result
 }
