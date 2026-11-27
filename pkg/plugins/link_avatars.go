@@ -236,11 +236,30 @@ func (p *LinkAvatarsPlugin) Render(m *lifecycle.Manager) error {
 	var iconCache sync.Map
 
 	posts := m.FilterPosts(func(post *models.Post) bool {
-		if post.Skip || post.ArticleHTML == "" {
-			return false
-		}
-		return true
+		return !post.Skip
 	})
+	if cache != nil {
+		emptyHash := buildcache.ContentHash("")
+		for _, post := range posts {
+			if post.ArticleHTML != "" {
+				continue
+			}
+			if _, ok := cache.GetCachedLinkAvatarsHTML(post.Path, emptyHash); ok {
+				continue
+			}
+			// Empty ArticleHTML is still a completed transform input. Persist an
+			// empty result so no-op verification can distinguish it from a cache
+			// entry that has never passed through this plugin.
+			cache.CacheLinkAvatarsHTML(post.Path, emptyHash, "")
+		}
+	}
+	filteredPosts := posts[:0]
+	for _, post := range posts {
+		if post.ArticleHTML != "" {
+			filteredPosts = append(filteredPosts, post)
+		}
+	}
+	posts = filteredPosts
 
 	if lifecycle.IsServeIncremental(m) {
 		if affected := lifecycle.GetServeAffectedPaths(m); len(affected) > 0 {

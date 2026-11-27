@@ -1327,7 +1327,9 @@ func checkNoOpLinkAvatarCacheEntry(name string, data []byte, cache *buildcache.C
 		return nil
 	}
 	cached := cache.GetCachedPost(post.Path)
-	if cached == nil || cached.LinkAvatarsHash == "" || cached.LinkAvatarsHTML == "" {
+	emptyArticleHash := buildcache.ContentHash("")
+	if cached == nil || cached.LinkAvatarsHash == "" ||
+		(cached.LinkAvatarsHTML == "" && cached.LinkAvatarsHash != emptyArticleHash) {
 		return fmt.Errorf("link-avatar transform cache is missing for %q", name)
 	}
 	return nil

@@ -690,6 +690,31 @@ func TestNoOpRequiresBuildTimeLinkAvatarCacheCoverage(t *testing.T) {
 	}
 }
 
+func TestNoOpAcceptsCachedEmptyLinkAvatarInput(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
+	svc, root := newNoOpFixture(t)
+	siteConfig, _, err := svc.loadNoOpSiteConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	siteConfig.Extra["link_avatars"] = map[string]any{"enabled": true, "mode": "local"}
+	writeNoOpFile(t, filepath.Join(root, "pages", "archive", "year.md"), "A template-only shadow page.\n")
+
+	cache, err := buildcache.Load(noOpBuildCacheDir(root, "", siteConfig))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cache.CacheLinkAvatarsHTML("pages/archive/year.md", buildcache.ContentHash(""), "")
+	if err := cache.Save(); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkNoOpLinkAvatarCache(context.Background(), root, "", siteConfig); err != nil {
+		t.Fatalf("cached empty link-avatar input rejected: %v", err)
+	}
+}
+
 func TestNoOpRequiresCompleteSelfHostedAssetCache(t *testing.T) {
 	root := t.TempDir()
 	siteConfig := models.NewConfig()

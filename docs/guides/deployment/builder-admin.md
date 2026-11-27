@@ -460,8 +460,10 @@ records an unchanged result. Builder Admin treats published releases as immutabl
 promotions; concurrent edits by other writers are outside this guarantee.
 
 For local or hosted link avatars, each renderable Markdown post must also have a persisted transform
-result. Self-hosted CDN assets must be present in the verified asset cache. If either cache is
-incomplete, Builder Admin runs a full build so remote data or assets can be retried.
+result. A post with empty article HTML has an explicit empty-input result; this counts as complete
+coverage because the avatar transform had no content to process. Missing results for non-empty
+article HTML still make Builder Admin run a full build so remote favicon data can be retried.
+Self-hosted CDN assets must be present in the verified asset cache.
 
 Then inspect the build row for status, queue wait, build duration, trigger, and release.
 
