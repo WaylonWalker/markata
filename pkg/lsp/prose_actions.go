@@ -19,11 +19,11 @@ type proseCodeActionParams struct {
 }
 
 type proseCodeAction struct {
-	Title       string             `json:"title"`
-	Kind        string             `json:"kind"`
-	IsPreferred bool               `json:"isPreferred,omitempty"`
+	Title       string              `json:"title"`
+	Kind        string              `json:"kind"`
+	IsPreferred bool                `json:"isPreferred,omitempty"`
 	Edit        *proseWorkspaceEdit `json:"edit,omitempty"`
-	Command     *proseCommand      `json:"command,omitempty"`
+	Command     *proseCommand       `json:"command,omitempty"`
 }
 
 type proseWorkspaceEdit struct {
