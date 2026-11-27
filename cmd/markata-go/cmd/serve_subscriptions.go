@@ -37,16 +37,11 @@ const (
 	subscriptionActionUpdate = "update"
 	subscriptionActionRemove = "remove"
 	subscriptionActionActive = "set-active"
-	subscriptionTOMLExt      = ".toml"
 	subscriptionHTTPS        = "https"
 	subscriptionHTTP         = "http"
 )
 
-type subscriptionView struct {
-	models.ExternalFeedConfig
-	Source   string `json:"source"`
-	Editable bool   `json:"editable"`
-}
+type subscriptionView = blogroll.SubscriptionView
 
 type subscriptionResponse struct {
 	Feeds   []subscriptionView `json:"feeds,omitempty"`
@@ -116,83 +111,39 @@ func subscriptionReadRequest(w http.ResponseWriter, r *http.Request, dst any) bo
 	return true
 }
 
-// blogrollRawFeeds reads the *local* entries in each source, before composition.
+// subscriptionSources adapts resolved workspace layers to the shared service.
 // Editing an included file rather than the root is crucial to avoid misplaced changes.
-func blogrollRawFeeds(raw map[string]any) []map[string]any {
-	root := raw
-	if nested, ok := root["markata-go"].(map[string]any); ok {
-		root = nested
-	}
-	blogroll, ok := root["blogroll"].(map[string]any)
-	if !ok {
-		return nil
-	}
-	entries, ok := blogroll["feeds"].([]any)
-	if !ok {
-		return nil
-	}
-	result := make([]map[string]any, 0, len(entries))
-	for _, entry := range entries {
-		if feed, ok := entry.(map[string]any); ok {
-			result = append(result, feed)
+func subscriptionSources(state *settingsState) blogroll.SourceSet {
+	sources := make(blogroll.SourceSet, len(state.sources))
+	for i, path := range state.sources {
+		sources[i] = blogroll.SubscriptionSource{
+			Path:        path,
+			DisplayPath: displayConfigPath(path),
+			Kind:        state.kinds[path],
+			Raw:         state.raws[i],
 		}
 	}
-	return result
+	return sources
 }
 
 func feedOwner(state *settingsState, address string) (string, error) {
-	// Arrays replace across config layers. The last source defining feeds
-	// owns the effective array; never edit a shadowed earlier layer.
-	owner := ""
-	matches := 0
-	for i, raw := range state.raws {
-		entries := blogrollRawFeeds(raw)
-		if entries == nil {
-			continue
-		}
-		owner = state.sources[i]
-		matches = 0
-		for _, entry := range entries {
-			if value, ok := entry["url"].(string); ok && value == address {
-				matches++
-			}
-		}
-	}
-	if matches != 1 {
-		return "", fmt.Errorf("could not uniquely identify feed %q in the effective config file (found %d)", address, matches)
-	}
-	if state.kinds[owner] != "" {
-		return "", fmt.Errorf("feed belongs to a %s config (%s); edit that source manually", state.kinds[owner], displayConfigPath(owner))
-	}
-	if strings.ToLower(filepath.Ext(owner)) != subscriptionTOMLExt {
-		return "", fmt.Errorf("editing %s is not yet supported in the browser; use the config file directly", filepath.Ext(owner))
-	}
-	return owner, nil
+	owner, err := subscriptionSources(state).Owner(address)
+	return owner.Path, err
 }
 
 func newFeedTarget(state *settingsState) (string, error) {
-	// If a later included/override file defines feeds, the earlier lists are
-	// shadowed. Choose the effective definition, not the first blogroll table.
-	var owner string
-	for i, raw := range state.raws {
-		if blogrollRawFeeds(raw) != nil {
-			owner = state.sources[i]
-		}
-	}
-	if owner == "" {
+	owner, err := subscriptionSources(state).AddTarget(func() (blogroll.SubscriptionSource, error) {
 		target, err := state.target([]string{"blogroll", "feeds"})
 		if err != nil {
-			return "", err
+			return blogroll.SubscriptionSource{}, err
 		}
-		owner = target
-	}
-	if state.kinds[owner] != "" {
-		return "", fmt.Errorf("blogroll lives in a %s config (%s); choose an editable site config", state.kinds[owner], displayConfigPath(owner))
-	}
-	if strings.ToLower(filepath.Ext(owner)) != subscriptionTOMLExt {
-		return "", fmt.Errorf("browser subscriptions require an owning TOML file, found %s", displayConfigPath(owner))
-	}
-	return owner, nil
+		return blogroll.SubscriptionSource{
+			Path:        target,
+			DisplayPath: displayConfigPath(target),
+			Kind:        state.kinds[target],
+		}, nil
+	})
+	return owner.Path, err
 }
 
 func describeSubscriptions(state *settingsState) subscriptionResponse {
@@ -202,17 +153,7 @@ func describeSubscriptions(state *settingsState) subscriptionResponse {
 	} else {
 		resp.Error = err.Error()
 	}
-	for i := range state.cfg.Blogroll.Feeds {
-		item := &state.cfg.Blogroll.Feeds[i]
-		src, err := feedOwner(state, item.URL)
-		view := subscriptionView{ExternalFeedConfig: *item, Editable: err == nil}
-		if err == nil {
-			view.Source = displayConfigPath(src)
-		} else {
-			view.Source = "Read only: " + err.Error()
-		}
-		resp.Feeds = append(resp.Feeds, view)
-	}
+	resp.Feeds = subscriptionSources(state).Inventory(state.cfg.Blogroll.Feeds)
 	return resp
 }
 

@@ -109,7 +109,7 @@ func (s *Server) allowBrowserMessage(msg *Message) bool {
 	switch msg.Method {
 	case "initialized", "shutdown", "exit", "$/cancelRequest", "$/setTrace":
 		return true
-	case "textDocument/didOpen", "textDocument/didChange", "textDocument/didClose", "textDocument/didSave", "textDocument/completion", "textDocument/hover", "textDocument/definition":
+	case "textDocument/didOpen", "textDocument/didChange", "textDocument/didClose", "textDocument/didSave", "textDocument/completion", "textDocument/hover", "textDocument/definition", "textDocument/codeAction":
 		var params struct {
 			TextDocument TextDocumentIdentifier `json:"textDocument"`
 			Position     *Position              `json:"position"`
