@@ -108,6 +108,10 @@ func planExistingSubscription(content string, req TOMLMutation) (string, error) 
 		replacement, err = PatchSubscriptionBlock(content[selected.Start:selected.End], req.Fields, names)
 	case MutationActive:
 		replacement, err = PatchSubscriptionBlock(content[selected.Start:selected.End], map[string]string{mutationFieldActive: strconv.FormatBool(req.Active)}, []string{mutationFieldActive})
+	case MutationRemove:
+		// An empty replacement removes the selected table.
+	case MutationAdd:
+		return "", errors.New("add must use the new subscription planner")
 	}
 	if err != nil {
 		return "", err
@@ -139,14 +143,14 @@ func SubscriptionBlocks(content string) []SubscriptionBlock {
 		if following := anyTableHeader.FindStringIndex(content[header[1]:]); following != nil {
 			end = header[1] + following[0]
 		}
-		url := ""
+		address := ""
 		if match := feedURLLine.FindStringSubmatch(content[header[1]:end]); match != nil {
-			url = match[1]
-			if url == "" {
-				url = match[2]
+			address = match[1]
+			if address == "" {
+				address = match[2]
 			}
 		}
-		result = append(result, SubscriptionBlock{header[0], end, url})
+		result = append(result, SubscriptionBlock{header[0], end, address})
 	}
 	return result
 }
