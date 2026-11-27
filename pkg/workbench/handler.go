@@ -842,7 +842,7 @@ func (h *Handler) serveProseIgnoreRule(w http.ResponseWriter, r *http.Request) {
 	h.workspaceWriteMu.Lock()
 	defer h.workspaceWriteMu.Unlock()
 	// Site root is server-owned; clients cannot pick paths outside it.
-	if _, err := prose.IgnoreRule(filepath.Join(h.root, "post.md"), req.Rule); err != nil {
+	if _, err := prose.IgnoreRuleAtRoot(h.root, req.Rule); err != nil {
 		fail(w, http.StatusUnprocessableEntity, "could not save prose preference")
 		return
 	}
