@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const opmlRSS = "rss"
+
 // OPMLFeed is the interoperable subset of a subscription shared with other readers.
 type OPMLFeed struct {
 	URL         string
@@ -115,7 +117,7 @@ func WriteOPML(w io.Writer, title string, feeds []OPMLFeed) error {
 			name = feed.URL
 		}
 		outline := opmlOutline{
-			Text: name, Title: name, Type: "rss", URL: feed.URL,
+			Text: name, Title: name, Type: opmlRSS, URL: feed.URL,
 			SiteURL: feed.SiteURL, Description: feed.Description,
 		}
 		if feed.Category == "" {
