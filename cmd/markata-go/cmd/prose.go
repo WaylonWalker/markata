@@ -51,7 +51,7 @@ var proseCheckCmd = &cobra.Command{
 				Binary: proseHarperBinary, Options: options,
 			})
 			if err != nil {
-				return fmt.Errorf("Harper: %w", err)
+				return fmt.Errorf("harper: %w", err)
 			}
 			issues = append(issues, harperIssues...)
 			sort.Slice(issues, func(i, j int) bool {
