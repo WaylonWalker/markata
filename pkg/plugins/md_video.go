@@ -132,6 +132,11 @@ func (p *MDVideoPlugin) Render(m *lifecycle.Manager) error {
 // It handles both src="..." and alt="..." in either order.
 var imgTagRegex = regexp.MustCompile(`<img\s+([^>]*)>`)
 
+// linkedSTLImageRegex matches a Markdown link whose only content is an image.
+// Keeping the authored anchor intact lets us add a separate viewer link without
+// producing invalid nested anchors or changing the destination the author set.
+var linkedSTLImageRegex = regexp.MustCompile(`(?is)<a\b([^>]*)>\s*(<img\s+[^>]*>)\s*</a\s*>`)
+
 var videoTagRegex = regexp.MustCompile(`(?i)<video\b[^>]*>`)
 
 var videoBlockRegex = regexp.MustCompile(`(?is)<video\b[^>]*>.*?</video\s*>`)
@@ -223,6 +228,29 @@ func replaceDropperSTLImages(articleHTML string) string {
 	if !strings.Contains(articleHTML, "<img") {
 		return articleHTML
 	}
+	articleHTML = linkedSTLImageRegex.ReplaceAllStringFunc(articleHTML, func(match string) string {
+		parts := linkedSTLImageRegex.FindStringSubmatch(match)
+		if len(parts) != 3 {
+			return match
+		}
+		image := parts[2]
+		srcMatch := srcAttrRegex.FindStringSubmatch(image)
+		if len(srcMatch) < 2 {
+			return match
+		}
+		posterURL, viewerURL, ok := dropperSTLPreviewURLs(html.UnescapeString(srcMatch[1]))
+		if !ok {
+			return match
+		}
+		alt := ""
+		if altMatch := altAttrRegex.FindStringSubmatch(image); len(altMatch) >= 2 {
+			alt = html.UnescapeString(altMatch[1])
+		}
+		poster := dropperSTLPosterImage(posterURL, alt)
+		viewerLink := dropperSTLViewerAnchor(viewerURL, alt, `<span>Open interactive 3D view</span>`)
+		return `<span class="md-3d-model-linked"><a` + parts[1] + `>` + poster + `</a>` + viewerLink + `</span>`
+	})
+
 	return imgTagRegex.ReplaceAllStringFunc(articleHTML, func(match string) string {
 		srcMatch := srcAttrRegex.FindStringSubmatch(match)
 		if len(srcMatch) < 2 {
@@ -238,14 +266,35 @@ func replaceDropperSTLImages(articleHTML string) string {
 		if altMatch := altAttrRegex.FindStringSubmatch(match); len(altMatch) >= 2 {
 			alt = html.UnescapeString(altMatch[1])
 		}
-		accessibleLabel := "Open interactive 3D view"
-		if alt != "" {
-			accessibleLabel += " of " + alt
-		}
-		return `<a class="md-3d-model" href="` + html.EscapeString(viewerURL) + `" target="_blank" rel="noopener noreferrer" aria-label="` + html.EscapeString(accessibleLabel) + `">` +
-			`<img src="` + html.EscapeString(posterURL) + `" alt="` + html.EscapeString(alt) + `" width="` + strconv.Itoa(dropperSTLPosterWidth) + `" height="` + strconv.Itoa(dropperSTLPosterHeight) + `" loading="lazy" decoding="async">` +
-			`<span>Open interactive 3D view</span></a>`
+		poster := dropperSTLPosterImage(posterURL, alt)
+		return dropperSTLViewerAnchor(viewerURL, alt, poster+`<span>Open interactive 3D view</span>`)
 	})
+}
+
+// mdVideoEnabled mirrors MDVideoPlugin's default-on setting for standalone
+// renders such as the editor preview.
+func mdVideoEnabled(config *models.Config) bool {
+	if config == nil || config.Extra == nil {
+		return true
+	}
+	mdVideoConfig, ok := config.Extra["md_video"].(map[string]interface{})
+	if !ok {
+		return true
+	}
+	enabled, ok := mdVideoConfig["enabled"].(bool)
+	return !ok || enabled
+}
+
+func dropperSTLPosterImage(posterURL, alt string) string {
+	return `<img src="` + html.EscapeString(posterURL) + `" alt="` + html.EscapeString(alt) + `" width="` + strconv.Itoa(dropperSTLPosterWidth) + `" height="` + strconv.Itoa(dropperSTLPosterHeight) + `" loading="lazy" decoding="async">`
+}
+
+func dropperSTLViewerAnchor(viewerURL, alt, content string) string {
+	accessibleLabel := "Open interactive 3D view"
+	if alt != "" {
+		accessibleLabel += " of " + alt
+	}
+	return `<a class="md-3d-model" href="` + html.EscapeString(viewerURL) + `" target="_blank" rel="noopener noreferrer" aria-label="` + html.EscapeString(accessibleLabel) + `">` + content + `</a>`
 }
 
 // dropperSTLPreviewURLs returns the Dropper poster and interactive viewer URLs

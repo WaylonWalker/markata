@@ -61,3 +61,43 @@ func TestParseLLMsTXTPluginOptionsAcrossFormats(t *testing.T) {
 		})
 	}
 }
+
+func TestParseMDVideoPluginOptionsAcrossFormats(t *testing.T) {
+	cases := []struct {
+		name  string
+		parse func([]byte) (*models.Config, error)
+		input string
+	}{
+		{
+			name:  "TOML",
+			parse: ParseTOML,
+			input: "[markata-go]\ntitle = \"Test\"\n[markata-go.md_video]\nenabled = false\n",
+		},
+		{
+			name:  "YAML",
+			parse: ParseYAML,
+			input: "markata-go:\n  title: Test\n  md_video:\n    enabled: false\n",
+		},
+		{
+			name:  "JSON",
+			parse: ParseJSON,
+			input: `{"markata-go":{"title":"Test","md_video":{"enabled":false}}}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := tc.parse([]byte(tc.input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			pluginConfig, ok := cfg.Extra["md_video"].(map[string]any)
+			if !ok {
+				t.Fatalf("missing md_video options: %#v", cfg.Extra)
+			}
+			if enabled, ok := pluginConfig["enabled"].(bool); !ok || enabled {
+				t.Fatalf("expected enabled=false, got %#v", pluginConfig["enabled"])
+			}
+		})
+	}
+}

@@ -6,6 +6,8 @@ import (
 
 	xhtml "golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
+
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func TestRenderStandalone_ConditionalAssets(t *testing.T) {
@@ -94,6 +96,28 @@ func TestRenderStandalone_DropperSTLImage(t *testing.T) {
 		if !strings.Contains(r.HTML, want) {
 			t.Errorf("standalone renderer output is missing %q: %s", want, r.HTML)
 		}
+	}
+}
+
+func TestRenderStandalone_DropperSTLImageRespectsMDVideoDisabled(t *testing.T) {
+	r, err := RenderStandalone("![Part](https://dropper.waylonwalker.com/file/part.stl)", StandaloneOptions{
+		Config: &models.Config{Extra: map[string]any{"md_video": map[string]any{"enabled": false}}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(r.HTML, `class="md-3d-model"`) || !strings.Contains(r.HTML, `src="https://dropper.waylonwalker.com/file/part.stl"`) {
+		t.Fatalf("disabled md_video config should leave the STL image unchanged: %s", r.HTML)
+	}
+}
+
+func TestRenderStandalone_LinkedDropperSTLImageKeepsAuthoredLink(t *testing.T) {
+	r, err := RenderStandalone("[![Part](https://dropper.waylonwalker.com/file/part.stl)](https://example.com/article)", StandaloneOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(r.HTML, "<a ") != 2 || !strings.Contains(r.HTML, `href="https://example.com/article"`) || !strings.Contains(r.HTML, `href="https://dropper.waylonwalker.com/view/part.stl"`) {
+		t.Fatalf("linked model should keep its authored destination and expose the viewer link: %s", r.HTML)
 	}
 }
 

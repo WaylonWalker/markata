@@ -162,6 +162,21 @@ func TestMDVideoPlugin_ProcessPost_DropperSTLImage(t *testing.T) {
 	}
 }
 
+func TestReplaceDropperSTLImages_PreservesLinkedImageDestination(t *testing.T) {
+	got := replaceDropperSTLImages(`<p><a href="https://example.com/article"><img src="https://dropper.waylonwalker.com/file/part.stl" alt="Part"></a></p>`)
+	if strings.Count(got, "<a ") != 2 {
+		t.Fatalf("expected separate authored and viewer links without nesting: %s", got)
+	}
+	for _, want := range []string{
+		`href="https://example.com/article"><img src="https://dropper.waylonwalker.com/fmt/file/part.stl.webp?height=576&amp;width=768"`,
+		`</a><a class="md-3d-model" href="https://dropper.waylonwalker.com/view/part.stl"`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("linked STL output is missing %q: %s", want, got)
+		}
+	}
+}
+
 func TestDropperSTLPreviewURLs_RequiresTrustedAbsoluteFileURL(t *testing.T) {
 	for _, raw := range []string{
 		"/models/part.stl",
