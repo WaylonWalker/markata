@@ -81,6 +81,9 @@ func (s *Server) computeDiagnostics(uri, content string) []Diagnostic {
 			s.logger.Printf("Cannot load prose preferences: %v", err)
 		}
 		for _, issue := range prose.Check(content, preferences.Options()) {
+			if s.proseIssueIgnored(uri, issue, content) {
+				continue
+			}
 			start, end := Position{Line: issue.Line, Character: issue.Column},
 				Position{Line: issue.EndLine, Character: issue.EndColumn}
 			if start.Line >= 0 && start.Line < len(lines) {
