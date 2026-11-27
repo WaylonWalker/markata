@@ -405,10 +405,10 @@ class BrowserLSPTest(unittest.TestCase):
                 }""")
                 expect(page.locator(".markata-lsp-prose-hint")).to_be_visible()
                 page.keyboard.press("Alt+Enter")
-                popup.get_by_role("button", name="Always ignore rule").click()
+                popup.get_by_role("button", name="Always ignore phrase").click()
                 expect(page.locator(".markata-lsp-prose-hint")).to_have_count(0)
                 preferences = json.loads((root / ".markata-prose.json").read_text(encoding="utf-8"))
-                self.assertIn("prose/intensifier", preferences["ignored_rules"])
+                self.assertIn({"rule": "prose/intensifier", "phrase": "very unique"}, preferences["ignored_phrases"])
                 self.assertEqual(errors, [])
 
     def test_lsp_failure_preserves_editing_and_preview(self):
