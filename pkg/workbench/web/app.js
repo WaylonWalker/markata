@@ -1053,7 +1053,7 @@ try {
 // are measured. Each site document must first match an authoritative Go render.
 const wasmPreviewOptIn = new URLSearchParams(location.search).get('wasm-preview') === '1';
 let wasmWorker = null, wasmReady = false, wasmParity = null, lastGoPreview = null;
-const previewDocumentIdentity = () => window.MarkataSiteTree?.filename() || 'draft.md';
+const previewDocumentIdentity = () => window.MarkataSiteTree?.activeFile() || 'draft.md';
 async function certifyWasm(snapshot) {
   if (!wasmReady || !wasmWorker || !snapshot ||
       !window.MarkataWasmPreview.simpleTextOnly(snapshot.markdown) ||
@@ -1127,7 +1127,7 @@ function canUseWasmPreview(markdown, frontmatter, sourceLineOffset) {
     siteFingerprint: wasmParity?.siteFingerprint || '',
     workerFingerprint: wasmParity?.workerFingerprint || '',
     parityCertified: Boolean(wasmParity),
-    requiresSiteRender: !window.MarkataWasmPreview.simpleTextOnly(markdown),
+    requiresSiteRender: Boolean(frontmatter) || !window.MarkataWasmPreview.simpleTextOnly(markdown),
   });
   return rendererChoice?.renderer === 'wasm' && wasmReady && wasmWorker && wasmParity && previewStarted && previewReady &&
     wasmParity.documentId === previewDocumentIdentity() &&
@@ -1150,8 +1150,13 @@ async function render() {
   // a form mirror and may lag a programmatic document replacement.
   const version = revision, originalMarkdown = editor.getValue();
   const initialDocument = !previewStarted;
-  const markdown = window.MarkataSiteTree?.markdown(originalMarkdown) ?? originalMarkdown;
-  const frontmatter = originalMarkdown.match(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/);
+  const sourcePath = previewDocumentIdentity();
+  const isMarkdown = /\.(md|markdown|mdown|mkd)$/i.test(sourcePath);
+  const frontmatter = isMarkdown ? originalMarkdown.match(/^---\r?\n(?:[\s\S]*?\r?\n)?---(?:\r?\n|$)/) : null;
+  // Do not synthesize Markdown image lines from frontmatter. They shift
+  // cursor anchors and can duplicate template-provided media.
+  const markdown = frontmatter ? originalMarkdown.slice(frontmatter[0].length) :
+    (window.MarkataSiteTree?.markdown(originalMarkdown) ?? originalMarkdown);
   const sourceLineOffset = frontmatter && markdown !== originalMarkdown
     ? (frontmatter[0].match(/\n/g) || []).length
     : 0;
@@ -1194,7 +1199,7 @@ async function render() {
     if (!data) {
       const response = await fetch('/render', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({markdown, frontmatter_source:frontmatter?.[0] || '', include_document:!previewStarted, appearance:Object.fromEntries(Object.entries(attributes()).filter(([,v])=>v))}),
+        body:JSON.stringify({markdown, frontmatter_source:frontmatter?.[0] || '', source_path:sourcePath, include_document:!previewStarted, appearance:Object.fromEntries(Object.entries(attributes()).filter(([,v])=>v))}),
         signal:controller.signal
       });
       const payload = await response.json();

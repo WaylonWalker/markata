@@ -536,7 +536,7 @@ func (h *Handler) prepareRender(r *http.Request, req *renderRequest) (*renderRes
 	markdown := renderWorkbenchEmbeds(*req.Markdown, index, h.root)
 	markdown = renderWorkbenchWikilinks(markdown, index)
 	markdown, sourceAnchors := markSourceContainers(markdown)
-	frontmatterPreview := renderFrontmatterPreview(frontmatterSource(req), markdown)
+	frontmatterPreview := h.renderSiteFrontmatterPreview(frontmatterSource(req), markdown, req.SourcePath)
 	// Index revisions change while the first preview is open. Plain Markdown
 	// has no workspace references, so an index update does not invalidate it.
 	if !strings.Contains(*req.Markdown, "[[") && !strings.Contains(*req.Markdown, "![embed](") {
@@ -582,6 +582,7 @@ func frontmatterSource(req *renderRequest) string {
 type renderRequest struct {
 	Markdown          *string           `json:"markdown"`
 	FrontmatterSource *string           `json:"frontmatter_source,omitempty"`
+	SourcePath        string            `json:"source_path,omitempty"`
 	Appearance        map[string]string `json:"appearance"`
 	IncludeDocument   *bool             `json:"include_document"`
 }

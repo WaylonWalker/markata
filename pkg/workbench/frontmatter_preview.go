@@ -24,15 +24,27 @@ func renderFrontmatterPreview(frontmatterSource, markdown string) string {
 }
 
 func renderFrontmatterMetadataPreview(metadata map[string]interface{}, markdown string) string {
-	templateName := strings.ToLower(strings.TrimSpace(plugins.GetString(metadata, "template")))
-	if templateName == "" {
-		templateName = strings.ToLower(strings.TrimSpace(plugins.GetString(metadata, "templateKey")))
+	return renderFrontmatterMetadataForTemplate(metadata, markdown, frontmatterTemplateName(metadata))
+}
+
+func frontmatterTemplateName(metadata map[string]interface{}) string {
+	name := strings.TrimSpace(plugins.GetString(metadata, "template"))
+	if name == "" {
+		name = strings.TrimSpace(plugins.GetString(metadata, "templateKey"))
 	}
+	return normalizedPreviewTemplate(name)
+}
+
+func normalizedPreviewTemplate(name string) string {
+	return strings.TrimSuffix(strings.ToLower(strings.TrimSpace(name)), ".html")
+}
+
+func renderFrontmatterMetadataForTemplate(metadata map[string]interface{}, markdown, templateName string) string {
 	title := strings.TrimSpace(plugins.GetString(metadata, "title"))
 	description := strings.TrimSpace(plugins.GetString(metadata, "description"))
 	image := strings.TrimSpace(plugins.GetString(metadata, frontmatterImageKey))
 	linkURL := strings.TrimSpace(plugins.GetString(metadata, "link"))
-	if linkURL == "" {
+	if _, _, ok := safePreviewHTTPURL(linkURL); !ok {
 		linkURL = strings.TrimSpace(plugins.GetString(metadata, "url"))
 	}
 
@@ -75,11 +87,13 @@ func renderFrontmatterHeader(markdown, title, description string, linkTemplate, 
 }
 
 func renderFrontmatterPhotoImage(image, title, description, markdown string) string {
-	if strings.Contains(markdown, "![Post image]") {
-		return ""
-	}
 	imageURL := workbenchPreviewImageURL(image)
 	if imageURL == "" {
+		return ""
+	}
+	// Keep legacy browser-injected local images and authored primary media
+	// from appearing twice, without treating unrelated images as the cover.
+	if markdownContainsPreviewImage(markdown, imageURL) || markdownContainsPreviewImage(markdown, image) {
 		return ""
 	}
 	alt := title
@@ -100,6 +114,19 @@ func renderFrontmatterPhotoImage(image, title, description, markdown string) str
 	}
 	figure.WriteString(`</figure>`)
 	return figure.String()
+}
+
+func markdownContainsPreviewImage(markdown, destination string) bool {
+	if destination == "" {
+		return false
+	}
+	for _, part := range strings.Split(markdown, "![")[1:] {
+		_, target, ok := strings.Cut(part, "](")
+		if ok && (strings.HasPrefix(target, destination+")") || strings.HasPrefix(target, destination+" ") || strings.HasPrefix(target, "<"+destination+">")) {
+			return true
+		}
+	}
+	return false
 }
 
 func isLinkTemplate(templateName string) bool {
