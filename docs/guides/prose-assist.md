@@ -20,7 +20,7 @@ editorial suggestions. File I/O failures still return errors.
 
 ## Neovim / LSP
 
-The existing `markata lsp` server emits the same findings as *hint* severity
+Set `MARKATA_PROSE_ENABLED=1` when starting `markata lsp` to opt in.\nThe existing LSP server then emits the same findings as *hint* severity
 with `markata-prose` as source. Standard Neovim diagnostics can display them.
 No extra plugin is necessary. This first increment does not yet implement
 prose-specific code actions or persistent ignore preferences for the LSP.
