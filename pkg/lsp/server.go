@@ -174,10 +174,10 @@ func (s *Server) methodHandlers() map[string]methodHandler {
 		"textDocument/didSave":   s.handleDidSave,
 
 		// Language features
-		"textDocument/completion": s.handleCompletion,
-		"textDocument/hover":      s.handleHover,
-		"textDocument/definition": s.handleDefinition,
-		"textDocument/codeAction": s.handleProseCodeAction,
+		"textDocument/completion":  s.handleCompletion,
+		"textDocument/hover":       s.handleHover,
+		"textDocument/definition":  s.handleDefinition,
+		"textDocument/codeAction":  s.handleProseCodeAction,
 		"workspace/executeCommand": s.handleProseExecuteCommand,
 
 		// Workspace
