@@ -158,7 +158,14 @@ type ServerCapabilities struct {
 	CompletionProvider *CompletionOptions       `json:"completionProvider,omitempty"`
 	HoverProvider      bool                     `json:"hoverProvider,omitempty"`
 	DefinitionProvider bool                     `json:"definitionProvider,omitempty"`
+	CodeActionProvider bool                    `json:"codeActionProvider,omitempty"`
+	ExecuteCommandProvider *ExecuteCommandOptions `json:"executeCommandProvider,omitempty"`
 	Workspace          *WorkspaceOptions        `json:"workspace,omitempty"`
+}
+
+// ExecuteCommandOptions advertises native prose ignore actions.
+type ExecuteCommandOptions struct {
+	Commands []string `json:"commands"`
 }
 
 // TextDocumentSyncOptions represents text document sync options.
