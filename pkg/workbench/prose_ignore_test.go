@@ -1,6 +1,7 @@
 package workbench
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,7 +15,7 @@ import (
 func TestProseIgnoreRoutePersistsProjectRule(t *testing.T) {
 	root := t.TempDir()
 	h := &Handler{root: root}
-	req := httptest.NewRequest(http.MethodPost, "http://localhost/workspace/prose/ignore-rule",
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://localhost/workspace/prose/ignore-rule",
 		strings.NewReader(`{"rule":"prose/cliche"}`))
 	req.RemoteAddr = "127.0.0.1:42000"
 	req.Header.Set("Origin", "http://localhost")
@@ -48,7 +49,7 @@ func TestProseIgnoreRouteRejectsCrossOriginAndUnknownRules(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
 			h := &Handler{root: root}
-			req := httptest.NewRequest(http.MethodPost, "http://localhost/workspace/prose/ignore-rule",
+			req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://localhost/workspace/prose/ignore-rule",
 				strings.NewReader(tc.body))
 			req.RemoteAddr = "127.0.0.1:42001"
 			req.Header.Set("Origin", tc.origin)
