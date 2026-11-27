@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"net/url"
 	"strings"
 	"testing"
 
@@ -135,6 +136,97 @@ func TestMDVideoPlugin_ProcessPost_WithQueryParams(t *testing.T) {
 	}
 	if !contains(post.ArticleHTML, "kickflip") {
 		t.Error("Expected alt text preserved as fallback")
+	}
+}
+
+func TestMDVideoPlugin_ProcessPost_DropperSTLImage(t *testing.T) {
+	p := NewMDVideoPlugin()
+	post := &models.Post{ArticleHTML: `<p><img src="https://dropper.waylonwalker.com/file/part.STL?token=secret&amp;width=400&amp;rx=30&amp;projection=orthographic" alt="Bracket &amp; clip"></p>`}
+	if err := p.processPost(post); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`class="md-3d-model"`,
+		`href="https://dropper.waylonwalker.com/view/part.STL?projection=orthographic&amp;rx=30&amp;token=secret"`,
+		`src="https://dropper.waylonwalker.com/fmt/file/part.STL.webp?height=576&amp;projection=orthographic&amp;rx=30&amp;token=secret&amp;width=768"`,
+		`alt="Bracket &amp; clip" width="768" height="576" loading="lazy" decoding="async"`,
+		`Open interactive 3D view`,
+		`target="_blank" rel="noopener noreferrer"`,
+	} {
+		if !strings.Contains(post.ArticleHTML, want) {
+			t.Errorf("STL preview is missing %q: %s", want, post.ArticleHTML)
+		}
+	}
+	if strings.Contains(post.ArticleHTML, "width=400") || strings.Contains(post.ArticleHTML, "model.STL?token=secret") {
+		t.Fatalf("source sizing should be replaced with poster dimensions: %s", post.ArticleHTML)
+	}
+}
+
+func TestReplaceDropperSTLImages_PreservesLinkedImageDestination(t *testing.T) {
+	got := replaceDropperSTLImages(`<p><a href="https://example.com/article"><img src="https://dropper.waylonwalker.com/file/part.stl" alt="Part"></a></p>`)
+	if strings.Count(got, "<a ") != 2 {
+		t.Fatalf("expected separate authored and viewer links without nesting: %s", got)
+	}
+	for _, want := range []string{
+		`href="https://example.com/article"><img src="https://dropper.waylonwalker.com/fmt/file/part.stl.webp?height=576&amp;width=768"`,
+		`</a><a class="md-3d-model" href="https://dropper.waylonwalker.com/view/part.stl"`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("linked STL output is missing %q: %s", want, got)
+		}
+	}
+}
+
+func TestDropperSTLPreviewURLs_RequiresTrustedAbsoluteFileURL(t *testing.T) {
+	for _, raw := range []string{
+		"/models/part.stl",
+		"https://example.com/file/part.stl",
+		"https://dropper.waylonwalker.com/part.stl",
+		"https://dropper.waylonwalker.com/file/part.3mf",
+	} {
+		if poster, viewer, ok := dropperSTLPreviewURLs(raw); ok {
+			t.Errorf("dropperSTLPreviewURLs(%q) = (%q, %q, true), want unchanged", raw, poster, viewer)
+		}
+	}
+}
+
+func TestDropperSTLPreviewURLs_PreservesModelOptionsAndAccessQuery(t *testing.T) {
+	raw := "https://dropper.waylonwalker.com/site/file/part.stl?token=abc&width=300&height=200&" +
+		"crop_x=1&crop_y=2&crop_w=3&crop_h=4&x=1&y=2&cw=3&ch=4&" +
+		"so=1&eo=2&du=3&start=4&end=5&duration=6&t=7&" +
+		"rx=90&ry=2&rz=3&projection=orthographic"
+	poster, viewer, ok := dropperSTLPreviewURLs(raw)
+	if !ok {
+		t.Fatal("expected trusted STL URL to produce preview URLs")
+	}
+	posterURL, err := url.Parse(poster)
+	if err != nil {
+		t.Fatal(err)
+	}
+	viewerURL, err := url.Parse(viewer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if posterURL.Path != "/site/fmt/file/part.stl.webp" || viewerURL.Path != "/site/view/part.stl" {
+		t.Fatalf("unexpected preview paths: poster=%q viewer=%q", posterURL.Path, viewerURL.Path)
+	}
+	for _, query := range []url.Values{posterURL.Query(), viewerURL.Query()} {
+		for key, want := range map[string]string{"token": "abc", "rx": "90", "ry": "2", "rz": "3", "projection": "orthographic"} {
+			if got := query.Get(key); got != want {
+				t.Errorf("query %q = %q, want %q", key, got, want)
+			}
+			for _, key := range strings.Fields("crop_x crop_y crop_w crop_h x y cw ch so eo du start end duration t") {
+				if query.Has(key) {
+					t.Errorf("3D preview URL retained unsupported transform parameter %q: %s", key, query.Encode())
+				}
+			}
+		}
+	}
+	if posterURL.Query().Get("width") != "768" || posterURL.Query().Get("height") != "576" {
+		t.Errorf("poster dimensions = %s, want 768x576", posterURL.RawQuery)
+	}
+	if viewerURL.Query().Has("width") || viewerURL.Query().Has("height") {
+		t.Errorf("viewer URL retained poster sizing: %s", viewerURL.RawQuery)
 	}
 }
 

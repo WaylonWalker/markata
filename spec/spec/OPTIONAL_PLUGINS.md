@@ -15,7 +15,6 @@ This document specifies optional plugins that extend the static site generator w
 │    ├─ webawesome          Render Web Awesome components             │
 │    ├─ contribution_graph  GitHub-style calendar heatmaps           │
 │    ├─ csv_fence           Convert CSV code blocks to tables        │
-│    └─ md_video            Convert image syntax to video tags       │
 │                                                                      │
 │  LINK ENHANCEMENT                                                    │
 │    ├─ one_line_link       Rich previews for URLs on own line       │
@@ -1152,7 +1151,6 @@ hooks = [
     "mermaid",           # After render
     "chartjs",           # After render
     "csv_fence",         # After render
-    "md_video",          # After render
     "one_line_link",     # After render
     "wikilink_hover",    # After wikilinks (needs wikilink anchors)
     "qrcode",            # At save stage

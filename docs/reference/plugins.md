@@ -1287,7 +1287,7 @@ h4:hover .heading-anchor {
 
 **Name:** `md_video`  
 **Stage:** Render (post_render)  
-**Purpose:** Converts markdown image syntax for video files into HTML video elements with native controls and viewport-triggered muted autoplay.
+**Purpose:** Converts Markdown video images to native video elements. It also turns trusted Dropper STL images into poster links for the interactive viewer.
 
 **Configuration (TOML):**
 ```toml
@@ -1334,6 +1334,17 @@ controls = true
 ![Screen recording](screen.mp4?width=500)
 ```
 
+Use an image link for a Dropper-hosted STL file:
+
+```markdown
+![Part name](https://dropper.waylonwalker.com/file/part.stl)
+```
+
+Markata requests a 768 by 576 WebP poster from Dropper's `/fmt/file/` route.
+The poster links to `/view/` and opens the interactive model in a new tab.
+This works in site builds and editor previews. Local STL files and files on
+untrusted hosts stay as ordinary image links.
+
 **Behavior:**
 1. Scans `ArticleHTML` for `<img>` tags after markdown rendering
 2. Checks if the `src` attribute ends with a video extension (handles query parameters)
@@ -1341,6 +1352,7 @@ controls = true
 4. Preserves the `alt` text as fallback content
 5. Automatically detects MIME type from file extension
 6. Derives a `.webp` poster for trusted video URLs on every supported video format
+7. Converts trusted Dropper STL images to WebP posters that link to the Dropper viewer
 
 **HTML output:**
 ```html

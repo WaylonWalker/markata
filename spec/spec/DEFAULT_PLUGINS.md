@@ -28,7 +28,7 @@ This document specifies all built-in plugins that ship with the static site gene
 │                                                                      │
 │  POST-RENDER                                                         │
 │    ├─ heading_anchors    Add anchor links to headings               │
-│    ├─ md_video           Convert video images to video tags         │
+│    ├─ md_video           Convert videos and Dropper STL images      │
 │    ├─ toc                Generate table of contents                  │
 │    ├─ link_collector     Track inlinks/outlinks between posts       │
 │    └─ feeds              Generate feed collections                   │
@@ -736,7 +736,7 @@ for post in core.filter("not skip"):
 
 **Stage:** `render` (with late priority, after `render_markdown`)
 
-**Purpose:** Convert markdown video syntax to native video elements that autoplay muted when visible unless the reader opts out.
+**Purpose:** Convert Markdown video images to native video elements. Convert trusted Dropper STL images to poster links for the interactive viewer.
 
 **Configuration:**
 ```toml
@@ -773,6 +773,27 @@ preload = "none"
 4. Preserve alt text as fallback content
 5. Auto-detect MIME type from extension
 6. Resolve a poster image for trusted video URLs across every supported video format
+7. Convert trusted Dropper STL images to a 768 by 576 WebP poster link
+8. Link the poster to the Dropper viewer and open it in a new tab
+9. Leave local STL files and STL URLs on untrusted hosts unchanged
+
+The STL poster uses `/fmt/file/{filename}.stl.webp`. The viewer link uses
+`/view/{filename}.stl`. The transform preserves query values such as access
+tokens and 3D camera options. The same transform runs in the site build and the
+editor preview.
+
+**STL Markdown syntax:**
+```markdown
+![Part name](https://dropper.waylonwalker.com/file/part.stl)
+```
+
+**STL example output:**
+```html
+<a class="md-3d-model" href="https://dropper.waylonwalker.com/view/part.stl" target="_blank" rel="noopener noreferrer">
+  <img src="https://dropper.waylonwalker.com/fmt/file/part.stl.webp?height=576&amp;width=768" alt="Part name" width="768" height="576" loading="lazy" decoding="async">
+  <span>Open interactive 3D view</span>
+</a>
+```
 
 **Markdown syntax:**
 ```markdown
