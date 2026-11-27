@@ -12,11 +12,11 @@ func TestProjectPreferencesFollowMarkdownFile(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(post), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(post, []byte("A rich tapestry."), 0o644); err != nil {
+	if err := os.WriteFile(post, []byte("A rich tapestry."), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	preferencesPath := filepath.Join(root, PreferencesFile)
-	if err := os.WriteFile(preferencesPath, []byte("{\"ignored_rules\":[\"prose/cliche\"]}\n"), 0o644); err != nil {
+	if err := os.WriteFile(preferencesPath, []byte("{\"ignored_rules\":[\"prose/cliche\"]}\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	p, err := LoadPreferences(post)
@@ -47,7 +47,7 @@ func TestProjectPreferencesFollowMarkdownFile(t *testing.T) {
 
 func TestMalformedPreferencesReturnError(t *testing.T) {
 	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, PreferencesFile), []byte("{oops"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, PreferencesFile), []byte("{oops"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := LoadPreferences(filepath.Join(root, "test.md")); err == nil {
