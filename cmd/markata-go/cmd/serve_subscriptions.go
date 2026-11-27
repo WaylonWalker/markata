@@ -21,6 +21,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/WaylonWalker/markata/pkg/blogroll"
 	"github.com/WaylonWalker/markata/pkg/models"
 	"github.com/WaylonWalker/markata/pkg/plugins"
 )
@@ -638,18 +639,21 @@ func fetchSubscriptionURL(ctx context.Context, client *http.Client, address stri
 	return body, res.Request.URL.String(), err
 }
 
-//nolint:gocyclo // Feed discovery intentionally handles redirects, HTML alternatives, and response validation together.
 func discoverSubscription(ctx context.Context, address string) (discoveredSubscription, error) {
 	client := safeSubscriptionClient()
+	defer client.CloseIdleConnections()
+	return discoverSubscriptionWithClient(ctx, client, address)
+}
+
+//nolint:gocyclo // Feed discovery intentionally handles redirects, HTML alternatives, and response validation together.
+func discoverSubscriptionWithClient(ctx context.Context, client *http.Client, address string) (discoveredSubscription, error) {
 	body, finalURL, err := fetchSubscriptionURL(ctx, client, address)
 	if err != nil {
 		return discoveredSubscription{}, err
 	}
 	out := discoveredSubscription{URL: finalURL, SiteURL: finalURL}
-	first := bytes.TrimSpace(body)
-	if bytes.HasPrefix(first, []byte("<?xml")) || bytes.HasPrefix(first, []byte("<rss")) ||
-		bytes.HasPrefix(first, []byte("<feed")) || bytes.HasPrefix(first, []byte("{")) {
-		return out, nil // Already a feed, not an HTML page.
+	if _, err := blogroll.ValidateFeedDocument(body); err == nil {
+		return out, nil // A validated feed document, not an HTML page.
 	}
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
 	if err != nil {
@@ -663,8 +667,13 @@ func discoverSubscription(ctx context.Context, address string) (discoveredSubscr
 			channelID = extractYouTubeChannelIDFromHTML(string(body))
 		}
 		if channelID != "" {
-			out.URL = youtubeFeedBaseURL + channelID
-			return out, nil
+			feedBody, resolved, err := fetchSubscriptionURL(ctx, client, youtubeFeedBaseURL+channelID)
+			if err == nil {
+				if _, err := blogroll.ValidateFeedDocument(feedBody); err == nil {
+					out.URL = resolved
+					return out, nil
+				}
+			}
 		}
 	}
 	base, err := url.Parse(finalURL)
@@ -694,12 +703,15 @@ func discoverSubscription(ctx context.Context, address string) (discoveredSubscr
 		return out, errors.New("no RSS, Atom, or JSON Feed advertised by this website; paste its feed URL directly")
 	}
 	for _, feed := range feeds {
-		if _, resolved, err := fetchSubscriptionURL(ctx, client, feed); err == nil {
-			out.URL = resolved
-			return out, nil
+		feedBody, resolved, err := fetchSubscriptionURL(ctx, client, feed)
+		if err == nil {
+			if _, err := blogroll.ValidateFeedDocument(feedBody); err == nil {
+				out.URL = resolved
+				return out, nil
+			}
 		}
 	}
-	return out, errors.New("the website advertises feeds, but none could be fetched")
+	return out, errors.New("the website advertises feeds, but none could be fetched and validated")
 }
 
 func handleSubscriptionsDiscover(w http.ResponseWriter, r *http.Request) {
