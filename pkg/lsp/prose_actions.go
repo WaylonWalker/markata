@@ -14,6 +14,7 @@ import (
 const (
 	proseIgnoreOnceCommand = "markata.prose.ignoreOnce"
 	proseIgnoreRuleCommand = "markata.prose.ignoreRule"
+	proseIgnorePhraseCommand = "markata.prose.ignorePhrase"
 	proseQuickFixKind      = "quickfix"
 )
 
@@ -111,10 +112,18 @@ func (s *Server) handleProseCodeAction(_ context.Context, msg *Message) error {
 				Arguments: args,
 			},
 		}, proseCodeAction{
-			Title: "Always ignore " + issue.Rule,
+			Title: "Always ignore this phrase",
 			Kind:  proseQuickFixKind,
 			Command: &proseCommand{
-				Title:     "Always ignore " + issue.Rule,
+				Title:     "Always ignore this phrase",
+				Command:   proseIgnorePhraseCommand,
+				Arguments: args,
+			},
+		}, proseCodeAction{
+			Title: "Disable " + issue.Rule + " rule",
+			Kind:  proseQuickFixKind,
+			Command: &proseCommand{
+				Title:     "Disable " + issue.Rule + " rule",
 				Command:   proseIgnoreRuleCommand,
 				Arguments: args,
 			},
@@ -155,7 +164,7 @@ func proseRangeIntersects(a, b Range) bool {
 	return proseComparePosition(a.Start, b.End) <= 0 && proseComparePosition(b.Start, a.End) <= 0
 }
 
-func proseIssueKey(issue prose.Issue, content string) string {
+func proseIssueText(issue prose.Issue, content string) string {
 	lines := strings.Split(content, "\n")
 	if issue.Line < 0 || issue.Line >= len(lines) || issue.EndLine != issue.Line {
 		return ""
@@ -164,7 +173,15 @@ func proseIssueKey(issue prose.Issue, content string) string {
 	if issue.Column < 0 || issue.EndColumn > len(line) || issue.Column >= issue.EndColumn {
 		return ""
 	}
-	return fmt.Sprintf("%s:%d:%d:%s", issue.Rule, issue.Line, issue.Column, line[issue.Column:issue.EndColumn])
+	return line[issue.Column:issue.EndColumn]
+}
+
+func proseIssueKey(issue prose.Issue, content string) string {
+	text := proseIssueText(issue, content)
+	if text == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s:%d:%d:%s", issue.Rule, issue.Line, issue.Column, text)
 }
 
 func (s *Server) proseIssueIgnored(uri string, issue prose.Issue, content string) bool {
@@ -211,7 +228,9 @@ type proseIgnoreTarget struct {
 func parseProseIgnoreTarget(params proseExecuteParams) (proseIgnoreTarget, error) {
 	var target proseIgnoreTarget
 	if len(params.Arguments) != 4 ||
-		(params.Command != proseIgnoreOnceCommand && params.Command != proseIgnoreRuleCommand) {
+		(params.Command != proseIgnoreOnceCommand &&
+			params.Command != proseIgnoreRuleCommand &&
+			params.Command != proseIgnorePhraseCommand) {
 		return target, fmt.Errorf("unsupported prose ignore command")
 	}
 	if json.Unmarshal(params.Arguments[0], &target.uri) != nil ||
@@ -255,8 +274,12 @@ func (s *Server) findProseIssue(target proseIgnoreTarget) (content string, issue
 }
 
 func (s *Server) applyProseIgnore(command string, target proseIgnoreTarget, issue prose.Issue, content string) error {
-	if command == proseIgnoreRuleCommand {
+	switch command {
+	case proseIgnoreRuleCommand:
 		_, err := prose.IgnoreRule(uriToPath(target.uri), target.id)
+		return err
+	case proseIgnorePhraseCommand:
+		_, err := prose.IgnorePhrase(uriToPath(target.uri), target.id, proseIssueText(issue, content))
 		return err
 	}
 	key := proseIssueKey(issue, content)
