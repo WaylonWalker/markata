@@ -144,7 +144,7 @@ func ResolveDraftTemplate(metadata map[string]interface{}, sourcePath string, cf
 	var slugRules []models.SlugRule
 	if cfg != nil {
 		p.config = &lifecycle.Config{Extra: map[string]interface{}{
-			"template_presets": cfg.TemplatePresets,
+			"template_presets":  cfg.TemplatePresets,
 			"default_templates": cfg.DefaultTemplates,
 		}}
 		p.layoutConfig = &cfg.Layout
