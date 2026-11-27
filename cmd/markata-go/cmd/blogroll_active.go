@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 
+	"github.com/WaylonWalker/markata/pkg/blogroll"
 	"github.com/WaylonWalker/markata/pkg/models"
 )
 
@@ -49,24 +49,7 @@ func newBlogrollActiveCmd(name string, active bool) *cobra.Command {
 // selectBlogrollFeed requires an exact URL or an unambiguous case-insensitive
 // handle. Never mutate a feed on a substring match.
 func selectBlogrollFeed(feeds []models.ExternalFeedConfig, selector string) (models.ExternalFeedConfig, error) {
-	selector = strings.TrimSpace(selector)
-	var matches []models.ExternalFeedConfig
-	if selector != "" {
-		for i := range feeds {
-			feed := &feeds[i]
-			if feed.URL == selector || (feed.Handle != "" && strings.EqualFold(feed.Handle, selector)) {
-				matches = append(matches, *feed)
-			}
-		}
-	}
-	switch len(matches) {
-	case 1:
-		return matches[0], nil
-	case 0:
-		return models.ExternalFeedConfig{}, fmt.Errorf("no subscription matches %q; use its exact handle or feed URL", selector)
-	default:
-		return models.ExternalFeedConfig{}, fmt.Errorf("subscription selector %q is ambiguous; use an exact feed URL", selector)
-	}
+	return blogroll.SelectSubscription(feeds, selector)
 }
 
 func newBlogrollRemoveCmd() *cobra.Command {
