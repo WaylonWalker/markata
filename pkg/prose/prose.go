@@ -11,13 +11,19 @@ import (
 // Issue uses zero-based line numbers and UTF-8 byte columns. LSP clients
 // convert these positions to UTF-16. Check never modifies the document.
 type Issue struct {
-	Rule       string `json:"rule"`
-	Message    string `json:"message"`
-	Line       int    `json:"line"`
-	Column     int    `json:"column"`
-	EndLine    int    `json:"end_line"`
-	EndColumn  int    `json:"end_column"`
-	Suggestion string `json:"suggestion,omitempty"`
+	Rule            string     `json:"rule"`
+	Message         string     `json:"message"`
+	Line            int        `json:"line"`
+	Column          int        `json:"column"`
+	EndLine         int        `json:"end_line"`
+	EndColumn       int        `json:"end_column"`
+	Suggestion      string     `json:"suggestion,omitempty"`
+	ContractVersion int        `json:"contract_version"`
+	Provider        string     `json:"provider"`
+	Severity        string     `json:"severity"`
+	StartByte       int        `json:"start_byte"`
+	EndByte         int        `json:"end_byte"`
+	Edits           []TextEdit `json:"edits,omitempty"`
 }
 
 type Options struct {
@@ -54,15 +60,25 @@ func Check(source string, options Options) []Issue {
 			}
 			sl, sc := position(source, loc[0])
 			el, ec := position(source, loc[1])
-			issues = append(issues, Issue{
-				Rule:       r.id,
-				Message:    r.message,
-				Line:       sl,
-				Column:     sc,
-				EndLine:    el,
-				EndColumn:  ec,
-				Suggestion: suggestionFor(r, matched),
-			})
+			suggestion := suggestionFor(r, matched)
+			issue := Issue{
+				Rule:            r.id,
+				Message:         r.message,
+				Line:            sl,
+				Column:          sc,
+				EndLine:         el,
+				EndColumn:       ec,
+				Suggestion:      suggestion,
+				ContractVersion: ContractVersion,
+				Provider:        "markata",
+				Severity:        "hint",
+				StartByte:       loc[0],
+				EndByte:         loc[1],
+			}
+			if suggestion != "" {
+				issue.Edits = []TextEdit{{StartByte: loc[0], EndByte: loc[1], Replacement: suggestion}}
+			}
+			issues = append(issues, issue)
 		}
 	}
 	sort.Slice(issues, func(i, j int) bool {
