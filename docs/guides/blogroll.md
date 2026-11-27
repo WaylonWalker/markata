@@ -38,6 +38,21 @@ Run `markata-go build` and you'll have:
 - `/blogroll/` - Lists Simon Willison's blog
 - `/reader/` - Shows his latest posts
 
+## List subscriptions from the terminal
+
+Inspect configured external subscriptions without fetching feeds or changing configuration:
+
+```bash
+markata blogroll list
+markata blogroll list --filter engineering
+markata blogroll list --json
+```
+
+The filter matches titles, URLs, handles, categories and tags without regard to case.
+The inventory shows active or paused state, reader type and configuration source.
+JSON output includes the effective blogroll enabled state, source editability and
+the target configuration file when available.
+
 ## Discover and check public feeds
 
 Find a valid advertised RSS or Atom feed from a website, or validate a known
