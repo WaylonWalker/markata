@@ -24,7 +24,7 @@ func TestTemplatesPlugin_RenderPhotoPostAliases(t *testing.T) {
 		{name: "legacy shot", template: "shot", body: caption, image: image, want: true},
 		{name: "shots alias", template: "shots", body: caption, image: image, want: true},
 		{name: "image alias", template: "image", body: caption, image: image, want: true},
-		{name: "gallery alias", template: "gallery", body: caption, image: image, want: true},
+		{name: "gallery retains its own layout", template: "gallery", body: caption, image: image},
 		{name: "already inline", template: "shot", body: "<img src=\"" + image + "\">" + caption, image: image},
 		{name: "no media", template: "photo", body: caption},
 		{name: "private", template: "photo", body: caption, image: image, private: true},

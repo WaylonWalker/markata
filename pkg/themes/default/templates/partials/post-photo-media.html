@@ -1,6 +1,6 @@
 {# A photo's frontmatter media is its primary content, not a generic article cover. #}
 {% if not post.private %}
-{% if post.template == "photo" or post.template == "shot" or post.template == "shots" or post.template == "image" or post.template == "gallery" %}
+{% if post.template == "photo" or post.template == "shot" or post.template == "shots" or post.template == "image" %}
 {% with post.image|media_url:post.video as media_src %}
 {% if media_src %}
 {% with media_src|original_media_url as original_media %}
