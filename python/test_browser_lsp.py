@@ -375,7 +375,7 @@ class BrowserLSPTest(unittest.TestCase):
                     cm.focus();
                 }""")
                 expect(page.locator(".markata-lsp-prose-hint")).to_be_visible()
-                page.keyboard.press("Alt+Enter")
+                page.locator(".markata-lsp-prose-hint").first.click()
                 popup = page.locator(".markata-prose-popover")
                 expect(popup).to_be_visible()
                 popup.get_by_role("button", name="Replace with unique").click()
@@ -390,7 +390,7 @@ class BrowserLSPTest(unittest.TestCase):
                     cm.focus();
                 }""")
                 expect(page.locator(".markata-lsp-prose-hint")).to_be_visible()
-                page.keyboard.press("Alt+Enter")
+                page.locator(".markata-lsp-prose-hint").first.click()
                 popup.get_by_role("button", name="Ignore once").click()
                 expect(page.locator(".markata-lsp-prose-hint")).to_have_count(0)
 
