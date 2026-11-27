@@ -222,15 +222,18 @@ keep them private if they contain access tokens.
 
 ### Add a feed from the terminal
 
-Run `markata blogroll add` in an interactive terminal to enter a feed URL and review its metadata, or supply the URL directly:
+Run `markata blogroll add` in an interactive terminal to enter a website or feed URL and review its metadata, or supply the URL directly:
 
 ```bash
+markata blogroll add https://example.com
 markata blogroll add https://example.com/feed.xml
 markata blogroll add https://example.com/feed.xml --dry-run
 markata blogroll add https://example.com/feed.xml --no-input
 ```
 
-If metadata cannot be fetched, the command reports the failure and offers an interactive manual-add confirmation. For scripts or offline use, explicitly bypass fetching and verification with:
+Direct CLI feed URLs can be private or use nonstandard ports. If the URL is not a valid RSS or Atom feed, Markata tries public website discovery using the protected browser discovery client. Multiple validated candidates require explicit selection in a terminal, or an exact feed URL with `--no-input`. Discovery checks up to eight advertised URLs. Metadata enrichment is best-effort after validation.
+
+If a feed cannot be verified or discovered, the command reports the failure and offers an interactive manual-add confirmation. For scripts or offline use, explicitly bypass fetching and verification with:
 
 ```bash
 markata blogroll add https://example.com/feed.xml --manual --title "My Blog" --no-input
