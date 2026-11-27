@@ -48,6 +48,12 @@ var noOpDateFormat = regexp.MustCompile(`date\s*(?::|\()\s*["']([^"']+)["']`)
 var noOpJinjaFlag = regexp.MustCompile(`(?im)^\s*jinja(?:_md)?\s*:\s*(?:true|yes|on)\s*(?:#.*)?$`)
 var noOpMentionCandidate = regexp.MustCompile(`(?i)(?:^|[^@~\w])([@~])([a-zA-Z][a-zA-Z0-9_.-]*)(?:[^a-zA-Z0-9_.-]|$)`)
 
+type noOpBuildCacheState struct {
+	path     string
+	identity string
+	cache    *buildcache.Cache
+}
+
 type noOpBaseline struct {
 	Version            int       `json:"version"`
 	Fingerprint        string    `json:"fingerprint"`
@@ -706,7 +712,16 @@ func (s *Service) validateNoOpSemantics(ctx context.Context) (time.Time, error) 
 	if err := checkJinjaTimeUse(ctx, s.cfg.SourceDir, siteConfig); err != nil {
 		return time.Time{}, err
 	}
-	if err := checkNoOpEmbedCache(ctx, s.cfg.SourceDir, s.cfg.CacheMount, siteConfig); err != nil {
+	needsEmbedCache := !embedsDisabled(siteConfig.Extra)
+	needsLinkAvatarCache := noOpHookEnabled(siteConfig, "link_avatars") && plugins.LinkAvatarsRequiresBuildTimeRender(siteConfig.Extra)
+	var cache *buildcache.Cache
+	if needsEmbedCache || needsLinkAvatarCache {
+		cache, err = s.loadNoOpBuildCache(noOpBuildCacheDir(s.cfg.SourceDir, s.cfg.CacheMount, siteConfig))
+		if err != nil {
+			return time.Time{}, fmt.Errorf("load build cache for no-op semantic checks: %w", err)
+		}
+	}
+	if err := checkNoOpEmbedCacheWithCache(ctx, s.cfg.SourceDir, siteConfig, cache); err != nil {
 		return time.Time{}, err
 	}
 	if noOpHookEnabled(siteConfig, "cdn_assets") {
@@ -714,8 +729,13 @@ func (s *Service) validateNoOpSemantics(ctx context.Context) (time.Time, error) 
 			return time.Time{}, err
 		}
 	}
-	if noOpHookEnabled(siteConfig, "link_avatars") {
-		if err := checkNoOpLinkAvatarCache(ctx, s.cfg.SourceDir, s.cfg.CacheMount, siteConfig); err != nil {
+	if needsLinkAvatarCache {
+		if err := checkNoOpLinkAvatarCacheWithCache(ctx, s.cfg.SourceDir, siteConfig, cache); err != nil {
+			return time.Time{}, err
+		}
+	}
+	if needsEmbedCache || needsLinkAvatarCache {
+		if err := s.verifyNoOpBuildCacheStable(noOpBuildCacheDir(s.cfg.SourceDir, s.cfg.CacheMount, siteConfig)); err != nil {
 			return time.Time{}, err
 		}
 	}
@@ -1071,7 +1091,7 @@ func statNoOpReleasePath(ctx context.Context, releaseRoot, path string) (noOpRel
 	return noOpReleaseIdentity{name: filepath.ToSlash(relative), info: info}, nil
 }
 
-func forEachNoOpContentFile(ctx context.Context, sourceDir string, siteConfig *models.Config, visit func(string, []byte) (bool, error)) error {
+func forEachNoOpContentPath(ctx context.Context, sourceDir string, siteConfig *models.Config, visit func(string) (bool, error)) error {
 	files, err := sourcegit.Command(ctx, sourceDir, "ls-files", "--cached", "--others", "--exclude-standard", "-z").Output()
 	if err != nil {
 		return fmt.Errorf("list content files for no-op verification: %w", err)
@@ -1094,14 +1114,7 @@ func forEachNoOpContentFile(ctx context.Context, sourceDir string, siteConfig *m
 		if !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 || info.Size() > 32<<20 {
 			return fmt.Errorf("content source %q is unsafe", name)
 		}
-		data, err := os.ReadFile(path)
-		if errors.Is(err, fs.ErrNotExist) {
-			continue
-		}
-		if err != nil {
-			return fmt.Errorf("read content source %q: %w", name, err)
-		}
-		done, err := visit(name, data)
+		done, err := visit(name)
 		if err != nil {
 			return err
 		}
@@ -1110,6 +1123,93 @@ func forEachNoOpContentFile(ctx context.Context, sourceDir string, siteConfig *m
 		}
 	}
 	return nil
+}
+
+func forEachNoOpContentFile(ctx context.Context, sourceDir string, siteConfig *models.Config, visit func(string, []byte) (bool, error)) error {
+	return forEachNoOpContentPath(ctx, sourceDir, siteConfig, func(name string) (bool, error) {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+		path := filepath.Join(sourceDir, filepath.FromSlash(name))
+		data, err := os.ReadFile(path)
+		if errors.Is(err, fs.ErrNotExist) {
+			return false, nil
+		}
+		if err != nil {
+			return false, fmt.Errorf("read content source %q: %w", name, err)
+		}
+		return visit(name, data)
+	})
+}
+
+func forEachNoOpContentFileConcurrent(ctx context.Context, sourceDir string, siteConfig *models.Config, workerCount int, visit func(string, []byte) error) error {
+	if workerCount < 1 {
+		workerCount = 1
+	}
+	scanCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	jobs := make(chan string)
+	var wg sync.WaitGroup
+	var errorOnce sync.Once
+	var firstErr error
+	setError := func(err error) {
+		if err != nil {
+			errorOnce.Do(func() {
+				firstErr = err
+				cancel()
+			})
+		}
+	}
+	for worker := 0; worker < workerCount; worker++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-scanCtx.Done():
+					return
+				case name, ok := <-jobs:
+					if !ok {
+						return
+					}
+					if err := scanCtx.Err(); err != nil {
+						setError(err)
+						return
+					}
+					path := filepath.Join(sourceDir, filepath.FromSlash(name))
+					data, err := os.ReadFile(path)
+					if errors.Is(err, fs.ErrNotExist) {
+						continue
+					}
+					if err != nil {
+						setError(fmt.Errorf("read content source %q: %w", name, err))
+						return
+					}
+					if err := visit(name, data); err != nil {
+						setError(err)
+						return
+					}
+				}
+			}
+		}()
+	}
+	pathErr := forEachNoOpContentPath(scanCtx, sourceDir, siteConfig, func(name string) (bool, error) {
+		select {
+		case <-scanCtx.Done():
+			return false, scanCtx.Err()
+		case jobs <- name:
+			return false, nil
+		}
+	})
+	close(jobs)
+	wg.Wait()
+	if firstErr != nil {
+		return firstErr
+	}
+	if pathErr != nil {
+		return pathErr
+	}
+	return ctx.Err()
 }
 
 func isNoOpContentFile(siteConfig *models.Config, name string) bool {
@@ -1197,8 +1297,18 @@ func checkNoOpEmbedCache(ctx context.Context, sourceDir, cacheMount string, site
 	if err != nil {
 		return fmt.Errorf("load build cache for embed verification: %w", err)
 	}
-	return forEachNoOpContentFile(ctx, sourceDir, siteConfig, func(name string, data []byte) (bool, error) {
-		return false, checkNoOpEmbedCacheEntry(name, data, cache, siteConfig)
+	return checkNoOpEmbedCacheWithCache(ctx, sourceDir, siteConfig, cache)
+}
+
+func checkNoOpEmbedCacheWithCache(ctx context.Context, sourceDir string, siteConfig *models.Config, cache *buildcache.Cache) error {
+	if siteConfig == nil || embedsDisabled(siteConfig.Extra) {
+		return nil
+	}
+	if cache == nil {
+		return errors.New("build cache snapshot is unavailable for embed verification")
+	}
+	return forEachNoOpContentFileConcurrent(ctx, sourceDir, siteConfig, noOpStatWorkerCount(), func(name string, data []byte) error {
+		return checkNoOpEmbedCacheEntry(name, data, cache, siteConfig)
 	})
 }
 
@@ -1313,9 +1423,88 @@ func checkNoOpLinkAvatarCache(ctx context.Context, sourceDir, cacheMount string,
 	if err != nil {
 		return fmt.Errorf("load build cache for link-avatar verification: %w", err)
 	}
+	return checkNoOpLinkAvatarCacheWithCache(ctx, sourceDir, siteConfig, cache)
+}
+
+func checkNoOpLinkAvatarCacheWithCache(ctx context.Context, sourceDir string, siteConfig *models.Config, cache *buildcache.Cache) error {
+	if siteConfig == nil || !plugins.LinkAvatarsRequiresBuildTimeRender(siteConfig.Extra) {
+		return nil
+	}
+	if cache == nil {
+		return errors.New("build cache snapshot is unavailable for link-avatar verification")
+	}
 	return forEachNoOpContentFile(ctx, sourceDir, siteConfig, func(name string, data []byte) (bool, error) {
 		return false, checkNoOpLinkAvatarCacheEntry(name, data, cache, siteConfig)
 	})
+}
+
+func (s *Service) loadNoOpBuildCache(cacheDir string) (*buildcache.Cache, error) {
+	cacheDir = filepath.Clean(cacheDir)
+	cachePath := filepath.Join(cacheDir, buildcache.CacheFileName)
+	s.noOpBuildCacheMu.Lock()
+	defer s.noOpBuildCacheMu.Unlock()
+
+	info, err := os.Lstat(cachePath)
+	if errors.Is(err, fs.ErrNotExist) {
+		if s.noOpBuildCache != nil && s.noOpBuildCache.path == cachePath && s.noOpBuildCache.identity == "" {
+			return s.noOpBuildCache.cache, nil
+		}
+		cache := buildcache.New(cacheDir)
+		s.noOpBuildCache = &noOpBuildCacheState{path: cachePath, cache: cache}
+		return cache, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+		return nil, errors.New("build cache file is not a regular file")
+	}
+	identity := noOpCacheFileIdentity(info)
+	if identity == "" {
+		return nil, errors.New("build cache file identity is unavailable")
+	}
+	if s.noOpBuildCache != nil && s.noOpBuildCache.path == cachePath && s.noOpBuildCache.identity == identity {
+		return s.noOpBuildCache.cache, nil
+	}
+	cache, err := buildcache.Load(cacheDir)
+	if err != nil {
+		return nil, err
+	}
+	after, err := os.Lstat(cachePath)
+	if err != nil || !after.Mode().IsRegular() || after.Mode()&os.ModeSymlink != 0 || noOpCacheFileIdentity(after) != identity {
+		return nil, errors.New("build cache changed during no-op baseline validation")
+	}
+	s.noOpBuildCache = &noOpBuildCacheState{path: cachePath, identity: identity, cache: cache}
+	return cache, nil
+}
+
+func (s *Service) verifyNoOpBuildCacheStable(cacheDir string) error {
+	cachePath := filepath.Join(filepath.Clean(cacheDir), buildcache.CacheFileName)
+	s.noOpBuildCacheMu.Lock()
+	defer s.noOpBuildCacheMu.Unlock()
+	state := s.noOpBuildCache
+	if state == nil || state.path != cachePath {
+		return errors.New("build cache snapshot is unavailable after no-op validation")
+	}
+	info, err := os.Lstat(cachePath)
+	if state.identity == "" {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+		return errors.New("build cache changed during no-op baseline validation")
+	}
+	if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 || noOpCacheFileIdentity(info) != state.identity {
+		return errors.New("build cache changed during no-op baseline validation")
+	}
+	return nil
+}
+
+func noOpCacheFileIdentity(info fs.FileInfo) string {
+	identity := fileidentity.Read(info)
+	if identity.Inode == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d:%d:%d:%d:%d:%d", identity.Device, identity.Inode, identity.Size, identity.Mode, identity.Modified, identity.Changed)
 }
 
 func checkNoOpLinkAvatarCacheEntry(name string, data []byte, cache *buildcache.Cache, siteConfig *models.Config) error {

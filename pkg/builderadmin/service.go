@@ -230,6 +230,8 @@ type Service struct {
 	noOpBuilderMu        sync.Mutex
 	noOpBuilderDigest    string
 	noOpBuilderIdentity  string
+	noOpBuildCacheMu     sync.Mutex
+	noOpBuildCache       *noOpBuildCacheState
 	releaseMu            sync.Mutex
 	pruneScheduleMu      sync.Mutex
 	pruneRunning         bool
