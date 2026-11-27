@@ -79,8 +79,8 @@ func (s *Server) handleProseCodeAction(_ context.Context, msg *Message) error {
 		return s.sendResponse(msg.ID, actions)
 	}
 	for _, issue := range prose.Check(content, prefs.Options()) {
-		issueRange := proseLSPRange(content, issue)
-		if !proseRangeIntersects(params.Range, issueRange) || s.proseIssueIgnored(params.TextDocument.URI, issue, content) {
+		issueRange, ok := proseLSPRange(content, issue)
+		if !ok || !proseRangeIntersects(params.Range, issueRange) || s.proseIssueIgnored(params.TextDocument.URI, issue, content) {
 			continue
 		}
 		if issue.Suggestion != "" {
@@ -132,17 +132,15 @@ func (s *Server) handleProseCodeAction(_ context.Context, msg *Message) error {
 	return s.sendResponse(msg.ID, actions)
 }
 
-func proseLSPRange(content string, issue prose.Issue) Range {
-	lines := strings.Split(content, "\n")
-	start := Position{Line: issue.Line, Character: issue.Column}
-	end := Position{Line: issue.EndLine, Character: issue.EndColumn}
-	if start.Line >= 0 && start.Line < len(lines) {
-		start.Character = utf16Column(lines[start.Line], start.Character)
+func proseLSPRange(content string, issue prose.Issue) (Range, bool) {
+	span, err := prose.UTF16Range(content, issue)
+	if err != nil {
+		return Range{}, false
 	}
-	if end.Line >= 0 && end.Line < len(lines) {
-		end.Character = utf16Column(lines[end.Line], end.Character)
-	}
-	return Range{Start: start, End: end}
+	return Range{
+		Start: Position{Line: span.Start.Line, Character: span.Start.Character},
+		End:   Position{Line: span.End.Line, Character: span.End.Character},
+	}, true
 }
 
 func proseComparePosition(a, b Position) int {
@@ -165,15 +163,11 @@ func proseRangeIntersects(a, b Range) bool {
 }
 
 func proseIssueText(issue prose.Issue, content string) string {
-	lines := strings.Split(content, "\n")
-	if issue.Line < 0 || issue.Line >= len(lines) || issue.EndLine != issue.Line {
+	text, err := prose.OriginalText(content, issue)
+	if err != nil {
 		return ""
 	}
-	line := lines[issue.Line]
-	if issue.Column < 0 || issue.EndColumn > len(line) || issue.Column >= issue.EndColumn {
-		return ""
-	}
-	return line[issue.Column:issue.EndColumn]
+	return text
 }
 
 func proseIssueKey(issue prose.Issue, content string) string {
