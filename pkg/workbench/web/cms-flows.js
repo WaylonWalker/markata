@@ -450,7 +450,7 @@
     qnHeading.value = prefill.title || '';
     qnUrl.value = prefill.url || '';
     qnBody.value = prefill.text || '';
-    qnTags.value = prefill.tags || (prefill.url ? 'link' : 'note');
+    qnTags.value = prefill.tags || (prefill.files?.length ? 'photo' : prefill.url ? 'link' : 'note');
     qnPublish.checked = false;
     qnStatus.hidden = true;
     pendingShareId = prefill.shareId || null;
@@ -504,12 +504,13 @@
       const yamlTags = tags.length ? ['tags:', ...tags.map((t) => `  - ${JSON.stringify(t)}`)].join('\n') : 'tags:\n  - note';
       const lines = [
         '---',
-        `title: ${JSON.stringify(title || `Quick Note ${date}`)}`,
+        `title: ${JSON.stringify(title || (qnPhotos.length ? `Photo ${date}` : `Quick Note ${date}`))}`,
         `date: ${date}`,
         'published: false',
         'draft: true',
         yamlTags,
       ];
+      if (qnPhotos.length) lines.push('type: photo');
       if (url) lines.push(`link: ${JSON.stringify(url)}`);
       lines.push('---', '');
       if (url) lines.push(`[${title || url}](${url})`, '');
