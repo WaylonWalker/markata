@@ -112,7 +112,7 @@ func subscriptionReadRequest(w http.ResponseWriter, r *http.Request, dst any) bo
 	return true
 }
 
-// blogrollRawFeeds reads the *local* entries in each source, before composition.
+// subscriptionSources adapts resolved workspace layers to the shared service.
 // Editing an included file rather than the root is crucial to avoid misplaced changes.
 func subscriptionSources(state *settingsState) blogroll.SourceSet {
 	sources := make(blogroll.SourceSet, len(state.sources))
