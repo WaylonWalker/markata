@@ -21,7 +21,8 @@ type Issue struct {
 }
 
 type Options struct {
-	IgnoredRules map[string]bool
+	IgnoredRules   map[string]bool
+	IgnoredPhrases map[string]map[string]bool
 }
 
 type rule struct {
@@ -47,6 +48,10 @@ func Check(source string, options Options) []Issue {
 			continue
 		}
 		for _, loc := range r.re.FindAllStringIndex(masked, -1) {
+			matched := source[loc[0]:loc[1]]
+			if options.IgnoredPhrases[r.id][normalizePhrase(matched)] {
+				continue
+			}
 			sl, sc := position(source, loc[0])
 			el, ec := position(source, loc[1])
 			issues = append(issues, Issue{
@@ -56,7 +61,7 @@ func Check(source string, options Options) []Issue {
 				Column:     sc,
 				EndLine:    el,
 				EndColumn:  ec,
-				Suggestion: suggestionFor(r, source[loc[0]:loc[1]]),
+				Suggestion: suggestionFor(r, matched),
 			})
 		}
 	}
@@ -167,4 +172,25 @@ func suggestionFor(r rule, matched string) string {
 		result = strings.ToUpper(result[:1]) + result[1:]
 	}
 	return result
+}
+
+// normalizePhrase consistently matches accepted phrases case-insensitively.
+func normalizePhrase(phrase string) string {
+	return strings.ToLower(strings.TrimSpace(phrase))
+}
+
+// ValidPhrase checks an exact known prose pattern. It is used by the browser
+// preference endpoint to reject arbitrary strings and unbounded values.
+func ValidPhrase(id, phrase string) bool {
+	if len(phrase) == 0 || len(phrase) > 256 || strings.TrimSpace(phrase) != phrase {
+		return false
+	}
+	for _, r := range rules {
+		if r.id != id {
+			continue
+		}
+		matches := r.re.FindStringIndex(phrase)
+		return matches != nil && matches[0] == 0 && matches[1] == len(phrase)
+	}
+	return false
 }
