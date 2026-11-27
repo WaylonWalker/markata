@@ -588,9 +588,17 @@ the local pre-publish commit, then creates an isolated one-file commit and
 pushes it. Any unrelated local commits block the quick path rather than
 being pushed unexpectedly. The status says **Published to Git**, not Live;
 deployment verification is separate. If the network push fails, the in-memory
-session can retry the pending commit without creating a duplicate. If the
-editor is reloaded in that state, inspect Git and remote status before
-retrying; automatic recovery across browser restarts is not yet implemented.
+session can retry the pending commit without creating a duplicate. If the push
+response was lost after origin accepted the exact commit, retry confirms that
+commit instead of pushing it again. A confirmed push closes the review dialog
+and leaves **Pushed to origin · live status not verified** beside the save
+status. Use **Check live status** to verify a configured Builder Admin
+deployment. If the remote branch moved to another commit, the editor keeps the
+local commit and blocks a blind retry. Use **Review changes** to inspect the
+post. The editor does not yet sync that branch; keep the local commit while you
+resolve the remote change. If the editor is reloaded after an unconfirmed push,
+inspect Git and remote status before retrying; automatic recovery across browser
+restarts is not yet implemented.
 
 Use the separate **Review changes** control or **Ctrl/Cmd+Shift+Enter** when
 you want a detailed comparison of the active post. The optional advanced
@@ -672,9 +680,14 @@ flags.
 The review can create a local Git commit for the selected page, using the
 message shown in the **Commit message** tab. After that commit, **Push to
 origin** is a separate action. Pushing does not prove that a deployment
-succeeded; when Builder Admin verification is configured, **Check live status**
-can confirm the deployed source revision. “Last committed” is not necessarily
-the live site revision. A scratch file must first be created or opened as a
+succeeded. After a confirmed push, the review closes and **Check live status**
+remains available beside the editor save status. When Builder Admin verification
+is configured, it can confirm the deployed source revision. “Last committed” is
+not necessarily the live site revision. If the remote branch changed, the local
+commit remains saved and the editor asks you to resolve the branch before
+another push. A safe in-editor sync flow is tracked separately; do not hard
+reset the workspace to recover a reviewed post. A scratch file must first be
+created or opened as a
 workspace Markdown post. If the workspace has no Git history, the review
 reports this rather than assuming a baseline.
 

@@ -163,6 +163,22 @@ MUST keep the revision recoverable and avoid showing "Published" prematurely.
 The UI should support publishing a single post, a selected group, or an explicit
 site-wide release, each displaying its scope.
 
+After the remote confirms a push, the review dialog MUST close and the editor
+MUST announce **Pushed to origin · live status not verified** outside the
+dialog. The user MUST still be able to check the pushed commit's deployment
+status from the editor. A lost or failed push response MUST NOT be reported as a
+confirmed push.
+
+If the remote branch moves after the local one-page commit, the editor MUST keep
+that commit and the saved source. It MUST NOT offer an identical blind retry
+when the publisher reports that the remote branch changed. The current recovery
+message MUST say that the local commit is retained and that this editor cannot
+sync the branch automatically yet. A later sync flow may fast-forward or
+reapply the reviewed one-page change only after checking for same-file
+overlap. If the remote changed that file, the editor MUST show both versions
+before any overwrite. A forced remote update MUST never trigger a forced push
+or a silent hard reset.
+
 Power users MAY opt into Git details and a full Pierre source diff. The default
 experience must be a rendered content review. A rich unified rendered diff must
 respect paragraph, heading, list, table, code, image, container and frontmatter
@@ -226,7 +242,13 @@ push source MUST be the reviewed commit hash, not a mutable local branch name.
 A push MUST be a non-forced fast-forward of exactly one commit whose sole
 changed path is a regular Markdown blob; the remote branch MUST equal that
 commit's parent. The publisher MUST verify the remote points to the requested
-commit after pushing.
+commit after pushing. If a retry finds that the remote already points to that
+exact reviewed commit, it MUST acknowledge the existing push as successful
+without pushing again.
+
+The publisher MUST log each accepted or rejected push with the branch, short
+commit ID, and outcome. Logs MUST NOT include document source, authentication
+material, or request bodies.
 
 The Unix socket MUST remain private to the pod and MUST NOT be exposed through
 an HTTP or Kubernetes Service. Hlab Auth continues to authorize editor

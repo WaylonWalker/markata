@@ -344,9 +344,11 @@ func (s *gitPublisherService) handlePush(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err := s.push(r.Context(), request.Branch, request.Commit); err != nil {
+		log.Printf("editor git publisher push result=rejected branch=%q commit=%s reason=%q", request.Branch, request.Commit[:12], err)
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
+	log.Printf("editor git publisher push result=confirmed branch=%q commit=%s", request.Branch, request.Commit[:12])
 	writePublisherJSON(w, map[string]string{"status": "pushed", "commit": request.Commit})
 }
 
@@ -356,7 +358,15 @@ func (s *gitPublisherService) push(ctx context.Context, branch, commit string) e
 		return err
 	}
 	remote, err := s.remoteHead(ctx)
-	if err != nil || remote != parent {
+	if err != nil {
+		return errors.New("cannot verify remote Git state; local commit is retained")
+	}
+	// A browser can lose the HTTP response after a successful push. Confirming
+	// that the exact reviewed commit is already remote makes the retry safe.
+	if remote == commit {
+		return nil
+	}
+	if remote != parent {
 		return errors.New("remote branch changed; sync and review again")
 	}
 	if _, err := s.runGit(ctx, "push", "--porcelain", s.pushURL, commit+":"+s.branch); err != nil {
