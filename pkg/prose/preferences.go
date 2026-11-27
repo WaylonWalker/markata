@@ -172,13 +172,18 @@ func CanonicalWord(word string) (string, error) {
 	if word == "" || len(word) > 128 || !utf8.ValidString(word) || strings.TrimSpace(word) != word {
 		return "", fmt.Errorf("invalid dictionary word")
 	}
+	hasLetterOrNumber := false
 	for _, r := range word {
 		switch {
-		case unicode.IsLetter(r), unicode.IsNumber(r), unicode.IsMark(r):
-		case strings.ContainsRune("-_'+.#", r):
+		case unicode.IsLetter(r), unicode.IsNumber(r):
+			hasLetterOrNumber = true
+		case unicode.IsMark(r), strings.ContainsRune("-_'+.#", r):
 		default:
 			return "", fmt.Errorf("invalid dictionary character")
 		}
+	}
+	if !hasLetterOrNumber {
+		return "", fmt.Errorf("dictionary word must contain a letter or number")
 	}
 	return strings.ToLower(word), nil
 }
