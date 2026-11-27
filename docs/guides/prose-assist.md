@@ -31,7 +31,7 @@ editorial suggestions. File I/O failures still return errors.
 
 Set `MARKATA_PROSE_ENABLED=1` when starting `markata lsp` to opt in.\nThe existing LSP server then emits the same findings as *hint* severity
 with `markata-prose` as source. Standard Neovim diagnostics can display them.
-No extra plugin is necessary. Rule-level project ignores are shared with the CLI; per-occurrence ignores, code actions, and personal vocabulary are not implemented yet.
+No extra plugin is necessary. Rule-level project ignores are shared with the CLI. With `MARKATA_PROSE_ENABLED=1`, native LSP sessions also expose standard `textDocument/codeAction` fixes: Replace (when a deterministic suggestion exists), Ignore this occurrence (until the document closes or position changes), and Always ignore this rule (saved to project preferences). For example, `very unique` can be replaced with `unique` as a single undoable text edit. Personal dictionaries are not implemented yet.
 
 ## Editor
 
@@ -44,7 +44,7 @@ require editor UI work, stable edit actions, and a shared persisted vocabulary.
 
 1. Extend project rule ignores with user dictionaries and per-occurrence ignore semantics.
 2. Add spelling and grammar via an evaluated Harper adapter.
-3. Add LSP code actions for safe suggestions and ignore operations.
+3. Expand LSP code actions beyond the first deterministic replacement and rule-level ignores.
 4. Add unobtrusive inline decorations and accessible suggestion popovers in
    Editor, with a single undoable edit per correction.
 5. Evaluate Vale style packs and document-level repetition metrics, with
