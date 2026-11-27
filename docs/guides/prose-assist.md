@@ -57,6 +57,24 @@ as `harper/Spelling`; personal dictionaries and Harper-backed Editor/LSP
 runtime checks are **not implemented yet**. This is the first native adapter
 in issue #2153, not the final cross-platform grammar integration.
 
+## Project spelling dictionary
+
+Accepted technical words can live in the same Git-trackable project preferences,
+without disabling grammar rules or the entire spelling checker:
+
+```sh
+markata prose dictionary add QuickSync posts/example.md
+markata prose dictionary list posts/example.md
+markata prose dictionary remove QuickSync posts/example.md
+```
+
+These commands update the project's nearest `.markata-prose.json` file, adding
+`"accepted_words": ["quicksync"]` in normalized form. Words are case-insensitive,
+deduplicated and validated as bounded single tokens. They suppress matching
+**Harper spelling** observations, not unrelated grammar findings.
+The dictionary is project-scoped; a private cross-device personal dictionary
+and browser Add to Dictionary control are still tracked in #2154 and #2155.
+
 ## Neovim / LSP
 
 Set `MARKATA_PROSE_ENABLED=1` when starting `markata lsp` to opt in.
