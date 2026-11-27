@@ -197,7 +197,7 @@ let clipboardWrite = Promise.resolve();
 let lastClipboardWrite = null;
 vimRegisters.pushText = function(name, operator, text, linewise, blockwise) {
   pushVimText.call(this, name, operator, text, linewise, blockwise);
-  if (!vimClipboardEnabled() || name === '_' || !['yank','delete','change'].includes(operator)) return;
+  if (!vimClipboardEnabled() || (name && !['"','+','*'].includes(name)) || !['yank','delete','change'].includes(operator)) return;
   const value = this.unnamedRegister.toString();
   try {
     clipboardWrite = Promise.resolve(navigator.clipboard?.writeText(value))
