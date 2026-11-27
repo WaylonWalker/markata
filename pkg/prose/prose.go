@@ -1,5 +1,5 @@
-// Package prose provides small, deterministic prose checks shared by the CLI and LSP.
-// The checks are editorial suggestions, not claims about AI authorship.
+// Package prose provides deterministic editorial checks shared by CLI and LSP.
+// Observations describe writing patterns, never claims about AI authorship.
 package prose
 
 import (
@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// Issue uses zero-based line numbers and UTF-8 byte columns. Frontends may
-// convert columns to UTF-16 for LSP; the source document is never rewritten.
+// Issue uses zero-based line numbers and UTF-8 byte columns. LSP clients
+// convert these positions to UTF-16. Check never modifies the document.
 type Issue struct {
 	Rule       string `json:"rule"`
 	Message    string `json:"message"`
@@ -21,13 +21,14 @@ type Issue struct {
 }
 
 type Options struct {
-	// IgnoredRules is keyed by stable rule ID (for example, "prose/wordiness").
 	IgnoredRules map[string]bool
 }
 
 type rule struct {
-	id, message, suggestion string
-	re *regexp.Regexp
+	id         string
+	message    string
+	suggestion string
+	re         *regexp.Regexp
 }
 
 var rules = []rule{
@@ -36,9 +37,8 @@ var rules = []rule{
 	{"prose/intensifier", "Does this intensifier add useful meaning?", "", regexp.MustCompile(`(?i)\b(?:very unique|completely revolutionary)\b`)},
 }
 
-// Check reports conservative, non-blocking style observations. It ignores
-// fenced code, inline code, frontmatter, Markdown link targets and bare URLs.
-// It does not attempt spelling/grammar correction (a future engine adapter).
+// Check returns non-blocking observations outside protected Markdown regions.
+// A separate engine adapter will eventually provide spelling and grammar.
 func Check(source string, options Options) []Issue {
 	masked := maskNonProse(source)
 	issues := make([]Issue, 0)
@@ -50,20 +50,29 @@ func Check(source string, options Options) []Issue {
 			sl, sc := position(source, loc[0])
 			el, ec := position(source, loc[1])
 			issues = append(issues, Issue{
-				Rule: r.id, Message: r.message, Line: sl, Column: sc,
-				EndLine: el, EndColumn: ec, Suggestion: r.suggestion,
+				Rule:       r.id,
+				Message:    r.message,
+				Line:       sl,
+				Column:     sc,
+				EndLine:    el,
+				EndColumn:  ec,
+				Suggestion: r.suggestion,
 			})
 		}
 	}
 	sort.Slice(issues, func(i, j int) bool {
-		if issues[i].Line != issues[j].Line { return issues[i].Line < issues[j].Line }
-		if issues[i].Column != issues[j].Column { return issues[i].Column < issues[j].Column }
+		if issues[i].Line != issues[j].Line {
+			return issues[i].Line < issues[j].Line
+		}
+		if issues[i].Column != issues[j].Column {
+			return issues[i].Column < issues[j].Column
+		}
 		return issues[i].Rule < issues[j].Rule
 	})
 	return issues
 }
 
-func position(source string, offset int) (int, int) {
+func position(source string, offset int) (line, column int) {
 	prefix := source[:offset]
 	last := strings.LastIndexByte(prefix, '\n')
 	return strings.Count(prefix, "\n"), offset - last - 1
@@ -75,47 +84,60 @@ var (
 	linkTarget = regexp.MustCompile(`\]\([^\n)]*\)`)
 )
 
-// maskNonProse replaces excluded bytes with spaces without moving source
-// offsets. This intentionally prefers missing a suggestion to linting code.
+func maskRange(data []byte, start, end int) {
+	for i := start; i < end; i++ {
+		if data[i] != '\n' && data[i] != '\r' {
+			data[i] = ' '
+		}
+	}
+}
+
+// maskNonProse replaces protected bytes with spaces to preserve all offsets.
 func maskNonProse(source string) string {
 	data := []byte(source)
-	mask := func(start, end int) {
-		for i := start; i < end; i++ { if data[i] != '\n' && data[i] != '\r' { data[i] = ' ' } }
-	}
 	lines := strings.SplitAfter(source, "\n")
 	offset := 0
 	inFence := false
 	fenceChar := byte(0)
 	fenceLen := 0
-	inFrontmatter := false
-	if len(lines) > 0 && strings.TrimSpace(lines[0]) == "---" { inFrontmatter = true }
+	inFrontmatter := len(lines) > 0 && strings.TrimSpace(lines[0]) == "---"
 	for index, line := range lines {
 		trim := strings.TrimLeft(line, " \t")
-		if inFrontmatter {
-			mask(offset, offset+len(line))
-			if index > 0 && (strings.TrimSpace(line) == "---" || strings.TrimSpace(line) == "...") { inFrontmatter = false }
-		} else {
-			marker := byte(0)
-			count := 0
-			if len(trim) > 0 && (trim[0] == '`' || trim[0] == '~') {
-				marker = trim[0]
-				for count < len(trim) && trim[count] == marker { count++ }
+		marker, count := fenceMarker(trim)
+		switch {
+		case inFrontmatter:
+			maskRange(data, offset, offset+len(line))
+			if index > 0 && (strings.TrimSpace(line) == "---" || strings.TrimSpace(line) == "...") {
+				inFrontmatter = false
 			}
-			if inFence {
-				mask(offset, offset+len(line))
-				if marker == fenceChar && count >= fenceLen { inFence = false }
-			} else if count >= 3 {
-				inFence, fenceChar, fenceLen = true, marker, count
-				mask(offset, offset+len(line))
-			} else if strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "\t") {
-				mask(offset, offset+len(line))
+		case inFence:
+			maskRange(data, offset, offset+len(line))
+			if marker == fenceChar && count >= fenceLen {
+				inFence = false
 			}
+		case count >= 3:
+			inFence, fenceChar, fenceLen = true, marker, count
+			maskRange(data, offset, offset+len(line))
+		case strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "\t"):
+			maskRange(data, offset, offset+len(line))
 		}
 		offset += len(line)
 	}
-	// Apply inline masks to the still-visible text, not to fenced regions.
 	for _, re := range []*regexp.Regexp{inlineCode, linkTarget, urlPattern} {
-		for _, match := range re.FindAllIndex(data, -1) { mask(match[0], match[1]) }
+		for _, match := range re.FindAllIndex(data, -1) {
+			maskRange(data, match[0], match[1])
+		}
 	}
 	return string(data)
+}
+
+func fenceMarker(line string) (marker byte, count int) {
+	if line == "" || (line[0] != '`' && line[0] != '~') {
+		return 0, 0
+	}
+	marker = line[0]
+	for count < len(line) && line[count] == marker {
+		count++
+	}
+	return marker, count
 }
