@@ -29,6 +29,7 @@ type Issue struct {
 type Options struct {
 	IgnoredRules   map[string]bool
 	IgnoredPhrases map[string]map[string]bool
+	AcceptedWords  map[string]bool
 }
 
 type rule struct {

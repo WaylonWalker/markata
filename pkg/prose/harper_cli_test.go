@@ -162,3 +162,26 @@ func TestHarperCLINonzeroExitWithoutLintsIsError(t *testing.T) {
 		t.Fatal("failure exit with no lints cannot be accepted as a successful check")
 	}
 }
+
+func TestHarperSpellingRespectsProjectDictionaryWithoutSuppressingGrammar(t *testing.T) {
+	source := "I use QuickSync."
+	fixture := harperCLIJSONFixture(t, source, "QuickSync", nil)
+	var files []harperCLIFileResult
+	if err := json.Unmarshal(fixture, &files); err != nil {
+		t.Fatal(err)
+	}
+	options := Options{AcceptedWords: map[string]bool{"quicksync": true}}
+	issues, err := ParseHarperCLIJSON(source, fixture, options)
+	if err != nil || len(issues) != 0 {
+		t.Fatalf("project dictionary did not suppress spelling: %+v, %v", issues, err)
+	}
+	files[0].Lints[0].Kind = "Grammar"
+	grammar, err := json.Marshal(files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	issues, err = ParseHarperCLIJSON(source, grammar, options)
+	if err != nil || len(issues) != 1 {
+		t.Fatalf("project dictionary masked an unrelated grammar check: %+v, %v", issues, err)
+	}
+}
