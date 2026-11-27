@@ -149,6 +149,7 @@
         {% include "components/editorial_history.html" %}
 
         <div class="post-content e-content{% if post.css_class %} {{ post.css_class }}{% endif %}">
+            {% include "partials/post-photo-media.html" %}
             {{ body | safe }}
         </div>
 
