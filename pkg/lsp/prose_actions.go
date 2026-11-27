@@ -11,6 +11,12 @@ import (
 	"github.com/WaylonWalker/markata/pkg/prose"
 )
 
+const (
+	proseIgnoreOnceCommand = "markata.prose.ignoreOnce"
+	proseIgnoreRuleCommand = "markata.prose.ignoreRule"
+	proseQuickFixKind      = "quickfix"
+)
+
 // Prose code actions intentionally use standard LSP edits and commands so
 // Neovim needs no Markata-specific UI extension.
 type proseCodeActionParams struct {
@@ -79,7 +85,7 @@ func (s *Server) handleProseCodeAction(_ context.Context, msg *Message) error {
 		if issue.Suggestion != "" {
 			actions = append(actions, proseCodeAction{
 				Title:       "Replace with " + issue.Suggestion,
-				Kind:        "quickfix",
+				Kind:        proseQuickFixKind,
 				IsPreferred: false,
 				Edit: &proseWorkspaceEdit{DocumentChanges: []proseDocumentEdit{{
 					TextDocument: VersionedTextDocumentIdentifier{
@@ -98,19 +104,18 @@ func (s *Server) handleProseCodeAction(_ context.Context, msg *Message) error {
 		args := []interface{}{params.TextDocument.URI, issue.Rule, issue.Line, issue.Column}
 		actions = append(actions, proseCodeAction{
 			Title: "Ignore this occurrence",
-			Kind:  "quickfix",
+			Kind:  proseQuickFixKind,
 			Command: &proseCommand{
 				Title:     "Ignore this occurrence",
-				Command:   "markata.prose.ignoreOnce",
+				Command:   proseIgnoreOnceCommand,
 				Arguments: args,
 			},
-		})
-		actions = append(actions, proseCodeAction{
+		}, proseCodeAction{
 			Title: "Always ignore " + issue.Rule,
-			Kind:  "quickfix",
+			Kind:  proseQuickFixKind,
 			Command: &proseCommand{
 				Title:     "Always ignore " + issue.Rule,
-				Command:   "markata.prose.ignoreRule",
+				Command:   proseIgnoreRuleCommand,
 				Arguments: args,
 			},
 		})
@@ -206,7 +211,7 @@ type proseIgnoreTarget struct {
 func parseProseIgnoreTarget(params proseExecuteParams) (proseIgnoreTarget, error) {
 	var target proseIgnoreTarget
 	if len(params.Arguments) != 4 ||
-		(params.Command != "markata.prose.ignoreOnce" && params.Command != "markata.prose.ignoreRule") {
+		(params.Command != proseIgnoreOnceCommand && params.Command != proseIgnoreRuleCommand) {
 		return target, fmt.Errorf("unsupported prose ignore command")
 	}
 	if json.Unmarshal(params.Arguments[0], &target.uri) != nil ||
@@ -250,7 +255,7 @@ func (s *Server) findProseIssue(target proseIgnoreTarget) (content string, issue
 }
 
 func (s *Server) applyProseIgnore(command string, target proseIgnoreTarget, issue prose.Issue, content string) error {
-	if command == "markata.prose.ignoreRule" {
+	if command == proseIgnoreRuleCommand {
 		_, err := prose.IgnoreRule(uriToPath(target.uri), target.id)
 		return err
 	}
