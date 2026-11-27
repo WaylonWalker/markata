@@ -1352,7 +1352,7 @@ func (s *Service) loadNoOpLinkAvatarCache(cacheDir string) (*buildcache.Cache, e
 	info, err := os.Lstat(cachePath)
 	if errors.Is(err, fs.ErrNotExist) {
 		s.noOpLinkAvatarCache = nil
-		return buildcache.Load(cacheDir)
+		return nil, errors.New("build cache file is missing")
 	}
 	if err != nil {
 		return nil, err

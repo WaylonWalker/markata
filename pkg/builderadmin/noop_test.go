@@ -812,6 +812,22 @@ func TestNoOpLinkAvatarCacheReusesOnlyStableCacheFile(t *testing.T) {
 	}
 }
 
+func TestNoOpLinkAvatarCacheMissingFileFailsClosed(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
+	svc, root := newNoOpFixture(t)
+	siteConfig, _, err := svc.loadNoOpSiteConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	siteConfig.Extra["link_avatars"] = map[string]any{"enabled": true, "mode": "local"}
+	writeNoOpFile(t, filepath.Join(root, "posts", "avatar.md"), "A link to [example](https://example.com/).\n")
+	if err := svc.checkNoOpLinkAvatarCache(context.Background(), root, "", siteConfig); err == nil {
+		t.Fatal("missing build-cache file was accepted")
+	}
+}
+
 func TestNoOpRequiresCompleteSelfHostedAssetCache(t *testing.T) {
 	root := t.TempDir()
 	siteConfig := models.NewConfig()
