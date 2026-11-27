@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	blogrollListCommand = "list"
+	blogrollListCommand  = "list"
 	blogrollStatusActive = "active"
 )
 
