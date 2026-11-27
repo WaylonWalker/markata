@@ -3,6 +3,7 @@ package lsp
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"strings"
 )
 
@@ -39,11 +40,18 @@ func (s *Server) handleInitialize(_ context.Context, msg *Message) error {
 			},
 			HoverProvider:      true,
 			DefinitionProvider: true,
+			CodeActionProvider: os.Getenv("MARKATA_PROSE_ENABLED") == "1",
 		},
 		ServerInfo: &ServerInfo{
 			Name:    "markata-go-lsp",
 			Version: "0.1.0",
 		},
+	}
+
+	if os.Getenv("MARKATA_PROSE_ENABLED") == "1" && s.browser == nil {
+		result.Capabilities.ExecuteCommandProvider = &ExecuteCommandOptions{
+			Commands: []string{"markata.prose.ignoreOnce", "markata.prose.ignoreRule"},
+		}
 	}
 
 	s.initialized = true
@@ -155,6 +163,7 @@ func (s *Server) handleDidClose(_ context.Context, msg *Message) error {
 
 	s.docMu.Lock()
 	delete(s.documents, params.TextDocument.URI)
+	delete(s.proseIgnored, params.TextDocument.URI)
 	s.docMu.Unlock()
 
 	// Clear diagnostics
