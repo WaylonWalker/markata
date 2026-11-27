@@ -44,7 +44,7 @@ func verifyDirectBlogrollFeed(ctx context.Context, client *http.Client, address 
 	if err != nil {
 		return err
 	}
-	if format == "json" {
+	if format == reportFormatJSON {
 		return errors.New("JSON Feed is not supported by the external reader; use RSS or Atom")
 	}
 	return nil
