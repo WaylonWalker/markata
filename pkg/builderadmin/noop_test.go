@@ -715,6 +715,31 @@ func TestNoOpAcceptsCachedEmptyLinkAvatarInput(t *testing.T) {
 	}
 }
 
+func TestNoOpRejectsInconsistentEmptyLinkAvatarMarker(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
+	svc, root := newNoOpFixture(t)
+	siteConfig, _, err := svc.loadNoOpSiteConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	siteConfig.Extra["link_avatars"] = map[string]any{"enabled": true, "mode": "local"}
+	name := "posts/avatar.md"
+	writeNoOpFile(t, filepath.Join(root, filepath.FromSlash(name)), "A link to [example](https://example.com/).\n")
+	cache, err := buildcache.Load(noOpBuildCacheDir(root, "", siteConfig))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cache.CacheLinkAvatarsHTML(name, buildcache.ContentHash(""), "<p>should not be an empty-input result</p>")
+	if err := cache.Save(); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkNoOpLinkAvatarCache(context.Background(), root, "", siteConfig); err == nil {
+		t.Fatal("empty-input hash with non-empty output was accepted")
+	}
+}
+
 func TestNoOpLinkAvatarCoverageDoesNotParseMarkdown(t *testing.T) {
 	if !fileidentity.Available {
 		t.Skip("verified no-op requires Linux file identity")

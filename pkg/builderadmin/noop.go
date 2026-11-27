@@ -1364,13 +1364,13 @@ func (s *Service) loadNoOpLinkAvatarCache(cacheDir string) (*buildcache.Cache, e
 	if identity != "" && s.noOpLinkAvatarCache != nil && s.noOpLinkAvatarCache.path == cachePath && s.noOpLinkAvatarCache.identity == identity {
 		return s.noOpLinkAvatarCache.cache, nil
 	}
+	if identity == "" {
+		return nil, errors.New("build cache file identity is unavailable")
+	}
 
 	cache, err := buildcache.Load(cacheDir)
 	if err != nil {
 		return nil, err
-	}
-	if identity == "" {
-		return cache, nil
 	}
 	after, err := os.Lstat(cachePath)
 	if err != nil || !after.Mode().IsRegular() || after.Mode()&os.ModeSymlink != 0 || noOpCacheFileIdentity(after) != identity {
@@ -1398,7 +1398,7 @@ func checkNoOpLinkAvatarCacheEntry(name string, cache *buildcache.Cache) error {
 	cached := cache.GetCachedPost(filepath.ToSlash(name))
 	emptyArticleHash := buildcache.ContentHash("")
 	if cached == nil || cached.LinkAvatarsHash == "" ||
-		(cached.LinkAvatarsHTML == "" && cached.LinkAvatarsHash != emptyArticleHash) {
+		(cached.LinkAvatarsHTML == "") != (cached.LinkAvatarsHash == emptyArticleHash) {
 		return fmt.Errorf("link-avatar transform cache is missing for %q", name)
 	}
 	return nil
