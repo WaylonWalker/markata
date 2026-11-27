@@ -338,6 +338,16 @@ func enableSubscriptions(content string) string {
 	return strings.TrimRight(content, "\r\n") + "\n\n[markata-go.blogroll]\nenabled = true\n"
 }
 
+// emptySubscriptionList preserves an explicit empty array at the effective
+// owner so deleting the final feed cannot reveal a shadowed lower layer.
+func emptySubscriptionList(content string) string {
+	if loc := blogrollTable.FindStringIndex(content); loc != nil {
+		return content[:loc[1]] + "feeds = []\n" + content[loc[1]:]
+	}
+	prefix := detectBlogrollTablePrefix(content)
+	return strings.TrimRight(content, "\r\n") + "\n\n[" + prefix + "]\nfeeds = []\n"
+}
+
 func changeSubscription(state *settingsState, req subscriptionRequest) error {
 	return changeSubscriptionWithOptions(state, req, false)
 }
@@ -421,6 +431,9 @@ func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest
 			replacement = subscriptionField(content[selected.start:selected.end], "active", strconv.FormatBool(req.Active))
 		}
 		content = content[:selected.start] + replacement + content[selected.end:]
+		if req.Action == subscriptionActionRemove && len(state.cfg.Blogroll.Feeds) == 1 {
+			content = emptySubscriptionList(content)
+		}
 	}
 	if _, err := toml.Decode(content, &map[string]any{}); err != nil {
 		return fmt.Errorf("generated TOML was invalid: %w", err)
@@ -452,6 +465,9 @@ func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest
 					verifyErr = errors.New("saved subscription did not take effect in composed configuration")
 				}
 			}
+		}
+		if req.Action == subscriptionActionRemove && len(updated.cfg.Blogroll.Feeds) != len(state.cfg.Blogroll.Feeds)-1 {
+			verifyErr = errors.New("removal changed the effective subscription count unexpectedly")
 		}
 		if (req.Action == subscriptionActionRemove && present) || (req.Action != subscriptionActionRemove && !present) {
 			verifyErr = errors.New("saved subscriptions were shadowed by another config file")
