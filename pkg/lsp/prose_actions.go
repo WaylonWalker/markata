@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	proseIgnoreOnceCommand = "markata.prose.ignoreOnce"
-	proseIgnoreRuleCommand = "markata.prose.ignoreRule"
+	proseIgnoreOnceCommand   = "markata.prose.ignoreOnce"
+	proseIgnoreRuleCommand   = "markata.prose.ignoreRule"
 	proseIgnorePhraseCommand = "markata.prose.ignorePhrase"
-	proseQuickFixKind      = "quickfix"
+	proseQuickFixKind        = "quickfix"
 )
 
 // Prose code actions intentionally use standard LSP edits and commands so
