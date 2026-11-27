@@ -38,6 +38,21 @@ Run `markata-go build` and you'll have:
 - `/blogroll/` - Lists Simon Willison's blog
 - `/reader/` - Shows his latest posts
 
+## Pause and resume subscriptions from the terminal
+
+Use the exact configured handle or feed URL:
+
+```bash
+markata blogroll disable engineering --dry-run
+markata blogroll disable engineering
+markata blogroll enable engineering
+```
+
+Disabling a subscription excludes it from fetching without deleting its metadata.
+These commands change only the selected feed's active field in its effective
+owning TOML config file. Ambiguous handles and read-only sources are rejected.
+The global blogroll enabled setting is not changed.
+
 ## Manage subscriptions in your browser
 
 Start the local development server with `markata-go serve`, then open
