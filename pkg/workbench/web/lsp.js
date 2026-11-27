@@ -118,10 +118,13 @@
           // Full-sync notifications arrive in wire order. Ignore diagnostics while a newer edit is pending.
           if (timer || (message.params.version !== undefined && message.params.version !== version)) return;
           clearMarks();
-          window.MarkataWorkbenchDiagnostics?.update(message.params.diagnostics);
+          window.MarkataWorkbenchDiagnostics?.update(message.params.diagnostics.filter(
+            diagnostic => diagnostic.source !== 'markata-prose'));
           for (const diagnostic of message.params.diagnostics) {
+            const isProse = diagnostic.source === 'markata-prose';
             marks.push(editor.markText(pos(diagnostic.range.start),pos(diagnostic.range.end),
-              {className:'markata-lsp-diagnostic',title:diagnostic.message}));
+              {className:isProse ? 'markata-lsp-prose-hint' : 'markata-lsp-diagnostic',
+                title:diagnostic.message}));
           }
         }
       });
