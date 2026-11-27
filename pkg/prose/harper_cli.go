@@ -83,6 +83,12 @@ func ParseHarperCLIJSON(source string, data []byte, options Options) ([]Issue, e
 			options.IgnoredPhrases[ruleID][normalizePhrase(lint.MatchedText)] {
 			continue
 		}
+		// The project dictionary accepts a spelling word, not an unrelated
+		// grammar or punctuation finding for the same text.
+		if strings.EqualFold(lint.Kind, "Spelling") &&
+			options.AcceptedWords[normalizePhrase(lint.MatchedText)] {
+			continue
+		}
 		// A Harper suggestion is a human-readable action, not raw replacement
 		// text. Only the unambiguous ReplaceWith variant is safe as an edit.
 		replacement := harperReplacement(lint.Suggestions)
