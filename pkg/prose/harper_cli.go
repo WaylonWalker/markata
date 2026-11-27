@@ -45,7 +45,7 @@ type harperCLILint struct {
 // are rejected rather than producing an unsafe edit.
 func ParseHarperCLIJSON(source string, data []byte, options Options) ([]Issue, error) {
 	if !utf8.ValidString(source) {
-		return nil, fmt.Errorf("Harper input must be valid UTF-8")
+		return nil, fmt.Errorf("harper input must be valid UTF-8")
 	}
 	var files []harperCLIFileResult
 	if err := json.Unmarshal(data, &files); err != nil {
@@ -55,7 +55,7 @@ func ParseHarperCLIJSON(source string, data []byte, options Options) ([]Issue, e
 		return nil, fmt.Errorf("expected one Harper file result, got %d", len(files))
 	}
 	if files[0].Error != "" {
-		return nil, fmt.Errorf("Harper: %s", files[0].Error)
+		return nil, fmt.Errorf("harper: %s", files[0].Error)
 	}
 	// Each entry is a byte offset at a Unicode character boundary; Harper's
 	// char_start/char_end are Unicode scalar indices, not UTF-8 or UTF-16.
@@ -67,16 +67,16 @@ func ParseHarperCLIJSON(source string, data []byte, options Options) ([]Issue, e
 	issues := make([]Issue, 0, len(files[0].Lints))
 	for _, lint := range files[0].Lints {
 		if lint.Rule == "" {
-			return nil, fmt.Errorf("Harper returned a lint without a rule ID")
+			return nil, fmt.Errorf("harper returned a lint without a rule ID")
 		}
 		if lint.Span.CharStart < 0 || lint.Span.CharEnd <= lint.Span.CharStart ||
 			lint.Span.CharEnd >= len(byteOffsets) {
-			return nil, fmt.Errorf("Harper returned an invalid character range")
+			return nil, fmt.Errorf("harper returned an invalid character range")
 		}
 		start := byteOffsets[lint.Span.CharStart]
 		end := byteOffsets[lint.Span.CharEnd]
 		if source[start:end] != lint.MatchedText {
-			return nil, fmt.Errorf("Harper source mismatch for rule %s", lint.Rule)
+			return nil, fmt.Errorf("harper source mismatch for rule %s", lint.Rule)
 		}
 		ruleID := "harper/" + lint.Rule
 		if options.IgnoredRules[ruleID] ||
@@ -124,7 +124,7 @@ func CheckWithHarperCLI(ctx context.Context, source string, cfg HarperCLIOptions
 		timeout = 8 * time.Second
 	}
 	if !utf8.ValidString(source) {
-		return nil, fmt.Errorf("Harper input must be valid UTF-8")
+		return nil, fmt.Errorf("harper input must be valid UTF-8")
 	}
 	dir, err := os.MkdirTemp("", "markata-harper-*")
 	if err != nil {
@@ -140,7 +140,7 @@ func CheckWithHarperCLI(ctx context.Context, source string, cfg HarperCLIOptions
 	cmd := exec.CommandContext(ctx, binary, "lint", "--format", "json", "--quiet", path)
 	stdout, err := cmd.Output()
 	if ctx.Err() != nil {
-		return nil, fmt.Errorf("Harper timed out or was cancelled: %w", ctx.Err())
+		return nil, fmt.Errorf("harper timed out or was canceled: %w", ctx.Err())
 	}
 	if err != nil {
 		var exit *exec.ExitError
@@ -153,7 +153,7 @@ func CheckWithHarperCLI(ctx context.Context, source string, cfg HarperCLIOptions
 		return nil, parseErr
 	}
 	if err != nil && len(issues) == 0 {
-		return nil, fmt.Errorf("Harper exited unsuccessfully without findings: %w", err)
+		return nil, fmt.Errorf("harper exited unsuccessfully without findings: %w", err)
 	}
 	return issues, nil
 }
