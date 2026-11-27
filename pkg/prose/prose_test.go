@@ -5,8 +5,8 @@ import "testing"
 func TestCheckProseAndProtectedMarkdown(t *testing.T) {
 	source := "---\ntitle: delve into\n---\nHere we delve into the API.\n\n```go\n// delve into\n```\n\nUse `delve into` or [delve into](https://example.com/delve-into).\n"
 	issues := Check(source, Options{})
-	if len(issues) != 1 {
-		t.Fatalf("expected only one prose issue, got %+v", issues)
+	if len(issues) != 2 {
+		t.Fatalf("expected prose in the paragraph and link label, got %+v", issues)
 	}
 	if issues[0].Rule != "prose/cliche" || issues[0].Line != 3 || issues[0].Column != 8 {
 		t.Fatalf("unexpected issue: %+v", issues[0])
