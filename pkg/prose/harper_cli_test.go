@@ -98,13 +98,19 @@ func TestHarperJSONRejectsMismatchedOrCorruptSourceRanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	files[0].Lints[0].MatchedText = "other"
-	broken, _ := json.Marshal(files)
+	broken, marshalErr := json.Marshal(files)
+	if marshalErr != nil {
+		t.Fatal(marshalErr)
+	}
 	if _, err := ParseHarperCLIJSON(source, broken, Options{}); err == nil {
 		t.Fatal("accepted a suggestion pointing to unrelated source text")
 	}
 	files[0].Lints[0].MatchedText = "Some"
 	files[0].Lints[0].Span.CharEnd = 900
-	broken, _ = json.Marshal(files)
+	broken, marshalErr = json.Marshal(files)
+	if marshalErr != nil {
+		t.Fatal(marshalErr)
+	}
 	if _, err := ParseHarperCLIJSON(source, broken, Options{}); err == nil {
 		t.Fatal("accepted out-of-bounds character offsets")
 	}
@@ -137,7 +143,11 @@ func TestHarperCLIExpectedFindingExitStatusIsNotFatal(t *testing.T) {
 	binary := filepath.Join(t.TempDir(), "harper-cli-fixture")
 	// Harper intentionally exits with code 1 when it reports findings.
 	script := "#!/bin/sh\nprintf '%s' '" + string(jsonResult) + "'\nexit 1\n"
-	if err := os.WriteFile(binary, []byte(script), 0o700); err != nil {
+	if err := os.WriteFile(binary, []byte(script), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// #nosec G302 -- a private test fixture requires executable permissions.
+	if err := os.Chmod(binary, 0o700); err != nil {
 		t.Fatal(err)
 	}
 	issues, err := CheckWithHarperCLI(context.Background(), source, HarperCLIOptions{Binary: binary})
@@ -155,7 +165,11 @@ func TestHarperCLINonzeroExitWithoutLintsIsError(t *testing.T) {
 	}
 	binary := filepath.Join(t.TempDir(), "harper-cli-fixture")
 	script := "#!/bin/sh\nprintf '%s' '[{\"file\":\"draft.md\",\"lints\":[]}]'\nexit 1\n"
-	if err := os.WriteFile(binary, []byte(script), 0o700); err != nil {
+	if err := os.WriteFile(binary, []byte(script), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// #nosec G302 -- a private test fixture requires executable permissions.
+	if err := os.Chmod(binary, 0o700); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := CheckWithHarperCLI(context.Background(), "This is fine.", HarperCLIOptions{Binary: binary}); err == nil {
