@@ -715,6 +715,78 @@ func TestNoOpAcceptsCachedEmptyLinkAvatarInput(t *testing.T) {
 	}
 }
 
+func TestNoOpLinkAvatarCoverageDoesNotParseMarkdown(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
+	svc, root := newNoOpFixture(t)
+	siteConfig, _, err := svc.loadNoOpSiteConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	siteConfig.Extra["link_avatars"] = map[string]any{"enabled": true, "mode": "local"}
+	name := "posts/malformed-frontmatter.md"
+	writeNoOpFile(t, filepath.Join(root, filepath.FromSlash(name)), "---\n: invalid yaml [\n---\n")
+
+	cache, err := buildcache.Load(noOpBuildCacheDir(root, "", siteConfig))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cache.CacheLinkAvatarsHTML(name, "source-fingerprint-certified-input", "<p>cached</p>")
+	if err := cache.Save(); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkNoOpLinkAvatarCache(context.Background(), root, "", siteConfig); err != nil {
+		t.Fatalf("path-only link-avatar coverage check parsed Markdown or rejected its cache entry: %v", err)
+	}
+}
+
+func TestNoOpLinkAvatarCacheReusesOnlyStableCacheFile(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
+	svc, root := newNoOpFixture(t)
+	siteConfig, _, err := svc.loadNoOpSiteConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	siteConfig.Extra["link_avatars"] = map[string]any{"enabled": true, "mode": "local"}
+	writeNoOpFile(t, filepath.Join(root, "posts", "avatar.md"), "A link to [example](https://example.com/).\n")
+	cache, err := buildcache.Load(noOpBuildCacheDir(root, "", siteConfig))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cache.CacheLinkAvatarsHTML("posts/avatar.md", "input-hash", "<p>cached</p>")
+	if err := cache.Save(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := svc.checkNoOpLinkAvatarCache(context.Background(), root, "", siteConfig); err != nil {
+		t.Fatalf("initial link-avatar coverage check: %v", err)
+	}
+	first := svc.noOpLinkAvatarCache
+	if first == nil {
+		t.Fatal("initial link-avatar cache was not retained")
+	}
+	if err := svc.checkNoOpLinkAvatarCache(context.Background(), root, "", siteConfig); err != nil {
+		t.Fatalf("repeated link-avatar coverage check: %v", err)
+	}
+	if svc.noOpLinkAvatarCache != first {
+		t.Fatal("stable build cache was loaded more than once")
+	}
+
+	cache.CacheLinkAvatarsHTML("cache-update.md", "another-input", strings.Repeat("x", 1024))
+	if err := cache.Save(); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.checkNoOpLinkAvatarCache(context.Background(), root, "", siteConfig); err != nil {
+		t.Fatalf("coverage check after build-cache update: %v", err)
+	}
+	if svc.noOpLinkAvatarCache == first {
+		t.Fatal("changed build cache reused a stale in-memory copy")
+	}
+}
+
 func TestNoOpRequiresCompleteSelfHostedAssetCache(t *testing.T) {
 	root := t.TempDir()
 	siteConfig := models.NewConfig()

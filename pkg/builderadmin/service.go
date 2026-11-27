@@ -230,6 +230,8 @@ type Service struct {
 	noOpBuilderMu        sync.Mutex
 	noOpBuilderDigest    string
 	noOpBuilderIdentity  string
+	noOpLinkAvatarMu     sync.Mutex
+	noOpLinkAvatarCache  *noOpLinkAvatarCacheState
 	releaseMu            sync.Mutex
 	pruneScheduleMu      sync.Mutex
 	pruneRunning         bool

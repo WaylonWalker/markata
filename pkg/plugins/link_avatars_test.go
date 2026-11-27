@@ -100,7 +100,11 @@ func TestLinkAvatars_Render_CachesEmptyArticleResult(t *testing.T) {
 	manager.SetConfig(config)
 	cache := buildcache.New(t.TempDir())
 	manager.Cache().Set("build_cache", cache)
-	manager.SetPosts([]*models.Post{{Path: "pages/archive/year.md", Content: "template-only"}})
+	skipped := &models.Post{Path: "pages/skipped.md", Skip: true, ArticleHTML: "<p>must stay unchanged</p>"}
+	manager.SetPosts([]*models.Post{
+		{Path: "pages/archive/year.md", Content: "template-only"},
+		skipped,
+	})
 
 	plugin := NewLinkAvatarsPlugin()
 	if err := plugin.Configure(manager); err != nil {
@@ -113,6 +117,13 @@ func TestLinkAvatars_Render_CachesEmptyArticleResult(t *testing.T) {
 	got, ok := cache.GetCachedLinkAvatarsHTML("pages/archive/year.md", buildcache.ContentHash(""))
 	if !ok || got != "" {
 		t.Fatalf("empty article cache = (%q, %t), want (empty, true)", got, ok)
+	}
+	got, ok = cache.GetCachedLinkAvatarsHTML("pages/skipped.md", buildcache.ContentHash(""))
+	if !ok || got != "" {
+		t.Fatalf("skipped article cache = (%q, %t), want (empty, true)", got, ok)
+	}
+	if skipped.ArticleHTML != "<p>must stay unchanged</p>" {
+		t.Fatalf("skipped article HTML changed to %q", skipped.ArticleHTML)
 	}
 }
 

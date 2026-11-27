@@ -235,13 +235,26 @@ func (p *LinkAvatarsPlugin) Render(m *lifecycle.Manager) error {
 	// Thread-safe icon cache for concurrent access
 	var iconCache sync.Map
 
-	posts := m.FilterPosts(func(post *models.Post) bool {
-		return !post.Skip
+	posts := m.FilterPosts(func(*models.Post) bool {
+		return true
 	})
+
+	if lifecycle.IsServeIncremental(m) {
+		if affected := lifecycle.GetServeAffectedPaths(m); len(affected) > 0 {
+			filtered := posts[:0]
+			for _, post := range posts {
+				if affected[post.Path] {
+					filtered = append(filtered, post)
+				}
+			}
+			posts = filtered
+		}
+	}
+
 	if cache != nil {
 		emptyHash := buildcache.ContentHash("")
 		for _, post := range posts {
-			if post.ArticleHTML != "" {
+			if !post.Skip && post.ArticleHTML != "" {
 				continue
 			}
 			if _, ok := cache.GetCachedLinkAvatarsHTML(post.Path, emptyHash); ok {
@@ -255,23 +268,11 @@ func (p *LinkAvatarsPlugin) Render(m *lifecycle.Manager) error {
 	}
 	filteredPosts := posts[:0]
 	for _, post := range posts {
-		if post.ArticleHTML != "" {
+		if !post.Skip && post.ArticleHTML != "" {
 			filteredPosts = append(filteredPosts, post)
 		}
 	}
 	posts = filteredPosts
-
-	if lifecycle.IsServeIncremental(m) {
-		if affected := lifecycle.GetServeAffectedPaths(m); len(affected) > 0 {
-			filtered := posts[:0]
-			for _, post := range posts {
-				if affected[post.Path] {
-					filtered = append(filtered, post)
-				}
-			}
-			posts = filtered
-		}
-	}
 
 	// Phase 1: Restore cached results for unchanged posts
 	var needProcessing []*models.Post

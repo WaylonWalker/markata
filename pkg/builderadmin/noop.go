@@ -48,6 +48,12 @@ var noOpDateFormat = regexp.MustCompile(`date\s*(?::|\()\s*["']([^"']+)["']`)
 var noOpJinjaFlag = regexp.MustCompile(`(?im)^\s*jinja(?:_md)?\s*:\s*(?:true|yes|on)\s*(?:#.*)?$`)
 var noOpMentionCandidate = regexp.MustCompile(`(?i)(?:^|[^@~\w])([@~])([a-zA-Z][a-zA-Z0-9_.-]*)(?:[^a-zA-Z0-9_.-]|$)`)
 
+type noOpLinkAvatarCacheState struct {
+	path     string
+	identity string
+	cache    *buildcache.Cache
+}
+
 type noOpBaseline struct {
 	Version            int       `json:"version"`
 	Fingerprint        string    `json:"fingerprint"`
@@ -715,7 +721,7 @@ func (s *Service) validateNoOpSemantics(ctx context.Context) (time.Time, error) 
 		}
 	}
 	if noOpHookEnabled(siteConfig, "link_avatars") {
-		if err := checkNoOpLinkAvatarCache(ctx, s.cfg.SourceDir, s.cfg.CacheMount, siteConfig); err != nil {
+		if err := s.checkNoOpLinkAvatarCache(ctx, s.cfg.SourceDir, s.cfg.CacheMount, siteConfig); err != nil {
 			return time.Time{}, err
 		}
 	}
@@ -1071,7 +1077,7 @@ func statNoOpReleasePath(ctx context.Context, releaseRoot, path string) (noOpRel
 	return noOpReleaseIdentity{name: filepath.ToSlash(relative), info: info}, nil
 }
 
-func forEachNoOpContentFile(ctx context.Context, sourceDir string, siteConfig *models.Config, visit func(string, []byte) (bool, error)) error {
+func forEachNoOpContentPath(ctx context.Context, sourceDir string, siteConfig *models.Config, visit func(string) (bool, error)) error {
 	files, err := sourcegit.Command(ctx, sourceDir, "ls-files", "--cached", "--others", "--exclude-standard", "-z").Output()
 	if err != nil {
 		return fmt.Errorf("list content files for no-op verification: %w", err)
@@ -1094,14 +1100,7 @@ func forEachNoOpContentFile(ctx context.Context, sourceDir string, siteConfig *m
 		if !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 || info.Size() > 32<<20 {
 			return fmt.Errorf("content source %q is unsafe", name)
 		}
-		data, err := os.ReadFile(path)
-		if errors.Is(err, fs.ErrNotExist) {
-			continue
-		}
-		if err != nil {
-			return fmt.Errorf("read content source %q: %w", name, err)
-		}
-		done, err := visit(name, data)
+		done, err := visit(name)
 		if err != nil {
 			return err
 		}
@@ -1110,6 +1109,23 @@ func forEachNoOpContentFile(ctx context.Context, sourceDir string, siteConfig *m
 		}
 	}
 	return nil
+}
+
+func forEachNoOpContentFile(ctx context.Context, sourceDir string, siteConfig *models.Config, visit func(string, []byte) (bool, error)) error {
+	return forEachNoOpContentPath(ctx, sourceDir, siteConfig, func(name string) (bool, error) {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+		path := filepath.Join(sourceDir, filepath.FromSlash(name))
+		data, err := os.ReadFile(path)
+		if errors.Is(err, fs.ErrNotExist) {
+			return false, nil
+		}
+		if err != nil {
+			return false, fmt.Errorf("read content source %q: %w", name, err)
+		}
+		return visit(name, data)
+	})
 }
 
 func isNoOpContentFile(siteConfig *models.Config, name string) bool {
@@ -1313,38 +1329,79 @@ func checkNoOpLinkAvatarCache(ctx context.Context, sourceDir, cacheMount string,
 	if err != nil {
 		return fmt.Errorf("load build cache for link-avatar verification: %w", err)
 	}
-	return forEachNoOpContentFile(ctx, sourceDir, siteConfig, func(name string, data []byte) (bool, error) {
-		return false, checkNoOpLinkAvatarCacheEntry(name, data, cache, siteConfig)
+	return checkNoOpLinkAvatarCacheWithCache(ctx, sourceDir, siteConfig, cache)
+}
+
+func (s *Service) checkNoOpLinkAvatarCache(ctx context.Context, sourceDir, cacheMount string, siteConfig *models.Config) error {
+	if siteConfig == nil || !plugins.LinkAvatarsRequiresBuildTimeRender(siteConfig.Extra) {
+		return nil
+	}
+	cacheDir := noOpBuildCacheDir(sourceDir, cacheMount, siteConfig)
+	cache, err := s.loadNoOpLinkAvatarCache(cacheDir)
+	if err != nil {
+		return fmt.Errorf("load build cache for link-avatar verification: %w", err)
+	}
+	return checkNoOpLinkAvatarCacheWithCache(ctx, sourceDir, siteConfig, cache)
+}
+
+func (s *Service) loadNoOpLinkAvatarCache(cacheDir string) (*buildcache.Cache, error) {
+	cachePath := filepath.Join(cacheDir, buildcache.CacheFileName)
+	s.noOpLinkAvatarMu.Lock()
+	defer s.noOpLinkAvatarMu.Unlock()
+
+	info, err := os.Lstat(cachePath)
+	if errors.Is(err, fs.ErrNotExist) {
+		s.noOpLinkAvatarCache = nil
+		return buildcache.Load(cacheDir)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+		return nil, errors.New("build cache file is not a regular file")
+	}
+	identity := noOpCacheFileIdentity(info)
+	if identity != "" && s.noOpLinkAvatarCache != nil && s.noOpLinkAvatarCache.path == cachePath && s.noOpLinkAvatarCache.identity == identity {
+		return s.noOpLinkAvatarCache.cache, nil
+	}
+
+	cache, err := buildcache.Load(cacheDir)
+	if err != nil {
+		return nil, err
+	}
+	if identity == "" {
+		return cache, nil
+	}
+	after, err := os.Lstat(cachePath)
+	if err != nil || !after.Mode().IsRegular() || after.Mode()&os.ModeSymlink != 0 || noOpCacheFileIdentity(after) != identity {
+		return nil, errors.New("build cache changed during link-avatar verification")
+	}
+	s.noOpLinkAvatarCache = &noOpLinkAvatarCacheState{path: cachePath, identity: identity, cache: cache}
+	return cache, nil
+}
+
+func noOpCacheFileIdentity(info fs.FileInfo) string {
+	identity := fileidentity.Read(info)
+	if identity.Inode == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d:%d:%d:%d:%d:%d", identity.Device, identity.Inode, identity.Size, identity.Mode, identity.Modified, identity.Changed)
+}
+
+func checkNoOpLinkAvatarCacheWithCache(ctx context.Context, sourceDir string, siteConfig *models.Config, cache *buildcache.Cache) error {
+	return forEachNoOpContentPath(ctx, sourceDir, siteConfig, func(name string) (bool, error) {
+		return false, checkNoOpLinkAvatarCacheEntry(name, cache)
 	})
 }
 
-func checkNoOpLinkAvatarCacheEntry(name string, data []byte, cache *buildcache.Cache, siteConfig *models.Config) error {
-	post, err := plugins.ParsePostFromContentWithConfig(filepath.ToSlash(name), string(data), siteConfig)
-	if err != nil {
-		return fmt.Errorf("load link-avatar source %q: %w", name, err)
-	}
-	if post.Skip || (strings.TrimSpace(post.Content) == "" && !noOpPostHasLink(post)) {
-		return nil
-	}
-	cached := cache.GetCachedPost(post.Path)
+func checkNoOpLinkAvatarCacheEntry(name string, cache *buildcache.Cache) error {
+	cached := cache.GetCachedPost(filepath.ToSlash(name))
 	emptyArticleHash := buildcache.ContentHash("")
 	if cached == nil || cached.LinkAvatarsHash == "" ||
 		(cached.LinkAvatarsHTML == "" && cached.LinkAvatarsHash != emptyArticleHash) {
 		return fmt.Errorf("link-avatar transform cache is missing for %q", name)
 	}
 	return nil
-}
-
-func noOpPostHasLink(post *models.Post) bool {
-	if post == nil {
-		return false
-	}
-	for _, key := range []string{"link", "url"} {
-		if value, ok := post.Get(key).(string); ok && strings.TrimSpace(value) != "" {
-			return true
-		}
-	}
-	return false
 }
 
 func embedsDisabled(extra map[string]any) bool {
