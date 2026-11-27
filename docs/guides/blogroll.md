@@ -38,20 +38,20 @@ Run `markata-go build` and you'll have:
 - `/blogroll/` - Lists Simon Willison's blog
 - `/reader/` - Shows his latest posts
 
-## Edit a subscription from the terminal
+## List subscriptions from the terminal
 
-Use the exact handle or feed URL and specify only the fields to change:
+Inspect configured external subscriptions without fetching feeds or changing configuration:
 
 ```bash
-markata blogroll edit engineering --title "Engineering Notes" --dry-run
-markata blogroll edit engineering --category Technology --tags go,rss
-markata blogroll edit engineering --description ""
+markata blogroll list
+markata blogroll list --filter engineering
+markata blogroll list --json
 ```
 
-Omitted fields are unchanged; an explicit empty value clears a text field or tags.
-The edit uses the effective owning TOML file, preserves unrelated values and
-refuses layouts it cannot safely rewrite. For those layouts, edit the owning
-TOML file directly.
+The filter matches titles, URLs, handles, categories and tags without regard to case.
+The inventory shows active or paused state, reader type and configuration source.
+JSON output includes the effective blogroll enabled state, source editability and
+the target configuration file when available.
 
 ## Pause and resume subscriptions from the terminal
 
@@ -76,6 +76,21 @@ markata blogroll remove engineering --yes
 ```
 
 Omit `--yes` in an interactive terminal to review and confirm the removal.
+
+## Edit a subscription from the terminal
+
+Use the exact handle or feed URL and specify only the fields to change:
+
+```bash
+markata blogroll edit engineering --title "Engineering Notes" --dry-run
+markata blogroll edit engineering --category Technology --tags go,rss
+markata blogroll edit engineering --description ""
+```
+
+Omitted fields are unchanged; an explicit empty value clears a text field or tags.
+The edit uses the effective owning TOML file, preserves unrelated values and
+refuses layouts it cannot safely rewrite. For those layouts, edit the owning
+TOML file directly.
 
 ## Manage subscriptions in your browser
 

@@ -66,7 +66,7 @@ type subscriptionRequest struct {
 	Type        string `json:subscriptionFieldType`
 	Tags        string `json:subscriptionFieldTags`
 	Handle      string `json:subscriptionFieldHandle`
-	Active      bool   `json:subscriptionFieldActive`
+	Active      bool   `json:blogrollStatusActive`
 	// Selected fields are supplied by the CLI, not accepted from HTTP clients.
 	selectedFields []string
 }
@@ -324,7 +324,7 @@ func subscriptionFields(req subscriptionRequest) (map[string]string, error) {
 		subscriptionFieldType:        strconv.Quote(req.Type),
 		subscriptionFieldTags:        "[" + formatTOMLStringArray(parseTagsBlogroll(req.Tags)) + "]",
 		subscriptionFieldHandle:      strconv.Quote(strings.TrimSpace(req.Handle)),
-		subscriptionFieldActive:      strconv.FormatBool(req.Active),
+		blogrollStatusActive:         strconv.FormatBool(req.Active),
 	}, nil
 }
 
@@ -429,7 +429,7 @@ func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest
 		var block strings.Builder
 		block.WriteString("\n\n[[" + prefix + ".feeds]]\n")
 		block.WriteString("url = " + strconv.Quote(req.URL) + "\n")
-		for _, name := range []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, subscriptionFieldTags, subscriptionFieldHandle, subscriptionFieldActive} {
+		for _, name := range []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, subscriptionFieldTags, subscriptionFieldHandle, blogrollStatusActive} {
 			block.WriteString(name + " = " + fields[name] + "\n")
 		}
 		content = strings.TrimRight(content, "\r\n") + block.String()
@@ -443,7 +443,7 @@ func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest
 			replacement = content[selected.start:selected.end]
 			names := req.selectedFields
 			if len(names) == 0 {
-				names = []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, subscriptionFieldTags, subscriptionFieldHandle, subscriptionFieldActive}
+				names = []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, subscriptionFieldTags, subscriptionFieldHandle, blogrollStatusActive}
 			}
 			replacement, err = patchSubscriptionBlock(replacement, fields, names)
 			if err != nil {
@@ -451,7 +451,7 @@ func changeSubscriptionWithOptions(state *settingsState, req subscriptionRequest
 			}
 		}
 		if req.Action == subscriptionActionActive {
-			replacement = subscriptionField(content[selected.start:selected.end], subscriptionFieldActive, strconv.FormatBool(req.Active))
+			replacement = subscriptionField(content[selected.start:selected.end], blogrollStatusActive, strconv.FormatBool(req.Active))
 		}
 		content = content[:selected.start] + replacement + content[selected.end:]
 		if req.Action == subscriptionActionRemove && len(state.cfg.Blogroll.Feeds) == 1 {

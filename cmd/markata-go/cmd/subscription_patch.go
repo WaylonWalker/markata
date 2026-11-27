@@ -19,7 +19,6 @@ const (
 	subscriptionFieldType        = "type"
 	subscriptionFieldTags        = "tags"
 	subscriptionFieldHandle      = "handle"
-	subscriptionFieldActive      = "active"
 )
 
 // patchSubscriptionBlock applies only the selected fields and checks that the
@@ -104,7 +103,7 @@ func subscriptionInlineComment(value string) string {
 func subscriptionUpdateMatches(feed *models.ExternalFeedConfig, req subscriptionRequest) bool {
 	names := req.selectedFields
 	if len(names) == 0 {
-		names = []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, subscriptionFieldTags, subscriptionFieldHandle, subscriptionFieldActive}
+		names = []string{listSortTitle, subscriptionFieldDescription, subscriptionFieldCategory, subscriptionFieldType, subscriptionFieldTags, subscriptionFieldHandle, blogrollStatusActive}
 	}
 	actual := map[string]bool{
 		listSortTitle:                feed.Title == strings.TrimSpace(req.Title),
@@ -113,7 +112,7 @@ func subscriptionUpdateMatches(feed *models.ExternalFeedConfig, req subscription
 		subscriptionFieldType:        string(feed.Type) == req.Type,
 		subscriptionFieldTags:        slices.Equal(feed.Tags, parseTagsBlogroll(req.Tags)),
 		subscriptionFieldHandle:      feed.Handle == strings.TrimSpace(req.Handle),
-		subscriptionFieldActive:      feed.IsActive() == req.Active,
+		blogrollStatusActive:         feed.IsActive() == req.Active,
 	}
 	for _, name := range names {
 		if !actual[name] {
