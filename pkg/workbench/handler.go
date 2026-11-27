@@ -848,7 +848,9 @@ func (h *Handler) serveProseIgnoreRule(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	_, _ = io.WriteString(w, "{\"ok\":true}")
+	if _, err := io.WriteString(w, "{\"ok\":true}"); err != nil {
+		return
+	}
 }
 
 func isWorkspaceRoute(routePath, method string) bool {
