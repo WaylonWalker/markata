@@ -53,15 +53,15 @@ func ReadOPML(r io.Reader) ([]OPMLFeed, error) {
 		return nil, fmt.Errorf("parse OPML: %w", err)
 	}
 	feeds := make([]OPMLFeed, 0)
-	for _, outline := range doc.Body {
-		if err := collectOPMLFeeds(outline, "", &feeds); err != nil {
+	for i := range doc.Body {
+		if err := collectOPMLFeeds(&doc.Body[i], "", &feeds); err != nil {
 			return nil, err
 		}
 	}
 	return feeds, nil
 }
 
-func collectOPMLFeeds(outline opmlOutline, parent string, feeds *[]OPMLFeed) error {
+func collectOPMLFeeds(outline *opmlOutline, parent string, feeds *[]OPMLFeed) error {
 	title := strings.TrimSpace(outline.Title)
 	if title == "" {
 		title = strings.TrimSpace(outline.Text)
@@ -85,8 +85,8 @@ func collectOPMLFeeds(outline opmlOutline, parent string, feeds *[]OPMLFeed) err
 			parent += "/" + title
 		}
 	}
-	for _, child := range outline.Children {
-		if err := collectOPMLFeeds(child, parent, feeds); err != nil {
+	for i := range outline.Children {
+		if err := collectOPMLFeeds(&outline.Children[i], parent, feeds); err != nil {
 			return err
 		}
 	}
