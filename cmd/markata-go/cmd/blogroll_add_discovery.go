@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/charmbracelet/huh"
+	"github.com/spf13/cobra"
 
 	"github.com/WaylonWalker/markata/pkg/blogroll"
+	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 // verifyDirectBlogrollFeed is for an explicitly entered, trusted CLI URL.
@@ -76,4 +79,47 @@ func chooseBlogrollCandidate(candidates []string, interactive bool) (string, err
 		return "", err
 	}
 	return selected, nil
+}
+
+func resolveBlogrollAddFeed(cmd *cobra.Command, cfg *models.Config, address string) (string, *blogroll.Metadata, error) {
+	parent := cmd.Context()
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(parent, 60*time.Second)
+	defer cancel()
+	client := blogrollAddHTTPClientFactory(blogrollAddTimeout(cfg))
+	defer client.CloseIdleConnections()
+	directErr := verifyDirectBlogrollFeed(ctx, client, address)
+	if directErr != nil {
+		if ctx.Err() != nil {
+			return "", nil, ctx.Err()
+		}
+		discovered, err := discoverSubscription(ctx, address)
+		if err != nil {
+			if ctx.Err() != nil {
+				return "", nil, ctx.Err()
+			}
+			metadata, recoveryErr := recoverBlogrollMetadata(fmt.Errorf("direct feed: %w; website discovery: %w", directErr, err))
+			return address, metadata, recoveryErr
+		}
+		interactive := !noInput && !blogrollAddNoPrompt && inputIsTerminal() && outputIsTerminal()
+		address, err = chooseBlogrollCandidate(discovered.Candidates, interactive)
+		if err != nil {
+			return "", nil, err
+		}
+		publicClient := safeSubscriptionClient()
+		defer publicClient.CloseIdleConnections()
+		if err := verifyDirectBlogrollFeed(ctx, publicClient, address); err != nil {
+			return "", nil, fmt.Errorf("verify discovered feed: %w", err)
+		}
+	}
+	// The feed is verified already. Website metadata is enrichment, not a
+	// reason to reject a usable subscription.
+	metadata, err := fetchFeedMetadataForAdd(cfg, address)
+	if err != nil {
+		warnf("Feed verified, but metadata enrichment failed: %v", err)
+		metadata = &blogroll.Metadata{}
+	}
+	return address, metadata, nil
 }
