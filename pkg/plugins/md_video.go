@@ -164,7 +164,7 @@ const (
 	dropperSTLPosterHeight = 576
 )
 
-var dropperSTLTransformQueryKeys = strings.Fields("w h width height format fit crop quality q at start end time t")
+var dropperSTLTransformQueryKeys = strings.Fields("w h width height format fit crop crop_x crop_y crop_w crop_h x y cw ch quality q at so eo du start end duration time t")
 
 // processPost processes a single post's HTML for video image tags.
 func (p *MDVideoPlugin) processPost(post *models.Post) error {

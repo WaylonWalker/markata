@@ -191,7 +191,11 @@ func TestDropperSTLPreviewURLs_RequiresTrustedAbsoluteFileURL(t *testing.T) {
 }
 
 func TestDropperSTLPreviewURLs_PreservesModelOptionsAndAccessQuery(t *testing.T) {
-	poster, viewer, ok := dropperSTLPreviewURLs("https://dropper.waylonwalker.com/site/file/part.stl?token=abc&width=300&height=200&rx=90&ry=2&rz=3&projection=orthographic")
+	raw := "https://dropper.waylonwalker.com/site/file/part.stl?token=abc&width=300&height=200&" +
+		"crop_x=1&crop_y=2&crop_w=3&crop_h=4&x=1&y=2&cw=3&ch=4&" +
+		"so=1&eo=2&du=3&start=4&end=5&duration=6&t=7&" +
+		"rx=90&ry=2&rz=3&projection=orthographic"
+	poster, viewer, ok := dropperSTLPreviewURLs(raw)
 	if !ok {
 		t.Fatal("expected trusted STL URL to produce preview URLs")
 	}
@@ -210,6 +214,11 @@ func TestDropperSTLPreviewURLs_PreservesModelOptionsAndAccessQuery(t *testing.T)
 		for key, want := range map[string]string{"token": "abc", "rx": "90", "ry": "2", "rz": "3", "projection": "orthographic"} {
 			if got := query.Get(key); got != want {
 				t.Errorf("query %q = %q, want %q", key, got, want)
+			}
+			for _, key := range strings.Fields("crop_x crop_y crop_w crop_h x y cw ch so eo du start end duration t") {
+				if query.Has(key) {
+					t.Errorf("3D preview URL retained unsupported transform parameter %q: %s", key, query.Encode())
+				}
 			}
 		}
 	}
