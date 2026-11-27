@@ -73,11 +73,12 @@ type subscriptionRequest struct {
 }
 
 type discoveredSubscription struct {
-	URL         string `json:"url"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	SiteURL     string `json:"site_url"`
-	Error       string `json:"error,omitempty"`
+	URL         string   `json:"url"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	SiteURL     string   `json:"site_url"`
+	Error       string   `json:"error,omitempty"`
+	Candidates  []string `json:"candidates,omitempty"`
 }
 
 func subscriptionJSON(w http.ResponseWriter, status int, payload any) {
@@ -660,6 +661,7 @@ func discoverSubscriptionWithClient(ctx context.Context, client *http.Client, ad
 	}
 	out := discoveredSubscription{URL: finalURL, SiteURL: finalURL}
 	if _, err := blogroll.ValidateFeedDocument(body); err == nil {
+		out.Candidates = []string{finalURL}
 		return out, nil // A validated feed document, not an HTML page.
 	}
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
@@ -678,6 +680,7 @@ func discoverSubscriptionWithClient(ctx context.Context, client *http.Client, ad
 			if err == nil {
 				if _, err := blogroll.ValidateFeedDocument(feedBody); err == nil {
 					out.URL = resolved
+					out.Candidates = []string{resolved}
 					return out, nil
 				}
 			}
@@ -688,6 +691,7 @@ func discoverSubscriptionWithClient(ctx context.Context, client *http.Client, ad
 		return out, fmt.Errorf("parse final site URL: %w", err)
 	}
 	var feeds []string
+	seen := make(map[string]bool)
 	doc.Find("link[rel~='alternate']").Each(func(_ int, s *goquery.Selection) {
 		typ, _ := s.Attr("type")
 		if !strings.Contains(typ, "rss+xml") && !strings.Contains(typ, "atom+xml") && !strings.Contains(typ, "feed+json") {
@@ -702,21 +706,33 @@ func discoverSubscriptionWithClient(ctx context.Context, client *http.Client, ad
 			return
 		}
 		target := base.ResolveReference(parsed)
-		if validSubscriptionURL(target) == nil {
+		if validSubscriptionURL(target) == nil && !seen[target.String()] && len(feeds) < 8 {
+			seen[target.String()] = true
 			feeds = append(feeds, target.String())
 		}
 	})
 	if len(feeds) == 0 {
 		return out, errors.New("no RSS, Atom, or JSON Feed advertised by this website; paste its feed URL directly")
 	}
+	seen = make(map[string]bool)
 	for _, feed := range feeds {
 		feedBody, resolved, err := fetchSubscriptionURL(ctx, client, feed)
 		if err == nil {
-			if _, err := blogroll.ValidateFeedDocument(feedBody); err == nil {
-				out.URL = resolved
-				return out, nil
+			if _, err := blogroll.ValidateFeedDocument(feedBody); err == nil && !seen[resolved] {
+				seen[resolved] = true
+				out.Candidates = append(out.Candidates, resolved)
 			}
 		}
+		if ctx.Err() != nil {
+			break
+		}
+	}
+	if len(out.Candidates) > 0 {
+		out.URL = out.Candidates[0]
+		return out, nil
+	}
+	if ctx.Err() != nil {
+		return out, ctx.Err()
 	}
 	return out, errors.New("the website advertises feeds, but none could be fetched and validated")
 }
