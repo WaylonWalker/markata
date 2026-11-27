@@ -17,12 +17,12 @@ func newBlogrollListCmd() *cobra.Command {
 	var asJSON bool
 	var filter string
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List external subscriptions and their configuration sources",
-		Long:  "List configured blogroll subscriptions without making network requests or modifying configuration.",
-		Example: "  markata blogroll list\n" +
-			"  markata blogroll list --filter engineering\n" +
-			"  markata blogroll list --json",
+		Use:     "list",
+		Short:   "List external subscriptions and their configuration sources",
+		Long:    `List configured blogroll subscriptions without making network requests or modifying configuration.`,
+		Example: `  markata blogroll list
+  markata blogroll list --filter engineering
+  markata blogroll list --json`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			state, err := loadSettingsState()
@@ -51,7 +51,12 @@ func renderBlogrollList(w io.Writer, response subscriptionResponse, filter strin
 	if asJSON {
 		encoder := json.NewEncoder(w)
 		encoder.SetIndent("", "  ")
-		return encoder.Encode(response)
+		return encoder.Encode(struct {
+			Feeds   []subscriptionView `json:"feeds"`
+			Enabled bool               `json:"enabled"`
+			Target  string             `json:"target,omitempty"`
+			Error   string             `json:"error,omitempty"`
+		}{feeds, response.Enabled, response.Target, response.Error})
 	}
 	if !response.Enabled {
 		if _, err := fmt.Fprintln(w, "Blogroll is disabled in configuration."); err != nil {
@@ -59,7 +64,11 @@ func renderBlogrollList(w io.Writer, response subscriptionResponse, filter strin
 		}
 	}
 	if len(feeds) == 0 {
-		_, err := fmt.Fprintln(w, "No matching subscriptions. Run 'markata blogroll add' to add a feed.")
+		message := "No subscriptions configured. Run 'markata blogroll add --help' to get started."
+		if filter != "" {
+			message = "No matching subscriptions. Try a different --filter or list without a filter."
+		}
+		_, err := fmt.Fprintln(w, message)
 		return err
 	}
 	for i := range feeds {
