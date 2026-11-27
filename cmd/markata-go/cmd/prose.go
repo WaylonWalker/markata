@@ -77,10 +77,33 @@ var proseIgnoreCmd = &cobra.Command{
 	},
 }
 
+var proseIgnorePhraseCmd = &cobra.Command{
+	Use:   "ignore-phrase <rule-id> <phrase> [markdown-file]",
+	Short: "Always ignore one phrase without disabling the style rule",
+	Args:  cobra.RangeArgs(2, 3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		path := "untitled.md"
+		if len(args) > 2 {
+			path = args[2]
+		}
+		absolute, err := filepath.Abs(path)
+		if err != nil {
+			return err
+		}
+		name, err := prose.IgnorePhrase(absolute, args[0], args[1])
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintf(cmd.OutOrStdout(), "Ignored phrase %q (%s) in %s\n", args[1], args[0], name)
+		return err
+	},
+}
+
 func init() {
 	proseCheckCmd.Flags().BoolVar(&proseJSON, "json", false, "emit stable JSON diagnostics for tools and agents")
 	proseCheckCmd.Flags().StringSliceVar(&proseIgnore, "ignore-rule", nil, "suppress a rule ID (repeatable)")
 	proseCmd.AddCommand(proseCheckCmd)
 	proseCmd.AddCommand(proseIgnoreCmd)
+	proseCmd.AddCommand(proseIgnorePhraseCmd)
 	rootCmd.AddCommand(proseCmd)
 }
