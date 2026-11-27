@@ -2,10 +2,10 @@ package prose
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
-	"encoding/json"
 	"strings"
 	"testing"
 	"unicode/utf8"
