@@ -11,19 +11,27 @@ checker.
 markata prose check posts/example.md
 markata prose check posts/example.md --json
 markata prose check posts/example.md --ignore-rule prose/cliche
+markata prose ignore prose/cliche posts/example.md
 ```
 
 Reports use stable rule IDs and source locations. JSON results use zero-based
 lines and UTF-8 byte columns. Human-readable output uses one-based positions.
-The command does not edit source text and exits successfully when it finds
+The `ignore` command writes a project-level `.markata-prose.json` file in the nearest existing preferences directory (or next to the specified Markdown file). A CLI check and the LSP both discover the nearest such file by walking upward from the document. For example:
+
+```json
+{
+  "ignored_rules": ["prose/cliche"]
+}
+```
+
+This is rule-level suppression, not a personal dictionary, and it intentionally applies to all occurrences of that rule within the project. The command does not edit source text and exits successfully when it finds
 editorial suggestions. File I/O failures still return errors.
 
 ## Neovim / LSP
 
 Set `MARKATA_PROSE_ENABLED=1` when starting `markata lsp` to opt in.\nThe existing LSP server then emits the same findings as *hint* severity
 with `markata-prose` as source. Standard Neovim diagnostics can display them.
-No extra plugin is necessary. This first increment does not yet implement
-prose-specific code actions or persistent ignore preferences for the LSP.
+No extra plugin is necessary. Rule-level project ignores are shared with the CLI; per-occurrence ignores, code actions, and personal vocabulary are not implemented yet.
 
 ## Editor
 
@@ -34,7 +42,7 @@ require editor UI work, stable edit actions, and a shared persisted vocabulary.
 
 ## Next increments
 
-1. Define shared configuration and a persisted user/project ignore dictionary.
+1. Extend project rule ignores with user dictionaries and per-occurrence ignore semantics.
 2. Add spelling and grammar via an evaluated Harper adapter.
 3. Add LSP code actions for safe suggestions and ignore operations.
 4. Add unobtrusive inline decorations and accessible suggestion popovers in
