@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 
 	"github.com/WaylonWalker/markata/pkg/models"
 )
 
 func init() {
-	blogrollCmd.AddCommand(newBlogrollActiveCmd("enable", true), newBlogrollActiveCmd("disable", false))
+	blogrollCmd.AddCommand(newBlogrollActiveCmd("enable", true), newBlogrollActiveCmd("disable", false), newBlogrollRemoveCmd())
 }
 
 func newBlogrollActiveCmd(name string, active bool) *cobra.Command {
@@ -66,4 +67,64 @@ func selectBlogrollFeed(feeds []models.ExternalFeedConfig, selector string) (mod
 	default:
 		return models.ExternalFeedConfig{}, fmt.Errorf("subscription selector %q is ambiguous; use an exact feed URL", selector)
 	}
+}
+
+func newBlogrollRemoveCmd() *cobra.Command {
+	var dryRun, yes bool
+	cmd := &cobra.Command{
+		Use:     "remove <handle-or-url>",
+		Short:   "Remove an external subscription",
+		Example: "  markata blogroll remove engineering --dry-run",
+		Args:    cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			state, err := loadSettingsState()
+			if err != nil {
+				return fmt.Errorf("load subscription configuration: %w", err)
+			}
+			feed, err := selectBlogrollFeed(state.cfg.Blogroll.Feeds, args[0])
+			if err != nil {
+				return err
+			}
+			if !dryRun && !yes {
+				if err := confirmBlogrollRemoval(feed.URL); err != nil {
+					return err
+				}
+			}
+			req := subscriptionRequest{Action: subscriptionActionRemove, URL: feed.URL}
+			if err := changeSubscriptionWithOptions(state, req, dryRun); err != nil {
+				return fmt.Errorf("remove subscription: %w", err)
+			}
+			message := "Removed"
+			if dryRun {
+				message = "Would remove"
+			}
+			_, err = fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", message, feed.URL)
+			return err
+		},
+	}
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "validate removal without writing configuration")
+	cmd.Flags().BoolVar(&yes, "yes", false, "confirm removal without prompting")
+	return cmd
+}
+
+func confirmBlogrollRemoval(address string) error {
+	if noInput || !inputIsTerminal() || !outputIsTerminal() {
+		return newUsageError(&Diagnostic{
+			Problem:    "subscription removal requires confirmation",
+			Fix:        "Use --yes to confirm removal or --dry-run to preview.",
+			StatusCode: exitCodeUsage,
+		})
+	}
+	confirmed := false
+	form := huh.NewForm(huh.NewGroup(huh.NewConfirm().
+		Title("Remove subscription?").
+		Description(address).
+		Value(&confirmed))).WithTheme(createHuhThemeForPalette(currentCLIPalette))
+	if err := form.Run(); err != nil {
+		return err
+	}
+	if !confirmed {
+		return fmt.Errorf("subscription removal canceled; no changes written")
+	}
+	return nil
 }
