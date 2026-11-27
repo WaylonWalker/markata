@@ -2,4 +2,5 @@
 li.CodeMirror-hint{color:inherit;padding:4px 8px;max-width:34rem}
 li.CodeMirror-hint-active{background:var(--color-primary,#245fc5);color:var(--color-background,#fff)}
 .markata-lsp-diagnostic{text-decoration:underline wavy var(--color-error,#b42318);text-underline-offset:3px}
+.markata-lsp-prose-hint{text-decoration:underline wavy var(--color-warning,#a77a29);text-decoration-thickness:1px;text-underline-offset:3px}
 #language-status{white-space:nowrap}
