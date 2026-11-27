@@ -25,7 +25,7 @@ type SourceSet []SubscriptionSource
 
 // rawFeeds distinguishes an absent array from an explicitly empty array.
 // The latter shadows earlier lists just like a nonempty array.
-func rawFeeds(raw map[string]any) ([]map[string]any, bool, error) {
+func rawFeeds(raw map[string]any) (feeds []map[string]any, present bool, err error) {
 	root := raw
 	if nested, ok := root["markata-go"].(map[string]any); ok {
 		root = nested
