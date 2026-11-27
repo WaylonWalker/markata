@@ -48,6 +48,7 @@ type Server struct {
 
 	// documents tracks open documents by URI
 	documents map[string]*Document
+	proseIgnored map[string]map[string]bool
 	docMu     sync.RWMutex
 
 	// initialized indicates whether the server has been initialized
@@ -77,6 +78,7 @@ func New(logger *log.Logger) *Server {
 		logger:    logger,
 		index:     NewIndex(logger),
 		documents: make(map[string]*Document),
+		proseIgnored: make(map[string]map[string]bool),
 	}
 }
 
@@ -175,6 +177,8 @@ func (s *Server) methodHandlers() map[string]methodHandler {
 		"textDocument/completion": s.handleCompletion,
 		"textDocument/hover":      s.handleHover,
 		"textDocument/definition": s.handleDefinition,
+		"textDocument/codeAction": s.handleProseCodeAction,
+		"workspace/executeCommand": s.handleProseExecuteCommand,
 
 		// Workspace
 		"workspace/didChangeWatchedFiles": s.handleDidChangeWatchedFiles,
