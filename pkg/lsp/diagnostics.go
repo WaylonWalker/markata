@@ -84,16 +84,16 @@ func (s *Server) computeDiagnostics(uri, content string) []Diagnostic {
 			if s.proseIssueIgnored(uri, issue, content) {
 				continue
 			}
-			start, end := Position{Line: issue.Line, Character: issue.Column},
-				Position{Line: issue.EndLine, Character: issue.EndColumn}
-			if start.Line >= 0 && start.Line < len(lines) {
-				start.Character = utf16Column(lines[start.Line], start.Character)
-			}
-			if end.Line >= 0 && end.Line < len(lines) {
-				end.Character = utf16Column(lines[end.Line], end.Character)
+			span, err := prose.UTF16Range(content, issue)
+			if err != nil {
+				s.logger.Printf("Skipping invalid prose range: %v", err)
+				continue
 			}
 			diagnosticsList = append(diagnosticsList, Diagnostic{
-				Range:    Range{Start: start, End: end},
+				Range: Range{
+					Start: Position{Line: span.Start.Line, Character: span.Start.Character},
+					End:   Position{Line: span.End.Line, Character: span.End.Character},
+				},
 				Severity: DiagnosticSeverityHint,
 				Source:   "markata-prose",
 				Code:     issue.Rule,
