@@ -1,8 +1,8 @@
 package lsp
 
 import (
-	"strings"
 	"os"
+	"strings"
 
 	"github.com/WaylonWalker/markata/pkg/diagnostics"
 	"github.com/WaylonWalker/markata/pkg/prose"
@@ -88,9 +88,9 @@ func (s *Server) computeDiagnostics(uri, content string) []Diagnostic {
 			diagnosticsList = append(diagnosticsList, Diagnostic{
 				Range: Range{Start: start, End: end},
 				Severity: DiagnosticSeverityHint,
-				Source: "markata-prose",
-				Code: issue.Rule,
-				Message: issue.Message,
+				Source:   "markata-prose",
+				Code:     issue.Rule,
+				Message:  issue.Message,
 			})
 		}
 	}
