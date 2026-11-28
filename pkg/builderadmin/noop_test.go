@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -583,6 +584,127 @@ func TestNoOpRejectsDisabledBuildCacheAndMissingExternalEmbedTransform(t *testin
 	writeNoOpFile(t, filepath.Join(root, "posts", "remote-embed.md"), "![embed](https://example.com/post)\n")
 	if err := checkNoOpEmbedCache(context.Background(), root, "", siteConfig); err == nil {
 		t.Fatal("external embed without a persisted transform cache was accepted")
+	}
+}
+
+func TestForEachNoOpContentFileConcurrentMatchesSequentialScan(t *testing.T) {
+	svc, root := newNoOpFixture(t)
+	siteConfig, _, err := svc.loadNoOpSiteConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{
+		"posts/scan-a.md": "First file.\n",
+		"posts/scan-b.md": "Second file.\n",
+		"posts/scan-c.md": "Third file.\n",
+	}
+	for name, content := range want {
+		writeNoOpFile(t, filepath.Join(root, filepath.FromSlash(name)), content)
+	}
+
+	sequential := make(map[string]string)
+	if err := forEachNoOpContentFile(context.Background(), root, siteConfig, func(name string, data []byte) (bool, error) {
+		if _, ok := want[name]; ok {
+			sequential[name] = string(data)
+		}
+		return false, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	concurrent := make(map[string]string)
+	var mu sync.Mutex
+	if err := forEachNoOpContentFileConcurrent(context.Background(), root, siteConfig, 4, func(name string, data []byte) error {
+		if _, ok := want[name]; ok {
+			mu.Lock()
+			concurrent[name] = string(data)
+			mu.Unlock()
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(sequential) != len(want) || len(concurrent) != len(want) {
+		t.Fatalf("matched paths: sequential=%v concurrent=%v, want %v", sequential, concurrent, want)
+	}
+	for name, content := range want {
+		if sequential[name] != content || concurrent[name] != content {
+			t.Errorf("%s: sequential=%q concurrent=%q, want %q", name, sequential[name], concurrent[name], content)
+		}
+	}
+}
+
+func TestNoOpBuildCacheSnapshotReusesOnlyStableFile(t *testing.T) {
+	if !fileidentity.Available {
+		t.Skip("verified no-op requires Linux file identity")
+	}
+	svc, root := newNoOpFixture(t)
+	siteConfig, _, err := svc.loadNoOpSiteConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cacheDir := noOpBuildCacheDir(root, "", siteConfig)
+	cache, err := buildcache.Load(cacheDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cache.CacheEmbedsContent("posts/embed.md", "source-config-hash", "cached")
+	if err := cache.Save(); err != nil {
+		t.Fatal(err)
+	}
+
+	first, err := svc.loadNoOpBuildCache(cacheDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := svc.loadNoOpBuildCache(cacheDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first != second {
+		t.Fatal("stable build-cache file was parsed more than once")
+	}
+
+	cache.CacheEmbedsContent("posts/changed.md", "another-hash", strings.Repeat("x", 1024))
+	if err := cache.Save(); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.verifyNoOpBuildCacheStable(cacheDir); err == nil {
+		t.Fatal("changed build-cache file remained valid during baseline validation")
+	}
+	third, err := svc.loadNoOpBuildCache(cacheDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if third == first {
+		t.Fatal("changed build-cache file reused a stale parsed snapshot")
+	}
+	if err := svc.verifyNoOpBuildCacheStable(cacheDir); err != nil {
+		t.Fatalf("reloaded stable build-cache file failed its identity check: %v", err)
+	}
+}
+
+func TestNoOpBuildCacheSnapshotAllowsMissingCacheAsEmpty(t *testing.T) {
+	svc, root := newNoOpFixture(t)
+	siteConfig, _, err := svc.loadNoOpSiteConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cache, err := svc.loadNoOpBuildCache(noOpBuildCacheDir(root, "", siteConfig))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cache.GetCachedPost("posts/missing.md") != nil {
+		t.Fatal("missing build-cache file produced a cached post")
+	}
+	if err := svc.verifyNoOpBuildCacheStable(noOpBuildCacheDir(root, "", siteConfig)); err != nil {
+		t.Fatalf("unchanged missing cache file failed stability check: %v", err)
+	}
+	cache.CacheEmbedsContent("posts/appeared.md", "new-cache", "cached")
+	if err := cache.Save(); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.verifyNoOpBuildCacheStable(noOpBuildCacheDir(root, "", siteConfig)); err == nil {
+		t.Fatal("cache file created during baseline validation was accepted")
 	}
 }
 

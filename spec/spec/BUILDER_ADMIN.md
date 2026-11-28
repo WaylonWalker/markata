@@ -264,6 +264,12 @@ embed-transform result for that post under the current source content and
 embed configuration. A missing, stale, disabled, or unpersisted transform
 result MUST disable baseline creation.
 
+When embed and link-avatar checks read the build cache during the same baseline
+validation, they MAY share one parsed cache snapshot. The cache file MUST be a
+regular file with a verified identity before and after loading, and that
+identity MUST remain unchanged through both checks. A missing, unidentifiable,
+or changed file MUST fail closed when coverage requires it.
+
 When Tailwind builds are enabled, the shortcut MUST be disabled until its
 external executable and installer cache are included in the input contract.
 An explicit `tailwind.build = false` setting is required to use the shortcut.
