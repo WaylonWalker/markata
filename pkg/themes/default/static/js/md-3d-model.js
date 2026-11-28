@@ -135,8 +135,13 @@
       const THREE = await ensureThree();
       if (state.closed) return;
 
+      const source = new URL(widget.dataset.modelUrl, window.location.href);
+      // Dropper may have an older edge-cached response for the bare file URL
+      // without the current CORS headers. A viewer-specific query key gets a
+      // fresh response while keeping the source URL and its access options.
+      source.searchParams.set('markata_stl', '1');
       state.abortController = new AbortController();
-      const response = await fetch(widget.dataset.modelUrl, {
+      const response = await fetch(source.href, {
         credentials: 'include',
         signal: state.abortController.signal,
       });
@@ -163,7 +168,6 @@
         roughness: 0.68,
       });
       const model = new THREE.Mesh(geometry, material);
-      const source = new URL(widget.dataset.modelUrl, window.location.href);
       model.rotation.order = 'XYZ';
       model.rotation.set(
         (Number(source.searchParams.get('rx')) || 0) * Math.PI / 180,

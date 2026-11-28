@@ -2,6 +2,8 @@ package plugins
 
 import (
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -192,6 +194,16 @@ func TestMDVideoPlugin_DropperSTLLoadsThemeViewerScript(t *testing.T) {
 	for _, want := range []string{`data-markata-stl-model`, `/js/md-3d-model.`} {
 		if !strings.Contains(post.HTML, want) {
 			t.Errorf("rendered post is missing %q: %s", want, post.HTML)
+		}
+	}
+
+	viewerScript, err := os.ReadFile(filepath.Join("..", "themes", "default", "static", "js", "md-3d-model.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"source.searchParams.set('markata_stl', '1')", "fetch(source.href"} {
+		if !strings.Contains(string(viewerScript), want) {
+			t.Errorf("viewer script is missing %q", want)
 		}
 	}
 }
