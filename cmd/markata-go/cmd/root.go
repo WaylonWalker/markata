@@ -98,7 +98,7 @@ Profiling:
 		currentCmd = cmd
 		// The agent handoff is a fast, read-only introspection command. Do not
 		// load a workspace, execute config/plugin setup or require a valid site.
-		if cmd.Parent() == nil && rootSkillRequested {
+		if (cmd.Parent() == nil && rootSkillRequested) || cmd == cliInventoryCmd {
 			return nil
 		}
 		if cmd.Flags().Lookup("dag") != nil {
