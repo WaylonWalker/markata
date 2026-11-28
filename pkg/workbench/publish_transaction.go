@@ -334,8 +334,27 @@ func (h *Handler) servePublishPush(w http.ResponseWriter, r *http.Request) {
 		err = h.gitPublisher.Push(ctx, ref, req.Commit)
 	} else {
 		_, err = commitGit(ctx, root, "", "push", "--porcelain", "origin", ref+":"+ref)
+		if err != nil {
+			parent, parentErr := commitGit(ctx, root, "", "rev-parse", req.Commit+"^")
+			remoteOutput, remoteErr := commitGit(ctx, root, "", "ls-remote", "--heads", "origin", ref)
+			fields := strings.Fields(remoteOutput)
+			if parentErr == nil && remoteErr == nil && len(fields) == 2 && fields[1] == ref && gitHashPattern.MatchString(fields[0]) {
+				switch fields[0] {
+				case req.Commit:
+					err = nil // The remote accepted the commit even though the client lost its success response.
+				case parent:
+					// Origin is still at the reviewed parent; report the original push error.
+				default:
+					err = errors.New("remote branch changed; sync and review again")
+				}
+			}
+		}
 	}
 	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "remote branch changed") {
+			fail(w, http.StatusConflict, "remote branch changed; sync and review again")
+			return
+		}
 		fail(w, 422, "remote push failed; local commit is retained")
 		return
 	}

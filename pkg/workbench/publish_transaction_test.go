@@ -210,6 +210,46 @@ func TestPublishCommitMustHaveSameOrigin(t *testing.T) {
 	}
 }
 
+func TestPublishPushReportsLocalRemoteBranchRace(t *testing.T) {
+	root, handler := initPublishRepository(t)
+	remoteWork, branch := setupPublishSyncRemote(t, root)
+	localSource := "---\npublished: true\n---\n\n# Local post\n"
+	if err := os.WriteFile(filepath.Join(root, "posts", "one.md"), []byte(localSource), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	gitForReviewTest(t, root, "add", "posts/one.md")
+	gitForReviewTest(t, root, "commit", "-qm", "local post")
+	localHead, err := gitOutputForTest(root, "rev-parse", "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	localHead = strings.TrimSpace(localHead)
+	if err := os.WriteFile(filepath.Join(remoteWork, "unrelated.md"), []byte("# Remote change\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	gitForReviewTest(t, remoteWork, "add", "unrelated.md")
+	gitForReviewTest(t, remoteWork, "commit", "-qm", "remote unrelated change")
+	gitForReviewTest(t, remoteWork, "push", "origin", strings.TrimPrefix(branch, "refs/heads/"))
+
+	body, err := json.Marshal(pushRequest{Commit: localHead, Branch: branch})
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "http://localhost:8766/workspace/publish/push?path=posts%2Fone.md", bytes.NewReader(body))
+	request.RemoteAddr = "127.0.0.1:55555"
+	request.Host = "localhost:8766"
+	request.Header.Set("Origin", "http://localhost:8766")
+	request.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusConflict || !strings.Contains(recorder.Body.String(), "remote branch changed") {
+		t.Fatalf("remote race status %d: %s", recorder.Code, recorder.Body.String())
+	}
+	if got, err := gitOutputForTest(root, "rev-parse", "HEAD"); err != nil || strings.TrimSpace(got) != localHead {
+		t.Fatalf("local commit changed after push race: %q %v", got, err)
+	}
+}
+
 func gitOutputForTest(root string, args ...string) (string, error) {
 	// #nosec G204 -- test helper invokes fixed Git subcommands without a shell.
 	out, err := exec.CommandContext(context.Background(), "git", append([]string{"-C", root}, args...)...).Output()

@@ -169,15 +169,29 @@ dialog. The user MUST still be able to check the pushed commit's deployment
 status from the editor. A lost or failed push response MUST NOT be reported as a
 confirmed push.
 
-If the remote branch moves after the local one-page commit, the editor MUST keep
-that commit and the saved source. It MUST NOT offer an identical blind retry
-when the publisher reports that the remote branch changed. The current recovery
-message MUST say that the local commit is retained and that this editor cannot
-sync the branch automatically yet. A later sync flow may fast-forward or
-reapply the reviewed one-page change only after checking for same-file
-overlap. If the remote changed that file, the editor MUST show both versions
-before any overwrite. A forced remote update MUST never trigger a forced push
-or a silent hard reset.
+If the remote branch moves before or after the local one-page commit, the editor
+MUST keep the saved source and make one bounded sync attempt. It MUST fast-forward
+when local HEAD is an ancestor of the fetched remote head and the reviewed path
+is unchanged. If the local branch contains only the reviewed one-page commit
+after a common base, it MAY rebase that commit onto the fetched remote head only
+when committed and uncommitted changed-path sets do not overlap. It MUST preserve
+unrelated unstaged drafts. After a successful sync, it MUST recheck the reviewed
+source and remote head before committing or pushing.
+
+If the reviewed path changed remotely, histories have no common base, the local
+branch contains other unpublished commits, staged changes exist, or Git cannot
+prove that unrelated edits are safe to carry forward, the editor MUST preserve
+both copies and show a comparison with the remote copy. It MUST NOT offer an
+identical blind retry. A forced remote update MUST never trigger a forced push
+or a silent hard reset. Any reset that discards local work MUST be a separate
+confirmed action with a recoverable backup.
+
+`POST /workspace/publish/sync` MUST require the same-origin workspace mutation
+guard and exact expected local HEAD. Hosted fetches MUST use the dedicated
+publisher's configured branch and allowlisted origin; the browser MUST NOT
+receive Git credentials or select a remote/refspec. Sync MUST update only the
+current local branch and worktree. It MUST reject an in-progress Git operation
+or staged changes. A successful response identifies the resulting local HEAD.
 
 Power users MAY opt into Git details and a full Pierre source diff. The default
 experience must be a rendered content review. A rich unified rendered diff must
@@ -197,6 +211,11 @@ tag frontmatter through Page details, opens review with Rendered diff selected,
 switches comparison tabs, edits the commit message, commits the selected page,
 and pushes to a temporary bare Git remote. It MUST verify the exact remote commit
 message and revision, and MUST NOT use a developer site or production remote.
+Sync coverage MUST verify fast-forward with a saved draft on another path,
+rebase of one reviewed page commit across an unrelated remote commit, and a
+same-page conflict that shows both versions without changing local HEAD or
+working source. Staged changes, multiple local commits, and overlapping saved
+paths MUST remain unchanged and block automatic sync.
 
 
 ## Publishing implementation progress (experimental stack)
@@ -208,6 +227,10 @@ message and revision, and MUST NOT use a developer site or production remote.
   source in an isolated Git index. Publication flags must already indicate
   public content before a Git commit. The UI offers an explicit Mark as
   public action, then reopens review.
+- A remote branch change permits one guarded sync attempt: fast-forward an
+  unchanged reviewed path or rebase the single reviewed page commit when all
+  remote changes are on separate paths. A same-page or uncertain overlap shows
+  the origin copy beside the saved editor copy and makes no overwrite.
 - A successful Git push is still **not** a verified public deployment. Live
   status needs a deployment-specific integration and content revision receipt.
 - The rendered-diff comparison aligns structural blocks and annotates plain
@@ -230,8 +253,8 @@ container, which copies it to an ephemeral volume with owner-only permissions
 for the dedicated Git publisher process. The publisher runtime UID MUST resolve
 to a passwd entry for OpenSSH, and the private key MUST be owned by that UID.
 The editor MUST NOT receive either key volume, `GIT_SSH_COMMAND`, or an SSH
-agent socket. It may request remote readiness and push only through the
-publisher's local Unix socket.
+agent socket. It may request remote readiness, fetch for guarded sync, and push
+only through the publisher's local Unix socket.
 
 The publisher MUST use an operator-configured HTTPS GitHub origin and branch,
 and MUST reject any checkout whose configured fetch origin differs from those

@@ -593,12 +593,14 @@ response was lost after origin accepted the exact commit, retry confirms that
 commit instead of pushing it again. A confirmed push closes the review dialog
 and leaves **Pushed to origin · live status not verified** beside the save
 status. Use **Check live status** to verify a configured Builder Admin
-deployment. If the remote branch moved to another commit, the editor keeps the
-local commit and blocks a blind retry. Use **Review changes** to inspect the
-post. The editor does not yet sync that branch; keep the local commit while you
-resolve the remote change. If the editor is reloaded after an unconfirmed push,
-inspect Git and remote status before retrying; automatic recovery across browser
-restarts is not yet implemented.
+deployment. If origin moves, the editor makes one safe sync attempt. It
+fast-forwards when the post is unchanged and rebases this post's single commit
+when origin changed separate files. It preserves unrelated unsaved drafts.
+If origin also changed this post, the editor keeps your saved copy and opens a
+source comparison with the origin copy. It does not overwrite either version.
+Other local commits, staged changes, and uncertain overlaps require manual
+review. A second origin change stops the automatic retry and keeps the local
+commit for review.
 
 Use the separate **Review changes** control or **Ctrl/Cmd+Shift+Enter** when
 you want a detailed comparison of the active post. The optional advanced
