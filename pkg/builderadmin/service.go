@@ -1512,6 +1512,9 @@ func (s *Service) buildCommandArgs(id, buildWork string, force bool) ([]string, 
 	cleanup := func() {}
 	overridePath := filepath.Join(s.overrideDir, "builder-admin.toml")
 	var contents strings.Builder
+	if force {
+		fmt.Fprintf(&contents, "[markata-go]\ncache_dir = %q\n\n", s.buildCacheDir())
+	}
 	if s.cfg.MermaidMode != "" {
 		fmt.Fprintf(&contents, "[markata-go.mermaid]\nmode = %q\n\n", s.cfg.MermaidMode)
 	}
@@ -1532,6 +1535,13 @@ func (s *Service) buildCommandArgs(id, buildWork string, force bool) ([]string, 
 	}
 	args = append(args, "--output", buildWork)
 	return args, cleanup, nil
+}
+
+func (s *Service) buildCacheDir() string {
+	if s.cfg.CacheMount != "" {
+		return filepath.Join(s.cfg.CacheMount, "build")
+	}
+	return filepath.Join(s.cfg.SourceDir, ".markata")
 }
 
 func (s *Service) promoteBuild(buildWork string) (string, string, error) {
