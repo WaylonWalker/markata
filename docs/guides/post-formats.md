@@ -200,6 +200,18 @@ OG cards, feed cards, and embed cards now share a media pipeline so the same ima
 
 Only relative URLs and media hosted on the safe domain allowlist receive the sizing/presenter treatment. The default allowlist includes `dropper.wayl.one`, `dropper.waylonwalker.com`, and `dropper-dev.wayl.one`, but you can add or override entries via `[markata-go.templates.media]` in your `markata-go.toml`. Untrusted hosts skip the extra query params and auto-generated posters so you stay in control of which domains get the richer metadata. Custom templates can still opt out entirely by using their own helpers instead of `with_size`/`poster_url`.
 
+### Dropper STL Models
+
+Use a Dropper file URL as a Markdown image to show a lightweight poster. The reader can select the poster to load an interactive 3D view in the page:
+
+```markdown
+![Bracket](https://dropper.waylonwalker.com/file/bracket.stl)
+```
+
+The browser downloads the STL only after the reader selects **Load interactive 3D view**. Drag or use the arrow keys to rotate. Scroll or press **+**/**−** to zoom; press **0** to reset. The viewer uses orthographic projection by default; `projection=perspective` and the `rx`, `ry`, and `rz` query parameters set the initial camera view. Keep access query parameters on the file URL when the model requires them.
+
+Dropper must allow the page's origin through CORS so the browser can fetch the STL bytes. The same viewer works in editor previews when the editor can reach both the page assets and the Dropper file URL.
+
 ## Standard Web Txt Files
 
 markata-go supports generating standard web txt files at their expected canonical URLs:

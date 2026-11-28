@@ -18,6 +18,7 @@ func TestRenderStandalone_ConditionalAssets(t *testing.T) {
 		{"checklist", "::: md-checklist\n\n- [ ] Todo\n\n:::", "checklists", "js/markdown-checklists.js"},
 		{"tabs", "::: md-tabs\n\n:::: md-tab {label=\"Shell\"}\nmarkata version\n::::\n:::", "tabs", "js/md-tabs.js"},
 		{"road", "::: road\nHello\n:::", "roads", "js/roads.js"},
+		{"stl_model", "![Part](https://dropper.waylonwalker.com/file/part.stl)", "stl_model", "js/md-3d-model.js"},
 		{"mermaid", "```mermaid\nflowchart TD\n A-->B\n```", "mermaid", "assets/vendor/mermaid/mermaid.min.js"},
 		{"chartjs", "```chartjs\n{\"type\":\"bar\",\"data\":{\"labels\":[\"A\"],\"datasets\":[{\"data\":[1]}]}}\n```", "chartjs", "assets/vendor/chartjs/chart.min.js"},
 	}
@@ -89,9 +90,9 @@ func TestRenderStandalone_DropperSTLImage(t *testing.T) {
 	}
 	for _, want := range []string{
 		`class="md-3d-model"`,
-		`href="https://dropper.waylonwalker.com/view/part.stl?token=secret"`,
+		`data-model-url="https://dropper.waylonwalker.com/file/part.stl?token=secret"`,
 		`src="https://dropper.waylonwalker.com/fmt/file/part.stl.webp?height=576&amp;token=secret&amp;width=768"`,
-		`Open interactive 3D view`,
+		`Load interactive 3D view`,
 	} {
 		if !strings.Contains(r.HTML, want) {
 			t.Errorf("standalone renderer output is missing %q: %s", want, r.HTML)
@@ -116,8 +117,8 @@ func TestRenderStandalone_LinkedDropperSTLImageKeepsAuthoredLink(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Count(r.HTML, "<a ") != 2 || !strings.Contains(r.HTML, `href="https://example.com/article"`) || !strings.Contains(r.HTML, `href="https://dropper.waylonwalker.com/view/part.stl"`) {
-		t.Fatalf("linked model should keep its authored destination and expose the viewer link: %s", r.HTML)
+	if strings.Count(r.HTML, "<a ") != 1 || !strings.Contains(r.HTML, `href="https://example.com/article"`) || !strings.Contains(r.HTML, `data-model-url="https://dropper.waylonwalker.com/file/part.stl"`) {
+		t.Fatalf("linked model should keep its authored destination and load the inline viewer: %s", r.HTML)
 	}
 }
 
@@ -130,7 +131,7 @@ func TestRenderStandalone_DropperSTLImageUsesConfiguredTrustedDomains(t *testing
 	}
 	for _, want := range []string{
 		`class="md-3d-model"`,
-		`href="https://models.example.test/view/part.stl"`,
+		`data-model-url="https://models.example.test/file/part.stl"`,
 		`src="https://models.example.test/fmt/file/part.stl.webp?height=576&amp;width=768"`,
 	} {
 		if !strings.Contains(r.HTML, want) {

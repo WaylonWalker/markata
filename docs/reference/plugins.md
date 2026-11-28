@@ -1287,7 +1287,7 @@ h4:hover .heading-anchor {
 
 **Name:** `md_video`  
 **Stage:** Render (post_render)  
-**Purpose:** Converts Markdown video images to native video elements. It also turns trusted Dropper STL images into poster links for the interactive viewer.
+**Purpose:** Converts Markdown video images to native video elements. It also turns trusted Dropper STL images into posters that load an interactive browser viewer.
 
 **Configuration (TOML):**
 ```toml
@@ -1341,8 +1341,10 @@ Use an image link for a Dropper-hosted STL file:
 ```
 
 Markata requests a 768 by 576 WebP poster from Dropper's `/fmt/file/` route.
-The poster links to `/view/` and opens the interactive model in a new tab.
-This works in site builds and editor previews. Local STL files and files on
+Selecting it fetches the STL from `/file/` and opens the interactive model in
+the page. Drag or use arrow keys to rotate. Scroll or press **+**/**−** to zoom;
+press **0** to reset. Dropper must allow the page origin through CORS. This
+works in site builds and editor previews. Local STL files and files on
 untrusted hosts stay as ordinary image links.
 
 **Behavior:**
@@ -1352,7 +1354,7 @@ untrusted hosts stay as ordinary image links.
 4. Preserves the `alt` text as fallback content
 5. Automatically detects MIME type from file extension
 6. Derives a `.webp` poster for trusted video URLs on every supported video format
-7. Converts trusted Dropper STL images to WebP posters that link to the Dropper viewer
+7. Converts trusted Dropper STL images to WebP posters with a click-to-load browser viewer
 
 **HTML output:**
 ```html

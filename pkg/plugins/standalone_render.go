@@ -37,6 +37,7 @@ const (
 	standaloneFeatureAdmonitions = "admonitions"
 	standaloneFeatureCode        = "code"
 	standaloneFeatureRoads       = "roads"
+	standaloneFeatureSTLModel    = "stl_model"
 )
 
 // RenderAsset is an ordered dependency for a rendered Markdown fragment.
@@ -59,6 +60,7 @@ type StandaloneResult struct {
 	HeadHTML         string          `json:"head_html"`
 	BodyEndHTML      string          `json:"body_end_html"`
 	omitAssetContent bool
+	inlineAssets     bool
 }
 
 // RenderStandalone uses the site's Markdown, Mermaid, and Chart.js renderers.
@@ -127,13 +129,14 @@ func (renderer *StandaloneRenderer) Render(source string) (*StandaloneResult, er
 			post.ArticleHTML = replaceDropperSTLImages(post.ArticleHTML, options.Config.Templates.Media.TrustedDomains)
 		}
 	}
-	r := &StandaloneResult{omitAssetContent: options.OmitAssetContent, SchemaVersion: StandaloneSchemaVersion, Features: map[string]bool{featureFenceMermaid: false, featureFenceChartJS: false, excalidrawName: false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
+	r := &StandaloneResult{omitAssetContent: options.OmitAssetContent, inlineAssets: options.InlineAssets, SchemaVersion: StandaloneSchemaVersion, Features: map[string]bool{featureFenceMermaid: false, featureFenceChartJS: false, excalidrawName: false, standaloneFeatureSTLModel: false}, Assets: []RenderAsset{}, ExternalURLs: []string{}}
 	if err := r.renderDiagrams(post, options); err != nil {
 		return nil, err
 	}
 	post.Extra = map[string]interface{}{}
 	p.detectCSSRequirements(post)
 	r.HTML = expandStandaloneIcons(post.ArticleHTML)
+	r.Features[standaloneFeatureSTLModel] = strings.Contains(r.HTML, `data-markata-stl-model`)
 	r.detectEnhancements()
 	for signal, feature := range map[string]string{
 		"needs_code_css": standaloneFeatureCode, "needs_admonitions_css": standaloneFeatureAdmonitions,
@@ -325,6 +328,25 @@ func (r *StandaloneResult) addPresentationAssets() error {
 			}
 		}
 	}
+	if r.Features[standaloneFeatureSTLModel] {
+		kind := "resource"
+		if r.inlineAssets {
+			kind = standaloneScriptKind
+		}
+		for _, name := range []string{
+			"assets/vendor/three-r128/three.min.js",
+			"assets/vendor/three-r128/STLLoader.js",
+			"assets/vendor/three-r128/OrbitControls.js",
+			"assets/vendor/three-r128/BufferGeometryUtils.js",
+		} {
+			if err := r.addBundled(name, kind, "body_end"); err != nil {
+				return err
+			}
+		}
+		if err := r.addBundled("js/md-3d-model.js", standaloneScriptKind, "body_end"); err != nil {
+			return err
+		}
+	}
 	r.Assets = append(r.Assets, scripts...)
 	return nil
 }
@@ -408,6 +430,9 @@ func (r *StandaloneResult) collectScripts(fragment string) {
 }
 
 func (a RenderAsset) tag(options StandaloneOptions) string {
+	if a.Kind == "resource" {
+		return ""
+	}
 	url := a.URL
 	bundled := strings.HasPrefix(a.ID, "css/") || strings.HasPrefix(a.ID, "js/") || strings.HasPrefix(a.ID, "assets/vendor/")
 	if bundled && (!options.InlineAssets || options.OmitAssetContent) {

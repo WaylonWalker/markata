@@ -403,13 +403,21 @@ func TestHandler_RenderDropperSTLImageInPreviewAndDocument(t *testing.T) {
 	for _, rendered := range []string{result.HTML, dereferenceDocument(result.Document)} {
 		for _, want := range []string{
 			`class="md-3d-model"`,
-			`href="https://dropper.waylonwalker.com/view/part.stl?token=secret"`,
+			`data-model-url="https://dropper.waylonwalker.com/file/part.stl?token=secret"`,
 			`src="https://dropper.waylonwalker.com/fmt/file/part.stl.webp?height=576&amp;token=secret&amp;width=768"`,
 		} {
 			if !strings.Contains(rendered, want) {
 				t.Errorf("editor rendering is missing %q: %s", want, rendered)
 			}
 		}
+	}
+	if !strings.Contains(result.BodyEndHTML, `/appearance/js/md-3d-model.js`) {
+		t.Fatalf("editor preview did not include the STL viewer asset: %s", result.BodyEndHTML)
+	}
+	asset := httptest.NewRecorder()
+	h.ServeHTTP(asset, httptest.NewRequestWithContext(context.Background(), "GET", "/appearance/assets/vendor/three-r128/three.min.js", http.NoBody))
+	if asset.Code != http.StatusOK || !strings.Contains(asset.Body.String(), "REVISION=") {
+		t.Fatalf("editor preview did not serve the Three.js runtime: status=%d", asset.Code)
 	}
 }
 

@@ -13,6 +13,9 @@
 <link rel="stylesheet" href="{{ 'css/editorial-history.css'|theme_asset_hashed }}">
 <script src="{{ 'js/editorial-history.js'|theme_asset_hashed }}" defer></script>
 {% endif %}
+{% if body and 'data-markata-stl-model' in body %}
+<script src="{{ 'js/md-3d-model.js'|theme_asset_hashed }}" defer></script>
+{% endif %}
 {{ block.Super() }}
 {# Canonical URL for SEO #}
 <link rel="canonical" href="{{ config.url }}{{ post.href }}">

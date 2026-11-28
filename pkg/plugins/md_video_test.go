@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/WaylonWalker/markata/pkg/lifecycle"
 	"github.com/WaylonWalker/markata/pkg/models"
 )
 
@@ -147,11 +148,13 @@ func TestMDVideoPlugin_ProcessPost_DropperSTLImage(t *testing.T) {
 	}
 	for _, want := range []string{
 		`class="md-3d-model"`,
-		`href="https://dropper.waylonwalker.com/view/part.STL?projection=orthographic&amp;rx=30&amp;token=secret"`,
+		`data-model-url="https://dropper.waylonwalker.com/file/part.STL?projection=orthographic&amp;rx=30&amp;token=secret"`,
 		`src="https://dropper.waylonwalker.com/fmt/file/part.STL.webp?height=576&amp;projection=orthographic&amp;rx=30&amp;token=secret&amp;width=768"`,
 		`alt="Bracket &amp; clip" width="768" height="576" loading="lazy" decoding="async"`,
-		`Open interactive 3D view`,
-		`target="_blank" rel="noopener noreferrer"`,
+		`Load interactive 3D view`,
+		`class="md-3d-model-canvas" role="group" tabindex="0"`,
+		`Drag or use arrow keys to rotate`,
+		`press 0 to reset`,
 	} {
 		if !strings.Contains(post.ArticleHTML, want) {
 			t.Errorf("STL preview is missing %q: %s", want, post.ArticleHTML)
@@ -162,18 +165,59 @@ func TestMDVideoPlugin_ProcessPost_DropperSTLImage(t *testing.T) {
 	}
 }
 
+func TestMDVideoPlugin_DropperSTLLoadsThemeViewerScript(t *testing.T) {
+	title := "Part"
+	post := &models.Post{
+		Path:        "part.md",
+		Slug:        "part",
+		Title:       &title,
+		Template:    "post.html",
+		ArticleHTML: `<p><img src="https://dropper.waylonwalker.com/file/part.stl" alt="Bracket"></p>`,
+	}
+	if err := NewMDVideoPlugin().processPost(post); err != nil {
+		t.Fatal(err)
+	}
+
+	m := lifecycle.NewManager()
+	m.Config().Extra["templates_dir"] = "/nonexistent"
+	m.SetPosts([]*models.Post{post})
+	templatesPlugin := NewTemplatesPlugin()
+	if err := templatesPlugin.Configure(m); err != nil {
+		t.Fatal(err)
+	}
+	if err := templatesPlugin.Render(m); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{`data-markata-stl-model`, `/js/md-3d-model.`} {
+		if !strings.Contains(post.HTML, want) {
+			t.Errorf("rendered post is missing %q: %s", want, post.HTML)
+		}
+	}
+}
+
 func TestReplaceDropperSTLImages_PreservesLinkedImageDestination(t *testing.T) {
 	got := replaceDropperSTLImages(`<p><a href="https://example.com/article"><img src="https://dropper.waylonwalker.com/file/part.stl" alt="Part"></a></p>`)
-	if strings.Count(got, "<a ") != 2 {
-		t.Fatalf("expected separate authored and viewer links without nesting: %s", got)
+	if strings.Count(got, "<a ") != 1 {
+		t.Fatalf("expected the authored destination to remain the only link: %s", got)
 	}
 	for _, want := range []string{
 		`href="https://example.com/article"><img src="https://dropper.waylonwalker.com/fmt/file/part.stl.webp?height=576&amp;width=768"`,
-		`</a><a class="md-3d-model" href="https://dropper.waylonwalker.com/view/part.stl"`,
+		`data-model-url="https://dropper.waylonwalker.com/file/part.stl"`,
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("linked STL output is missing %q: %s", want, got)
 		}
+	}
+}
+
+func TestReplaceDropperSTLImages_TurnsGeneratedLightboxIntoInlineViewer(t *testing.T) {
+	got := replaceDropperSTLImages(`<p><a href="https://dropper.waylonwalker.com/file/part.stl" class="glightbox-link"><img src="https://dropper.waylonwalker.com/file/part.stl" alt="Part"></a></p>`)
+	if strings.Contains(got, `class="glightbox-link"`) || strings.Contains(got, `/view/part.stl`) {
+		t.Fatalf("generated lightbox link should load the inline viewer: %s", got)
+	}
+	if !strings.Contains(got, `data-model-url="https://dropper.waylonwalker.com/file/part.stl"`) {
+		t.Fatalf("inline viewer source is missing: %s", got)
 	}
 }
 
@@ -184,8 +228,8 @@ func TestDropperSTLPreviewURLs_RequiresTrustedAbsoluteFileURL(t *testing.T) {
 		"https://dropper.waylonwalker.com/part.stl",
 		"https://dropper.waylonwalker.com/file/part.3mf",
 	} {
-		if poster, viewer, ok := dropperSTLPreviewURLs(raw); ok {
-			t.Errorf("dropperSTLPreviewURLs(%q) = (%q, %q, true), want unchanged", raw, poster, viewer)
+		if poster, model, ok := dropperSTLPreviewURLs(raw); ok {
+			t.Errorf("dropperSTLPreviewURLs(%q) = (%q, %q, true), want unchanged", raw, poster, model)
 		}
 	}
 }
@@ -195,7 +239,7 @@ func TestDropperSTLPreviewURLs_PreservesModelOptionsAndAccessQuery(t *testing.T)
 		"crop_x=1&crop_y=2&crop_w=3&crop_h=4&x=1&y=2&cw=3&ch=4&" +
 		"so=1&eo=2&du=3&start=4&end=5&duration=6&t=7&" +
 		"rx=90&ry=2&rz=3&projection=orthographic"
-	poster, viewer, ok := dropperSTLPreviewURLs(raw)
+	poster, model, ok := dropperSTLPreviewURLs(raw)
 	if !ok {
 		t.Fatal("expected trusted STL URL to produce preview URLs")
 	}
@@ -203,14 +247,14 @@ func TestDropperSTLPreviewURLs_PreservesModelOptionsAndAccessQuery(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	viewerURL, err := url.Parse(viewer)
+	modelURL, err := url.Parse(model)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if posterURL.Path != "/site/fmt/file/part.stl.webp" || viewerURL.Path != "/site/view/part.stl" {
-		t.Fatalf("unexpected preview paths: poster=%q viewer=%q", posterURL.Path, viewerURL.Path)
+	if posterURL.Path != "/site/fmt/file/part.stl.webp" || modelURL.Path != "/site/file/part.stl" {
+		t.Fatalf("unexpected preview paths: poster=%q model=%q", posterURL.Path, modelURL.Path)
 	}
-	for _, query := range []url.Values{posterURL.Query(), viewerURL.Query()} {
+	for _, query := range []url.Values{posterURL.Query(), modelURL.Query()} {
 		for key, want := range map[string]string{"token": "abc", "rx": "90", "ry": "2", "rz": "3", "projection": "orthographic"} {
 			if got := query.Get(key); got != want {
 				t.Errorf("query %q = %q, want %q", key, got, want)
@@ -225,8 +269,8 @@ func TestDropperSTLPreviewURLs_PreservesModelOptionsAndAccessQuery(t *testing.T)
 	if posterURL.Query().Get("width") != "768" || posterURL.Query().Get("height") != "576" {
 		t.Errorf("poster dimensions = %s, want 768x576", posterURL.RawQuery)
 	}
-	if viewerURL.Query().Has("width") || viewerURL.Query().Has("height") {
-		t.Errorf("viewer URL retained poster sizing: %s", viewerURL.RawQuery)
+	if modelURL.Query().Has("width") || modelURL.Query().Has("height") {
+		t.Errorf("model URL retained poster sizing: %s", modelURL.RawQuery)
 	}
 }
 

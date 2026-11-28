@@ -79,9 +79,12 @@ Use Markdown image syntax for STL files on a trusted Dropper host:
 ![Part name](https://dropper.waylonwalker.com/file/part.stl)
 ```
 
-Markata renders a WebP poster from Dropper's preview API. The poster opens the
-interactive viewer in a new tab. The site build and editor preview use the same
-rendering. Local STL files and files on untrusted hosts stay unchanged.
+Markata renders a WebP poster from Dropper's preview API. Selecting the poster
+loads the STL and an interactive browser viewer in the same page. Drag or use
+arrow keys to rotate. Scroll or press **+**/**−** to zoom; press **0** to
+reset. The site build and editor preview use the same rendering. Dropper must
+allow the page origin through CORS. Local STL files and files on untrusted
+hosts stay unchanged.
 
 ## Native Markdown tabs
 
