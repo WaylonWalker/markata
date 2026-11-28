@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -14,6 +16,8 @@ import (
 
 var proseJSON bool
 var proseIgnore []string
+var proseUseHarper bool
+var proseHarperBinary string
 
 var proseCmd = &cobra.Command{
 	Use:   "prose",
@@ -38,6 +42,25 @@ var proseCheckCmd = &cobra.Command{
 			options.IgnoredRules[strings.TrimSpace(rule)] = true
 		}
 		issues := prose.Check(string(content), options)
+		if proseUseHarper {
+			ctx := cmd.Context()
+			if ctx == nil {
+				ctx = context.Background()
+			}
+			harperIssues, err := prose.CheckWithHarperCLI(ctx, string(content), prose.HarperCLIOptions{
+				Binary: proseHarperBinary, Options: options,
+			})
+			if err != nil {
+				return fmt.Errorf("harper: %w", err)
+			}
+			issues = append(issues, harperIssues...)
+			sort.Slice(issues, func(i, j int) bool {
+				if issues[i].StartByte != issues[j].StartByte {
+					return issues[i].StartByte < issues[j].StartByte
+				}
+				return issues[i].Rule < issues[j].Rule
+			})
+		}
 		if proseJSON {
 			return json.NewEncoder(cmd.OutOrStdout()).Encode(issues)
 		}
@@ -102,6 +125,8 @@ var proseIgnorePhraseCmd = &cobra.Command{
 func init() {
 	proseCheckCmd.Flags().BoolVar(&proseJSON, "json", false, "emit stable JSON diagnostics for tools and agents")
 	proseCheckCmd.Flags().StringSliceVar(&proseIgnore, "ignore-rule", nil, "suppress a rule ID (repeatable)")
+	proseCheckCmd.Flags().BoolVar(&proseUseHarper, "harper", false, "also run optional local harper-cli grammar/spelling checks")
+	proseCheckCmd.Flags().StringVar(&proseHarperBinary, "harper-bin", "harper-cli", "path to local harper-cli executable")
 	proseCmd.AddCommand(proseCheckCmd)
 	proseCmd.AddCommand(proseIgnoreCmd)
 	proseCmd.AddCommand(proseIgnorePhraseCmd)

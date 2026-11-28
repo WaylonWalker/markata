@@ -29,6 +29,34 @@ The `ignore` command writes a project-level `.markata-prose.json` file in the ne
 Use `ignore-phrase` to accept one pattern without suppressing all the other patterns in the same rule. `ignore` remains available for disabling the entire rule. These are project preferences, not personal dictionary entries. The command does not edit source text and exits successfully when it finds
 editorial suggestions. File I/O failures still return errors.
 
+## Optional local Harper grammar and spelling (CLI)
+
+If [Harper](https://github.com/Automattic/harper) is installed on the machine,
+enable it explicitly:
+
+```sh
+markata prose check posts/example.md --harper
+markata prose check posts/example.md --harper --json
+markata prose check posts/example.md --harper --harper-bin /path/to/harper-cli
+```
+
+The native CLI adapter invokes `harper-cli lint --format json --quiet` against
+a temporary local copy of the document, with a default eight-second deadline.
+It requires **no network service, npm or Rust toolchain at runtime**; Harper
+is an optional installed executable. Its reported Unicode character spans
+are converted to Markata's exact UTF-8 byte offsets and cross-interface
+diagnostic schema. Harper's nonzero exit status when it finds lints is treated
+as expected, not as a Markata publishing/build failure. A missing executable
+or malformed result produces a clear error *only when* `--harper` is requested.
+
+Harper JSON contains human-readable suggestions. For safety, this initial
+adapter offers automatic edits only for unambiguous `Replace with: ...`
+suggestions. Insert/remove actions remain observations until explicitly
+modeled as safe edits. Shared rule suppression applies to identifiers such
+as `harper/Spelling`; personal dictionaries and Harper-backed Editor/LSP
+runtime checks are **not implemented yet**. This is the first native adapter
+in issue #2153, not the final cross-platform grammar integration.
+
 ## Neovim / LSP
 
 Set `MARKATA_PROSE_ENABLED=1` when starting `markata lsp` to opt in.
