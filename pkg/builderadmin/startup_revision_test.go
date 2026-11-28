@@ -82,6 +82,9 @@ func TestStartupRevisionBuildQueue(t *testing.T) {
 				if last.TriggerType != "startup-revision" || last.Detail == "" {
 					t.Fatalf("startup build missing trigger provenance: %+v", last)
 				}
+				if !last.Force {
+					t.Fatalf("startup revision build must clear cached render output: %+v", last)
+				}
 			}
 		})
 	}

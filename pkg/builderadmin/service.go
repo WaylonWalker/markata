@@ -558,7 +558,7 @@ func (s *Service) enqueueStartupRevisionBuild() {
 	if !needed {
 		return
 	}
-	if err := s.enqueueBuild("startup-revision", reason, nil); err != nil {
+	if _, err := s.enqueueBuildAsForce("startup-revision", reason, nil, "", true); err != nil {
 		fmt.Fprintf(os.Stderr, "builder-admin: enqueue startup revision build: %v\n", err)
 		return
 	}
@@ -1259,7 +1259,7 @@ func (s *Service) runBuild(ctx context.Context, req queueRequest) {
 	buildWork := s.cfg.WorkDir
 	phaseStart = time.Now()
 	s.updateRunningPhase("build")
-	cmdArgs, cleanup, err := s.buildCommandArgs(req.ID, buildWork)
+	cmdArgs, cleanup, err := s.buildCommandArgs(req.ID, buildWork, req.Force)
 	if err != nil {
 		record.Status = "failed"
 		record.Error = err.Error()
@@ -1502,7 +1502,7 @@ func (s *Service) prepareBuild(log io.Writer) error {
 	return nil
 }
 
-func (s *Service) buildCommandArgs(id, buildWork string) ([]string, func(), error) {
+func (s *Service) buildCommandArgs(id, buildWork string, force bool) ([]string, func(), error) {
 	args := make([]string, 0, 10)
 	if s.cfg.ConfigPath != "" {
 		args = append(args, "--config", s.cfg.ConfigPath)
@@ -1519,6 +1519,9 @@ func (s *Service) buildCommandArgs(id, buildWork string) ([]string, func(), erro
 	}
 	args = append(args, "-m", overridePath)
 	args = append(args, "build")
+	if force {
+		args = append(args, "--clean")
+	}
 	if s.cfg.Fast {
 		args = append(args, "--fast")
 	}
