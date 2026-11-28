@@ -621,7 +621,7 @@ video,
   border-radius: var(--radius-lg);
 }
 
-/* Dropper model posters stay lightweight until a reader opens the viewer. */
+/* Dropper model posters stay lightweight until a reader opens the browser viewer. */
 .post-content .md-3d-model-linked {
   display: flex;
   max-width: 100%;
@@ -647,33 +647,103 @@ video,
 }
 
 .post-content .md-3d-model {
-  display: flex;
-  width: fit-content;
+  display: grid;
+  width: min(100%, 48rem);
   max-width: 100%;
-  flex-direction: column;
   margin: var(--space-6) auto;
-  color: inherit;
-  text-decoration: none;
 }
 
-.post-content .md-3d-model img {
+.post-content .md-3d-model-trigger {
+  display: grid;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  color: inherit;
+  cursor: pointer;
+  background: var(--color-surface, #111820);
+  border: 1px solid var(--color-border, #394451);
+  border-radius: var(--radius-lg);
+  font: inherit;
+}
+
+.post-content .md-3d-model-trigger[hidden] {
+  display: none;
+}
+
+.post-content .md-3d-model-trigger:focus-visible,
+.post-content .md-3d-model-close:focus-visible {
+  outline: 3px solid var(--color-primary, #75c8f4);
+  outline-offset: 3px;
+}
+
+.post-content .md-3d-model-trigger img {
   display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
   max-width: 100%;
   height: auto;
+  object-fit: contain;
   margin: 0;
 }
 
-.post-content .md-3d-model span {
-  margin-top: var(--space-2);
+.post-content .md-3d-model-trigger span {
+  padding: var(--space-3) var(--space-4);
   color: var(--color-text-muted);
   font-size: var(--text-sm);
   text-align: center;
 }
 
-.post-content .md-3d-model:hover span,
-.post-content .md-3d-model:focus-visible span {
+.post-content .md-3d-model-trigger:hover span {
   color: var(--color-primary);
-  text-decoration: underline;
+}
+
+.post-content .md-3d-model-viewer {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface, #111820);
+  border: 1px solid var(--color-border, #394451);
+  border-radius: var(--radius-lg);
+}
+
+.post-content .md-3d-model-viewer[hidden] {
+  display: none;
+}
+
+.post-content .md-3d-model-canvas {
+  min-height: 22rem;
+  overflow: hidden;
+  background: var(--color-background, #090d12);
+  border-radius: calc(var(--radius-lg) - 4px);
+}
+
+.post-content .md-3d-model-canvas:focus-visible {
+  outline: 3px solid var(--color-primary, #75c8f4);
+  outline-offset: 2px;
+}
+
+.post-content .md-3d-model-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.post-content .md-3d-model-status,
+.post-content .md-3d-model-help {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.post-content .md-3d-model-close {
+  justify-self: start;
+  padding: var(--space-2) var(--space-3);
+  color: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--color-border, #394451);
+  border-radius: 999px;
+  font: inherit;
 }
 
 /* Center larger images, but allow small inline images */

@@ -192,7 +192,7 @@ Content here`)
 	}
 }
 
-func TestIntegration_BuildRendersDropperSTLPosterLink(t *testing.T) {
+func TestIntegration_BuildRendersDropperSTLInlineViewer(t *testing.T) {
 	site := newTestSite(t)
 	site.addPost("part.md", `---
 title: Part
@@ -205,9 +205,9 @@ published: true
 	output := site.readFile("part/index.html")
 	for _, want := range []string{
 		`class="md-3d-model"`,
-		`href="https://dropper.waylonwalker.com/view/bracket.stl?token=secret"`,
+		`data-model-url="https://dropper.waylonwalker.com/file/bracket.stl?token=secret"`,
 		`src="https://dropper.waylonwalker.com/fmt/file/bracket.stl.webp?height=576&amp;token=secret&amp;width=768"`,
-		`Open interactive 3D view`,
+		`Load interactive 3D view`,
 	} {
 		if !strings.Contains(output, want) {
 			t.Errorf("built page is missing %q: %s", want, output)

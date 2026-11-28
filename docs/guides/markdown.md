@@ -255,10 +255,12 @@ Use Markdown image syntax for an STL file hosted by a trusted Dropper domain:
 ![Bracket](https://dropper.waylonwalker.com/file/bracket.stl)
 ```
 
-Markata renders a WebP poster from Dropper's 3D preview API. The poster links
-to the interactive Dropper viewer, which opens in a new tab. The site build and
-the editor preview use the same rendering. Local STL files and untrusted hosts
-stay unchanged.
+Markata renders a WebP poster from Dropper's 3D preview API. Select the poster
+to load an interactive browser viewer in the page. Drag or use the arrow keys
+to rotate. Scroll or press **+**/**−** to zoom; press **0** to reset. Dropper
+must allow the page origin through CORS so the browser can fetch the model. The
+site build and editor preview use the same rendering. Local STL files and
+untrusted hosts stay unchanged.
 
 ### Unordered Lists
 
