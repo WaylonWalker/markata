@@ -2,9 +2,11 @@ package workbench
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -193,6 +195,52 @@ func TestUnixGitPublisher_RemoteHeadUsesLocalSocket(t *testing.T) {
 	}
 	if got != remote {
 		t.Fatalf("RemoteHead() = %q, want %q", got, remote)
+	}
+}
+
+func TestGitPublisherFetch_UsesConfiguredRemoteAndSyncRef(t *testing.T) {
+	commit := strings.Repeat("a", 40)
+	remote := strings.Repeat("b", 40)
+	wantFetch := "fetch --no-tags --no-write-fetch-head " + publisherTestPush + " +" + publisherTestBranch + ":refs/markata-sync/main"
+	var calls []string
+	service := publisherTestService(func(_ context.Context, args ...string) (string, error) {
+		call := strings.Join(args, " ")
+		calls = append(calls, call)
+		switch call {
+		case "rev-parse HEAD":
+			return commit, nil
+		case "symbolic-ref -q HEAD":
+			return publisherTestBranch, nil
+		case "config --local --get remote.origin.url":
+			return publisherTestOrigin, nil
+		case wantFetch:
+			return "", nil
+		case "rev-parse --verify refs/markata-sync/main":
+			return remote, nil
+		default:
+			return "", errors.New("unexpected Git command: " + call)
+		}
+	})
+
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, gitPublisherFetchPath+"?branch="+publisherTestBranch+"&head="+commit, http.NoBody)
+	recorder := httptest.NewRecorder()
+	service.handler().ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("fetch endpoint status %d: %s", recorder.Code, recorder.Body.String())
+	}
+	var response gitPublisherRemoteResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	if response.Head != remote {
+		t.Fatalf("fetch endpoint returned %q, want %q", response.Head, remote)
+	}
+	foundFetch := false
+	for _, call := range calls {
+		foundFetch = foundFetch || call == wantFetch
+	}
+	if !foundFetch {
+		t.Fatalf("fetch did not use fixed origin and sync ref: %v", calls)
 	}
 }
 

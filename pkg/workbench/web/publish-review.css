@@ -248,4 +248,6 @@
 #markata-publish-status{display:inline-flex;align-items:center;font:12px/1.4 system-ui,sans-serif;color:var(--color-text-muted,#777);max-width:30ch;overflow-wrap:anywhere}
 #markata-publish-status[data-state="warning"]{color:var(--color-warning,#d07b31)}
 #markata-publish-status[data-state="loading"]{opacity:.75}
+#markata-live-check{margin-left:0}
+#markata-live-check[hidden]{display:none}
 @media(max-width:700px){#markata-publish-status{max-width:18ch;font-size:11px}#publish-review-open{padding:8px}}

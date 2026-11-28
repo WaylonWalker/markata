@@ -8,6 +8,7 @@
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const esc = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const state = {path:null, data:null, mode:'rich', loading:false, commit:null, busy:false};
+  let lastPushedCommit = null, liveCheckButton = null;
   let reviewGeneration = 0;
   let reviewRenderPromise = null;
   let reviewRenderController = null;
@@ -48,6 +49,27 @@
     notice.hidden = !message;
     notice.textContent = message || '';
     notice.dataset.level = level;
+  }
+  function setPagePublishStatus(message, level='info') {
+    if (publishStatus) {
+      publishStatus.textContent = message;
+      publishStatus.dataset.state = level;
+      publishStatus.title = message;
+    }
+    window.dispatchEvent(new CustomEvent('markata:publish-status', {
+      detail: {message, type:level, pending:false}
+    }));
+  }
+  function finishPush() {
+    if (!state.commit?.commit) return;
+    lastPushedCommit = {...state.commit, path:state.path};
+    setPagePublishStatus('Pushed to origin · live status not verified.');
+    if (liveCheckButton) liveCheckButton.hidden = false;
+    dialog.close();
+    schedulePublishStateRefresh();
+  }
+  function isRemoteBranchRace(status, message) {
+    return status === 409 && /remote branch changed|sync and review again/i.test(message || '');
   }
   let pierreRequest;
   function loadPierre() {
@@ -133,7 +155,7 @@
     if ((after.draft==='true' && after.published==='true') || (after.draft==='false' && after.published==='false'))
       chip('Conflicting publication flags','warning');
     chip(data.changed ? 'Content changes detected' : 'No changes','info');
-    chip('Compared with last Git commit','muted');
+    chip(data.baseline_kind==='origin' ? 'Compared with origin' : 'Compared with last Git commit','muted');
   }
   function diffLines(oldText,newText) {
     const before=oldText.split('\n'), after=newText.split('\n');
@@ -344,6 +366,7 @@
     dialog.querySelector('[data-publish-mode="rich"]').disabled=false;
     dialog.querySelector('#publish-confirm').hidden=false;
     dialog.querySelector('#publish-confirm').disabled=true;
+    dialog.querySelector('#publish-back').textContent='Back to editing';
     const commitPushBtn=dialog.querySelector('#publish-commit-and-push');
     if(commitPushBtn){commitPushBtn.hidden=false;commitPushBtn.disabled=true;}
     dialog.querySelector('#publish-discard').hidden=true;
@@ -352,6 +375,7 @@
     dialog.querySelector('#publish-no-changes').hidden=true;
     dialog.querySelector('.publish-mode-tabs').hidden=false;
     dialog.querySelector('#publish-push').hidden=true;
+    dialog.querySelector('#publish-push').disabled=false;
     dialog.querySelector('#publish-live-check').hidden=true;
     dialog.querySelector('#publish-mark-public').hidden=true;
     dialog.showModal();
@@ -410,6 +434,71 @@
       // A previous request must not clear the loading flag of a newer review.
       if(generation===reviewGeneration) state.loading=false;
     }
+  }
+  async function postPublishSync(path, head, version) {
+    const response = await fetch('/workspace/publish/sync', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({path,head,version})
+    });
+    const result = await response.json();
+    return {response,result};
+  }
+  async function showOriginComparison(path, result, current) {
+    if (canOpen() !== path || editor.getValue() !== current) {
+      reportQuick('Origin changed. Your saved post is safe. Reopen Review after confirming the active post.', 'warning');
+      return;
+    }
+    if (!dialog.open) await open();
+    if (state.path !== path || !state.data || state.data.current !== current) {
+      reportQuick('Origin changed. Your saved post is safe. Open Review to compare it with origin.', 'warning');
+      return;
+    }
+    state.data.baseline = result.remote_exists ? result.remote_source || '' : '';
+    state.data.baseline_exists = Boolean(result.remote_exists);
+    state.data.baseline_kind = 'origin';
+    state.data.changed = state.data.baseline !== current;
+    dialog.querySelector('#publish-before-name').textContent = result.remote_exists ? 'Origin version' : 'No origin copy';
+    dialog.querySelector('#publish-title').textContent = titleFromSource(current) || path.split('/').pop();
+    dialog.querySelector('#publish-path').textContent = path;
+    renderChips(state.data);
+    renderDiff(state.data);
+    dialog.querySelector('#publish-confirm').hidden = true;
+    dialog.querySelector('#publish-commit-and-push').hidden = true;
+    dialog.querySelector('#publish-push').hidden = true;
+    dialog.querySelector('#publish-mark-public').hidden = true;
+    dialog.querySelector('#publish-discard').hidden = true;
+    dialog.querySelector('#publish-no-changes').hidden = true;
+    dialog.querySelector('.publish-mode-tabs').hidden = false;
+    setMode('source');
+    dialog.querySelector('#publish-body').hidden = false;
+    setNotice((result.message || 'Origin and your saved post need review.') + ' Your editor copy is unchanged; compare both versions before publishing.', 'warning');
+  }
+  async function pushWithOneSync(pending, version) {
+    const push = async commit => {
+      const response = await fetch('/workspace/publish/push?path=' + encodeURIComponent(pending.path), {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({commit,branch:pending.branch})
+      });
+      return {response,result:await response.json()};
+    };
+    let attempt = await push(pending.commit);
+    if (attempt.response.ok || !isRemoteBranchRace(attempt.response.status, attempt.result.error))
+      return {...attempt,pending};
+    const sync = await postPublishSync(pending.path, pending.commit, version);
+    if (!sync.response.ok || sync.result.status !== 'synced')
+      return {...attempt,pending,
+        syncConflict:sync.result.status === 'review-required' ? sync.result : null,
+        syncError:sync.result.error || sync.result.message || 'Could not safely sync with origin.'};
+    const updated = {...pending,commit:sync.result.head};
+    attempt = await push(updated.commit);
+    return {...attempt,pending:updated};
+  }
+  function showRemoteBranchRace() {
+    const retry = dialog.querySelector('#publish-push');
+    retry.hidden = true;
+    retry.disabled = true;
+    dialog.querySelector('#publish-back').textContent = 'Close and keep local commit';
+    setNotice('Origin changed again while publishing. Your local commit is retained. Review the branch before retrying.', 'warning');
   }
   function markPublicAndReviewAgain() {
     const source=editor.getValue();
@@ -555,58 +644,90 @@
       commitBtn.hidden=true;
       pushBtn.hidden=true;
       dialog.querySelector('#publish-mark-public').hidden=true;
-      const pushResp=await fetch('/workspace/publish/push?path='+encodeURIComponent(state.path),{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({commit:state.commit.commit,branch:state.commit.branch})
-      });
-      const pushResult=await pushResp.json();
-      if(!pushResp.ok){
-        dialog.querySelector('#publish-push').hidden=false;
-        throw new Error(pushResult.error||'Committed locally, but push failed. Click Push to origin to retry.');
+      const pushed=await pushWithOneSync({path:state.path,commit:state.commit.commit,branch:state.commit.branch},data.version);
+      state.commit={...state.commit,commit:pushed.pending.commit};
+      if(pushed.syncConflict){
+        await showOriginComparison(state.path,pushed.syncConflict,data.current);
+        return;
+      }
+      if(pushed.syncError){showRemoteBranchRace();setNotice(pushed.syncError+' Your local commit is retained.','warning');return;}
+      if(!pushed.response.ok){
+        if (isRemoteBranchRace(pushed.response.status, pushed.result.error)) {
+          showRemoteBranchRace();
+          return;
+        }
+        const retry = dialog.querySelector('#publish-push');
+        retry.hidden=false;
+        retry.disabled=false;
+        throw new Error(pushed.result.error||'Committed locally, but push failed. Click Push to origin to retry.');
       }
       refreshWorkspaceChanges();
-      dialog.querySelector('#publish-live-check').hidden=false;
-      setNotice('Committed and pushed to origin. Click Check live status to verify the builder release, if configured.','info');
+      finishPush();
     }catch(err){
       setNotice(err.message,'warning');
       if(!state.commit){pushBtn.disabled=false;commitBtn.disabled=false;}
+      else {
+        const retry = dialog.querySelector('#publish-push');
+        retry.hidden=false;
+        retry.disabled=false;
+        setNotice(err.message+' The local commit is retained; retrying checks whether this exact commit already reached origin.', 'warning');
+      }
     }finally{
       state.busy=false;
       pushBtn.textContent='Commit & Push';
     }
   }
   async function checkLiveDeployment() {
-    if(!state.commit || state.busy)return;
+    const receipt = state.commit?.commit ? state.commit : lastPushedCommit;
+    if(!receipt || state.busy)return;
     const btn=dialog.querySelector('#publish-live-check');
-    state.busy=true;btn.disabled=true;btn.textContent='Checking…';
+    const pageBtn=liveCheckButton;
+    state.busy=true;
+    if (btn) { btn.disabled=true; btn.textContent='Checking…'; }
+    if (pageBtn) { pageBtn.disabled=true; pageBtn.textContent='Checking…'; }
+    const report = (message, level='info') => {
+      if (dialog.open) setNotice(message, level);
+      else setPagePublishStatus(message, level);
+    };
     try{
-      const response=await fetch('/workspace/publish/deployment?commit='+encodeURIComponent(state.commit.commit),{cache:'no-store'});
+      const response=await fetch('/workspace/publish/deployment?commit='+encodeURIComponent(receipt.commit),{cache:'no-store'});
       const result=await response.json();
       if(!response.ok)throw new Error(result.error||'Cannot verify deployment.');
       if(result.verified){
-        btn.hidden=true;
-        setNotice('Live · Verified source revision '+result.live_source_commit.slice(0,10)+(result.release_id?' · release '+result.release_id:'')+'.','info');
+        if (btn) btn.hidden=true;
+        if (pageBtn) pageBtn.hidden=true;
+        report('Live · Verified source revision '+result.live_source_commit.slice(0,10)+(result.release_id?' · release '+result.release_id:'')+'.','info');
       } else {
-        setNotice(result.message||'Deployment has not been verified.','warning');
+        report(result.message||'Deployment has not been verified.','warning');
       }
-    }catch(error){setNotice(error.message,'warning');}
-    finally{state.busy=false;btn.disabled=false;btn.textContent='Check live status';}
+    }catch(error){report(error.message,'warning');}
+    finally{
+      state.busy=false;
+      if (btn) { btn.disabled=false; btn.textContent='Check live status'; }
+      if (pageBtn) { pageBtn.disabled=false; pageBtn.textContent='Check live status'; }
+    }
   }
   async function pushReview() {
     if(state.busy||!state.commit)return;
     const btn=dialog.querySelector('#publish-push');
     state.busy=true;btn.disabled=true;btn.textContent='Pushing…';
     try {
-      const response=await fetch('/workspace/publish/push?path='+encodeURIComponent(state.path),{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({commit:state.commit.commit,branch:state.commit.branch})
-      });
-      const result=await response.json();
-      if(!response.ok)throw new Error(result.error||'Push failed. The local commit is retained.');
-      btn.hidden=true;
+      const pushed=await pushWithOneSync({path:state.path,commit:state.commit.commit,branch:state.commit.branch},state.data?.version);
+      state.commit={...state.commit,commit:pushed.pending.commit};
+      if(pushed.syncConflict){
+        await showOriginComparison(state.path,pushed.syncConflict,state.data?.current||editor.getValue());
+        return;
+      }
+      if(pushed.syncError){showRemoteBranchRace();setNotice(pushed.syncError+' Your local commit is retained.','warning');return;}
+      if(!pushed.response.ok) {
+        if (isRemoteBranchRace(pushed.response.status, pushed.result.error)) {
+          showRemoteBranchRace();
+          return;
+        }
+        throw new Error(pushed.result.error||'Push failed. The local commit is retained.');
+      }
       refreshWorkspaceChanges();
-      dialog.querySelector('#publish-live-check').hidden=false;
-      setNotice('Pushed to origin. Click Check live status to verify the current builder release, if configured.','info');
+      finishPush();
     }catch(err){setNotice(err.message,'warning');btn.disabled=false;}
     finally{state.busy=false;btn.textContent='Push to origin';}
   }
@@ -662,7 +783,7 @@
       publishStatus.title = message;
     }
     window.dispatchEvent(new CustomEvent('markata:publish-status', {
-      detail: { message, type, pending: Boolean(pendingQuick) }
+      detail: { message, type, pending: Boolean(pendingQuick && !pendingQuick.blocked) }
     }));
   }
   async function saveAsDraft() {
@@ -694,14 +815,35 @@
   }
   async function finishQuickPush(pending) {
     reportQuick('Publishing to your site…', 'loading');
-    const response = await fetch('/workspace/publish/push?path=' +
-      encodeURIComponent(pending.path), {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({commit:pending.commit,branch:pending.branch})
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Could not push. Your local commit is retained.');
+    const pushed = await pushWithOneSync(pending,pending.version);
+    pending.commit = pushed.pending.commit;
+    if (pushed.syncConflict) {
+      pending.blocked = true;
+      pendingQuick = pending;
+      await showOriginComparison(pending.path,pushed.syncConflict,pending.source);
+      reportQuick('Origin changed this post. Your saved copy is shown beside the origin copy for review.', 'warning');
+      return;
+    }
+    if (pushed.syncError) {
+      pending.blocked = true;
+      pendingQuick = pending;
+      reportQuick(pushed.syncError+' Your local commit is retained.', 'warning');
+      updatePublishButton();
+      return;
+    }
+    if (!pushed.response.ok) {
+      if (isRemoteBranchRace(pushed.response.status, pushed.result.error)) {
+        pending.blocked = true;
+        pendingQuick = pending;
+        reportQuick('Origin changed again while publishing. Your local commit is retained; review the branch before retrying.', 'warning');
+        updatePublishButton();
+        return;
+      }
+      throw new Error(pushed.result.error || 'Could not push. Your local commit is retained.');
+    }
     pendingQuick = null;
+    lastPushedCommit = {commit:pending.commit, branch:pending.branch, path:pending.path};
+    if (liveCheckButton) liveCheckButton.hidden = false;
     reportQuick('Published to Git · site build not yet verified', 'info');
     refreshWorkspaceChanges();
     refreshChangeGutter();
@@ -740,9 +882,9 @@
       await awaitSaved(path, snapshot);
       if (window.MarkataSiteTree?.activeFile?.() !== path || editor.getValue() !== snapshot)
         throw new Error('Post changed during save. Try Publish again.');
-      const reviewResponse = await fetch('/workspace/publish/review?path=' + encodeURIComponent(path),
+      let reviewResponse = await fetch('/workspace/publish/review?path=' + encodeURIComponent(path),
         {cache:'no-store'});
-      const reviewData = await reviewResponse.json();
+      let reviewData = await reviewResponse.json();
       if (!reviewResponse.ok)
         throw new Error(reviewData.error || 'Could not check current post.');
       if (!reviewData.changed) {
@@ -753,9 +895,27 @@
       if (reviewData.current !== snapshot)
         throw new Error('Saved post changed during publication. Retry after reviewing the latest version.');
       reportQuick('Checking publishing safety…', 'loading');
-      const readyResponse = await fetch('/workspace/publish/readiness?path=' +
+      let readyResponse = await fetch('/workspace/publish/readiness?path=' +
         encodeURIComponent(path), {cache:'no-store'});
-      const ready = await readyResponse.json();
+      let ready = await readyResponse.json();
+      if (!readyResponse.ok && readyResponse.status === 409 && /local branch differs from origin/i.test(ready.error || '')) {
+        reportQuick('Origin changed. Checking for safe changes on other files…', 'loading');
+        const sync = await postPublishSync(path,reviewData.head,reviewData.version);
+        if (!sync.response.ok || sync.result.status !== 'synced') {
+          if (sync.result.status === 'review-required') {
+            await showOriginComparison(path,sync.result,snapshot);
+            reportQuick('Origin changed this post or another file overlaps. Review both copies before publishing.', 'warning');
+            return;
+          }
+          throw new Error(sync.result.error || sync.result.message || 'Could not safely sync with origin.');
+        }
+        reviewResponse = await fetch('/workspace/publish/review?path=' + encodeURIComponent(path), {cache:'no-store'});
+        reviewData = await reviewResponse.json();
+        if (!reviewResponse.ok || reviewData.current !== snapshot)
+          throw new Error(reviewData.error || 'The saved post changed during sync. Reopen Review before publishing.');
+        readyResponse = await fetch('/workspace/publish/readiness?path=' + encodeURIComponent(path), {cache:'no-store'});
+        ready = await readyResponse.json();
+      }
       if (!readyResponse.ok || !ready.ready)
         throw new Error(ready.error || 'Publishing safety check failed.');
       if (ready.head !== reviewData.head)
@@ -770,7 +930,7 @@
       const commit = await commitResponse.json();
       if (!commitResponse.ok)
         throw new Error(commit.error || 'Could not prepare publication.');
-      pendingQuick = {path,source:snapshot,commit:commit.commit,branch:commit.branch};
+      pendingQuick = {path,source:snapshot,version:reviewData.version,commit:commit.commit,branch:commit.branch};
       refreshWorkspaceChanges();
       await finishQuickPush(pendingQuick);
     } catch (error) {
@@ -789,9 +949,9 @@
     const fields = frontmatter(source);
     const upToDate = Boolean(snapshot && snapshot.baselineExists && !snapshot.changed &&
       snapshot.current === source && fields.published === 'true' && fields.draft !== 'true');
-    const publishState = quickBusy ? 'publishing' : pendingQuick ? 'retry' :
+    const publishState = quickBusy ? 'publishing' : pendingQuick?.blocked ? 'sync-needed' : pendingQuick ? 'retry' :
       !path ? 'no-post' : upToDate ? 'up-to-date' : 'ready';
-    const label = {publishing:'Publishing…',retry:'Retry publish','no-post':'Choose post',
+    const label = {publishing:'Publishing…',retry:'Retry publish','sync-needed':'Remote changed','no-post':'Choose post',
       'up-to-date':'Up to date',ready:'Publish post'}[publishState];
     if (button.dataset.publishState !== publishState) {
       const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -801,13 +961,14 @@
       button.replaceChildren(icon,document.createTextNode(label));
     }
     button.dataset.publishState = publishState;
-    button.disabled = quickBusy || publishState === 'up-to-date' || !path;
+    button.disabled = quickBusy || publishState === 'up-to-date' || publishState === 'sync-needed' || !path;
     button.setAttribute('aria-busy',String(quickBusy));
     button.setAttribute('aria-label',publishState==='up-to-date'?'Up to date in Git; deployment not verified':
-      publishState==='retry'?'Retry pending publish':publishState==='no-post'?'Choose a site post to publish':
+      publishState==='retry'?'Retry pending publish':publishState==='sync-needed'?'Remote branch changed; review before publishing again':publishState==='no-post'?'Choose a site post to publish':
       publishState==='publishing'?'Publishing current post':'Publish current post');
     button.title = publishState==='up-to-date'?
       'This saved post matches its local Git commit. Remote push and site deployment are not verified.':
+      publishState==='sync-needed'?'Origin changed. The local commit is retained; review and sync the branch before another push.':
       'Publish this post only (Ctrl/Cmd+S). Review changes with Ctrl/Cmd+Shift+Enter.';
   }
 
@@ -1563,6 +1724,14 @@
     publishStatus.setAttribute('aria-live','polite');
     publishStatus.textContent='Not published';
     document.querySelector('#saved')?.insertAdjacentElement('afterend',publishStatus);
+    liveCheckButton=document.createElement('button');
+    liveCheckButton.type='button';
+    liveCheckButton.id='markata-live-check';
+    liveCheckButton.textContent='Check live status';
+    liveCheckButton.setAttribute('aria-label','Check the last pushed revision for deployment status');
+    liveCheckButton.hidden=true;
+    liveCheckButton.addEventListener('click',checkLiveDeployment);
+    publishStatus.insertAdjacentElement('afterend',liveCheckButton);
     attachWorkspaceChanges();
     const changesHeader=changesPanel?.querySelector('header');
     const changesTools=changesPanel?.querySelector('.workspace-changes-tools');

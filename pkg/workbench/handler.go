@@ -872,7 +872,7 @@ func isWorkspaceRoute(routePath, method string) bool {
 		return method == http.MethodPost
 	case routePath == "/workspace/file":
 		return method == http.MethodGet || method == http.MethodPut || method == http.MethodPost
-	case routePath == "/workspace/publish/commit" || routePath == "/workspace/publish/push" || routePath == "/workspace/publish/discard":
+	case routePath == "/workspace/publish/commit" || routePath == "/workspace/publish/push" || routePath == "/workspace/publish/discard" || routePath == "/workspace/publish/sync":
 		return method == http.MethodPost
 	case routePath == "/workspace/publish/deployment" || routePath == "/workspace/publish/review" || routePath == "/workspace/publish/readiness":
 		return method == http.MethodGet
@@ -1245,7 +1245,15 @@ func (h *Handler) serveWorkspace(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
 	if r.URL.Path == "/workspace/publish/commit" {
+		h.workspaceWriteMu.Lock()
+		defer h.workspaceWriteMu.Unlock()
 		h.servePublishCommit(w, r)
+		return
+	}
+	if r.URL.Path == "/workspace/publish/sync" {
+		h.workspaceWriteMu.Lock()
+		defer h.workspaceWriteMu.Unlock()
+		h.servePublishSync(w, r)
 		return
 	}
 	if r.URL.Path == "/workspace/publish/discard" {

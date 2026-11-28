@@ -21,6 +21,7 @@ import (
 
 const (
 	gitPublisherRemotePath = "/v1/remote-head"
+	gitPublisherFetchPath  = "/v1/fetch"
 	gitPublisherPushPath   = "/v1/push"
 	gitPublisherMaxBody    = 4096
 )
@@ -32,6 +33,7 @@ var gitPublisherRepoPartPattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
 // publication. Implementations must not accept a caller-selected remote.
 type GitPublisher interface {
 	RemoteHead(context.Context, string, string) (string, error)
+	FetchRemote(context.Context, string, string) (string, error)
 	Push(context.Context, string, string) error
 }
 
@@ -78,6 +80,25 @@ func (p *unixGitPublisher) RemoteHead(ctx context.Context, branch, head string) 
 	}
 	if !gitHashPattern.MatchString(response.Head) {
 		return "", errors.New("git publisher returned an invalid remote revision")
+	}
+	return response.Head, nil
+}
+
+func (p *unixGitPublisher) FetchRemote(ctx context.Context, branch, head string) (string, error) {
+	if p.socket == "" {
+		return "", errors.New("git publisher socket is not configured")
+	}
+	endpoint := "http://git-publisher" + gitPublisherFetchPath + "?branch=" + url.QueryEscape(branch) + "&head=" + url.QueryEscape(head)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, http.NoBody)
+	if err != nil {
+		return "", err
+	}
+	var response gitPublisherRemoteResponse
+	if err := p.do(req, &response); err != nil {
+		return "", err
+	}
+	if !gitHashPattern.MatchString(response.Head) {
+		return "", errors.New("git publisher returned an invalid fetched revision")
 	}
 	return response.Head, nil
 }
@@ -288,6 +309,7 @@ func validateGitPublisherOrigin(raw string) (string, error) {
 func (s *gitPublisherService) handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(gitPublisherRemotePath, s.handleRemoteHead)
+	mux.HandleFunc(gitPublisherFetchPath, s.handleFetchRemote)
 	mux.HandleFunc(gitPublisherPushPath, s.handlePush)
 	return mux
 }
@@ -320,6 +342,36 @@ func (s *gitPublisherService) handleRemoteHead(w http.ResponseWriter, r *http.Re
 	writePublisherJSON(w, gitPublisherRemoteResponse{Head: remote})
 }
 
+func (s *gitPublisherService) handleFetchRemote(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		http.Error(w, "POST required", http.StatusMethodNotAllowed)
+		return
+	}
+	branch, head := r.URL.Query().Get("branch"), r.URL.Query().Get("head")
+	if branch != s.branch || !gitHashPattern.MatchString(head) {
+		http.Error(w, "requested branch or revision is invalid", http.StatusUnprocessableEntity)
+		return
+	}
+	localHead, localBranch, err := s.localRevision(r.Context())
+	if err != nil || localHead != head || localBranch != branch {
+		http.Error(w, "checkout changed; review Git status again", http.StatusConflict)
+		return
+	}
+	if err := s.validateOrigin(r.Context()); err != nil {
+		http.Error(w, "configured Git origin does not match the publisher allowlist", http.StatusUnprocessableEntity)
+		return
+	}
+	remote, err := s.fetchRemote(r.Context(), branch)
+	if err != nil {
+		log.Printf("editor git publisher fetch result=rejected reason=remote_fetch_failed")
+		http.Error(w, "cannot fetch remote Git state", http.StatusServiceUnavailable)
+		return
+	}
+	log.Printf("editor git publisher fetch result=confirmed")
+	writePublisherJSON(w, gitPublisherRemoteResponse{Head: remote})
+}
+
 func (s *gitPublisherService) handlePush(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
@@ -344,9 +396,11 @@ func (s *gitPublisherService) handlePush(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err := s.push(r.Context(), request.Branch, request.Commit); err != nil {
+		log.Printf("editor git publisher push result=rejected branch=%q commit=%s reason=%q", request.Branch, request.Commit[:12], err)
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
+	log.Printf("editor git publisher push result=confirmed branch=%q commit=%s", request.Branch, request.Commit[:12])
 	writePublisherJSON(w, map[string]string{"status": "pushed", "commit": request.Commit})
 }
 
@@ -356,7 +410,15 @@ func (s *gitPublisherService) push(ctx context.Context, branch, commit string) e
 		return err
 	}
 	remote, err := s.remoteHead(ctx)
-	if err != nil || remote != parent {
+	if err != nil {
+		return errors.New("cannot verify remote Git state; local commit is retained")
+	}
+	// A browser can lose the HTTP response after a successful push. Confirming
+	// that the exact reviewed commit is already remote makes the retry safe.
+	if remote == commit {
+		return nil
+	}
+	if remote != parent {
 		return errors.New("remote branch changed; sync and review again")
 	}
 	if _, err := s.runGit(ctx, "push", "--porcelain", s.pushURL, commit+":"+s.branch); err != nil {
@@ -367,6 +429,26 @@ func (s *gitPublisherService) push(ctx context.Context, branch, commit string) e
 		return errors.New("push completed but the remote revision could not be confirmed")
 	}
 	return nil
+}
+
+func (s *gitPublisherService) fetchRemote(ctx context.Context, branch string) (string, error) {
+	if branch != s.branch {
+		return "", errors.New("requested branch is not configured")
+	}
+	ref := gitPublisherSyncRef(branch)
+	refspec := "+" + branch + ":" + ref
+	if _, err := s.runGit(ctx, "fetch", "--no-tags", "--no-write-fetch-head", s.pushURL, refspec); err != nil {
+		return "", errors.New("remote fetch failed")
+	}
+	remote, err := s.runGit(ctx, "rev-parse", "--verify", ref)
+	if err != nil || !gitHashPattern.MatchString(remote) {
+		return "", errors.New("cannot read fetched remote revision")
+	}
+	return remote, nil
+}
+
+func gitPublisherSyncRef(branch string) string {
+	return "refs/markata-sync/" + strings.TrimPrefix(branch, "refs/heads/")
 }
 
 func (s *gitPublisherService) validatePushCommit(ctx context.Context, branch, commit string) (string, error) {

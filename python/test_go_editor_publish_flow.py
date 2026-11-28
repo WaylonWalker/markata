@@ -49,6 +49,11 @@ class GoEditorPublishFlowTest(unittest.TestCase):
             "---\npublished: false\ndraft: false\n---\n\n# Quick before\n",
             encoding="utf-8",
         )
+        sync_post = posts / "sync-publish.md"
+        sync_post.write_text(
+            "---\npublished: false\ndraft: false\n---\n\n# Sync before\n",
+            encoding="utf-8",
+        )
         long_post = posts / "long-gutter.md"
         long_post.write_text(
             "---\ntitle: Long gutter fixture\npublished: false\n---\n\n"
@@ -61,7 +66,7 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         external_post.write_text("# First external version\n", encoding="utf-8")
         clean_post = posts / "autosave-clean.md"
         clean_post.write_text("# Initial clean draft\n", encoding="utf-8")
-        cls.git(cls.site, "add", "markata-go.toml", "posts/publish-flow.md", "posts/long-gutter.md", "posts/discard-flow.md", "posts/external-edit.md", "posts/autosave-clean.md", "posts/quick-publish.md")
+        cls.git(cls.site, "add", "markata-go.toml", "posts/publish-flow.md", "posts/long-gutter.md", "posts/discard-flow.md", "posts/external-edit.md", "posts/autosave-clean.md", "posts/quick-publish.md", "posts/sync-publish.md")
         cls.git(cls.site, "commit", "-m", "Fixture baseline")
         cls.git(cls.site, "push", "-u", "origin", "main")
 
@@ -466,11 +471,25 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.assertIn("browser-test", committed_post)
         self.assertIn("Revised copy for browser verification.", committed_post)
 
-        commit = self.git(self.site, "rev-parse", "HEAD")
+        original_commit = self.git(self.site, "rev-parse", "HEAD")
+        remote_work = self.root / "push-race-remote-work"
+        self.git(self.root, "clone", "--branch", "main", str(self.remote), str(remote_work))
+        self.git(remote_work, "config", "user.name", "Remote Push Race Test")
+        self.git(remote_work, "config", "user.email", "remote-push-race@example.invalid")
+        (remote_work / "remote-push-race.txt").write_text("Origin moved during review.\n", encoding="utf-8")
+        self.git(remote_work, "add", "remote-push-race.txt")
+        self.git(remote_work, "commit", "-m", "Remote changed during review")
+        self.git(remote_work, "push", "origin", "main")
+        remote_parent = self.git(remote_work, "rev-parse", "HEAD")
         review.get_by_role("button", name="Push to origin").click()
-        expect(review.get_by_role("button", name="Check live status")).to_be_visible()
+        expect(review).not_to_be_visible(timeout=30000)
+        expect(page.locator("#markata-publish-status")).to_contain_text("Pushed to origin", timeout=10000)
+        commit = self.git(self.site, "rev-parse", "HEAD")
+        self.assertNotEqual(commit, original_commit, "sync should rebase the reviewed post commit")
+        self.assertEqual(self.git(self.site, "rev-parse", "HEAD^"), remote_parent)
         self.assertEqual(self.git(self.remote, "rev-parse", "refs/heads/main"), commit)
         self.assertEqual(self.git(self.remote, "log", "-1", "--format=%B", "refs/heads/main"), message)
+        self.assertEqual(self.git(self.remote, "show", "refs/heads/main:remote-push-race.txt"), "Origin moved during review.")
         self.assertEqual(errors, [])
 
 
@@ -573,6 +592,36 @@ class GoEditorPublishFlowTest(unittest.TestCase):
         self.edit_source(page, source + "\nA later edit to publish.\n")
         expect(publish_button).to_have_text("Publish post", timeout=15000)
         expect(publish_button).to_be_enabled()
+        self.assertEqual(errors, [])
+
+    def test_quick_publish_syncs_disjoint_origin_change(self):
+        context = self.browser.new_context()
+        self.addCleanup(context.close)
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.goto(self.url)
+        self.open_site_file(page, "posts/sync-publish.md", errors)
+        source = page.evaluate("document.querySelector('.CodeMirror').CodeMirror.getValue()")
+        self.edit_source(page, source.replace("# Sync before", "# Sync after"))
+        expect(page.locator("#saved")).to_have_text("Saved to site", timeout=10000)
+
+        remote_work = self.root / "quick-sync-remote-work"
+        self.git(self.root, "clone", "--branch", "main", str(self.remote), str(remote_work))
+        self.git(remote_work, "config", "user.name", "Remote Sync Test")
+        self.git(remote_work, "config", "user.email", "remote-sync@example.invalid")
+        (remote_work / "remote-only.txt").write_text("Remote changed another file.\n", encoding="utf-8")
+        self.git(remote_work, "add", "remote-only.txt")
+        self.git(remote_work, "commit", "-m", "Remote unrelated change")
+        self.git(remote_work, "push", "origin", "main")
+
+        page.locator(".CodeMirror").click()
+        page.keyboard.press("Control+S")
+        expect(page.locator("#markata-publish-status")).to_contain_text("Published to Git", timeout=30000)
+        self.assertIn("# Sync after", self.git(self.remote, "show", "refs/heads/main:posts/sync-publish.md"))
+        self.assertEqual(self.git(self.site, "rev-parse", "HEAD"),
+                         self.git(self.remote, "rev-parse", "refs/heads/main"))
+        self.assertEqual(self.git(self.site, "show", "HEAD:remote-only.txt"), "Remote changed another file.")
         self.assertEqual(errors, [])
 
     def test_git_gutter_large_document(self):

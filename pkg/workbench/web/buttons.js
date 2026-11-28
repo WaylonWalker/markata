@@ -13,9 +13,9 @@
   ].join(',');
   const PRIMARY = '#publish-open,#publish-commit-and-push,#fm-add,#fm-add-custom,#create-form [type="submit"]';
   const DANGER = '#publish-discard-accept';
-  const SUBTLE = '.editor-toolbar > button,#frontmatter-raw,#fm-add-toggle,#fm-more,#preview-focus-editor,#site-sidebar .files-open,#header-new-post,#publish-confirm';
+  const SUBTLE = '.editor-toolbar > button,#frontmatter-raw,#fm-add-toggle,#fm-more,#preview-focus-editor,#site-sidebar .files-open,#header-new-post,#publish-confirm,#markata-live-check';
   const GHOST = '#commands,#header-commands,#publish-review-open,#settings-open,#sidebar-toggle,#theme-picker-toggle,#palette-mode-toggle,#diagnostics-toggle,#problems-toggle,.theme-switcher button';
-  const SMALL = '#preview-focus-editor,#diagnostics-toggle,#problems-toggle,#workspace-conflict-review,#fm-add-toggle';
+  const SMALL = '#preview-focus-editor,#diagnostics-toggle,#problems-toggle,#workspace-conflict-review,#fm-add-toggle,#markata-live-check';
   const KBD = {
     'publish-open': 'Ctrl+S',
     'publish-review-open': 'Ctrl+Shift+Enter',
