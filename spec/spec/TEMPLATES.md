@@ -18,7 +18,10 @@ The default `card` variant MUST retain its existing routing behavior.
 
 The `media_srcset` filter MUST emit width candidates only for trusted remote
 resize services. Relative and untrusted URLs MUST return an empty srcset. It
-MUST preserve unrelated query parameters and remove fixed-height parameters.
+MUST preserve unrelated query parameters and replace existing `w`/`width`
+aliases with each candidate width. When both source dimensions are known, it
+MUST scale the height to preserve the source aspect ratio; otherwise it MUST
+remove fixed-height aliases so the media service can infer the height.
 Default photo and article cards SHOULD use these candidates with native lazy
 loading and `sizes="auto, ..."` so small cards do not request full-size media.
 

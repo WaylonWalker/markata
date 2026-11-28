@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"math"
 	"net/url"
 	"path/filepath"
 	"sort"
@@ -63,9 +64,8 @@ func buildTrustedMediaDomainSet(domains []string) map[string]struct{} {
 	return set
 }
 
-// WithSize appends or overwrites the w/h query parameters for trusted URLs.
-// When height is 0 only the width param is set, letting the CDN preserve
-// the original aspect ratio (width-only sizing).
+// WithSize replaces existing dimension aliases for trusted URLs. When height
+// is 0 only the width is set, letting the media service infer the height.
 func WithSize(raw string, width, height int) string {
 	if width <= 0 {
 		return raw
@@ -79,6 +79,8 @@ func WithSize(raw string, width, height int) string {
 		return raw
 	}
 	qs := u.Query()
+	qs.Del("width")
+	qs.Del("height")
 	qs.Set("w", strconv.Itoa(width))
 	if height > 0 {
 		qs.Set("h", strconv.Itoa(height))
@@ -132,9 +134,14 @@ func ResponsiveSrcset(raw string, widths []int) string {
 	}
 	sort.Ints(ordered)
 
+	sourceWidth, sourceHeight, _ := MediaDimensionsFromURL(raw)
 	candidates := make([]string, 0, len(ordered))
 	for _, width := range ordered {
-		candidates = append(candidates, WithSize(raw, width, 0)+" "+strconv.Itoa(width)+"w")
+		height := 0
+		if sourceWidth > 0 && sourceHeight > 0 {
+			height = int(math.Round(float64(width) * float64(sourceHeight) / float64(sourceWidth)))
+		}
+		candidates = append(candidates, WithSize(raw, width, height)+" "+strconv.Itoa(width)+"w")
 	}
 	return strings.Join(candidates, ", ")
 }

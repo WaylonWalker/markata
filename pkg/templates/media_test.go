@@ -36,6 +36,25 @@ func TestResponsiveSrcsetUsesTrustedRemoteWidthsAndPreservesQuery(t *testing.T) 
 	}
 }
 
+func TestWithSizeReplacesLongDimensionAliases(t *testing.T) {
+	raw := "http://dropper.waylonwalker.com/file/part.stl.webp?token=abc&height=576&width=768#preview"
+	got := WithSize(raw, 320, 0)
+	want := "https://dropper.waylonwalker.com/file/part.stl.webp?token=abc&w=320#preview"
+	if got != want {
+		t.Fatalf("WithSize() = %q, want %q", got, want)
+	}
+}
+
+func TestResponsiveSrcsetReplacesLongDimensionAliases(t *testing.T) {
+	raw := "https://dropper.waylonwalker.com/fmt/file/part.stl.webp?height=576&width=768"
+	got := ResponsiveSrcset(raw, []int{320, 768})
+	want := "https://dropper.waylonwalker.com/fmt/file/part.stl.webp?h=240&w=320 320w, " +
+		"https://dropper.waylonwalker.com/fmt/file/part.stl.webp?h=576&w=768 768w"
+	if got != want {
+		t.Fatalf("ResponsiveSrcset() = %q, want %q", got, want)
+	}
+}
+
 func TestResponsiveSrcsetSkipsLocalAndUntrustedURLs(t *testing.T) {
 	for _, raw := range []string{"/images/photo.jpg", "https://example.com/photo.jpg", "ftp://dropper.waylonwalker.com/photo.jpg", "data:image/png;base64,abc"} {
 		if got := ResponsiveSrcset(raw, []int{160, 320}); got != "" {
