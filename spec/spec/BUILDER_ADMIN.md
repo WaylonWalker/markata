@@ -52,6 +52,12 @@ Required trigger sources:
 - signed GitHub or Forgejo push webhook after a successful source update
 - Helm startup/leadership acquisition when the running Builder commit differs from the latest successful build; this MUST go through the serialized queue rather than a direct build
 
+A build queued because the Builder commit changed MUST use a clean Markata build so
+cached rendered pages cannot hide output changes in the new executable. Explicit
+force mode MUST also clear the generated output and Markata build cache before
+building. It MUST preserve external plugin caches; normal builds MUST retain the
+warm Markata cache.
+
 ## Leadership And Handoff
 
 When more than one builder-admin pod is running for the same site, exactly one pod MUST hold leadership for mutating work.
