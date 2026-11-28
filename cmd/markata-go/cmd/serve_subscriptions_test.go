@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/WaylonWalker/markata/pkg/blogroll"
 	"github.com/WaylonWalker/markata/pkg/models"
 )
 
@@ -14,25 +15,25 @@ func TestSubscriptionBlocksPreserveNeighboringTables(t *testing.T) {
 		"[[markata-go.blogroll.feeds]]\nurl = \"https://one.test/rss\"\ntitle = \"One\"\n# keep first comment\n\n" +
 		"[[markata-go.blogroll.feeds]]\nurl = \"https://two.test/rss\"\ntitle = \"Two\"\n\n" +
 		"[markata-go.theme]\ntext_size = \"medium\"\n"
-	blocks := subscriptionBlocks(source)
+	blocks := blogroll.SubscriptionBlocks(source)
 	if len(blocks) != 2 {
 		t.Fatalf("got %d blocks, want 2", len(blocks))
 	}
-	first, err := uniqueBlock(source, "https://one.test/rss")
+	first, err := blogroll.UniqueSubscriptionBlock(source, "https://one.test/rss")
 	if err != nil {
 		t.Fatal(err)
 	}
-	updated := source[:first.start] + subscriptionField(source[first.start:first.end], "title", "\"Edited\"") + source[first.end:]
+	updated := source[:first.Start] + blogroll.SetSubscriptionField(source[first.Start:first.End], "title", "\"Edited\"") + source[first.End:]
 	if !strings.Contains(updated, "title = \"Edited\"") || !strings.Contains(updated, "# keep first comment") ||
 		!strings.Contains(updated, "url = \"https://two.test/rss\"") ||
 		!strings.Contains(updated, "[markata-go.theme]") {
 		t.Fatal("update unexpectedly changed another feed, comment, or section")
 	}
-	second, err := uniqueBlock(updated, "https://two.test/rss")
+	second, err := blogroll.UniqueSubscriptionBlock(updated, "https://two.test/rss")
 	if err != nil {
 		t.Fatal(err)
 	}
-	removed := updated[:second.start] + updated[second.end:]
+	removed := updated[:second.Start] + updated[second.End:]
 	if strings.Contains(removed, "https://two.test/rss") || !strings.Contains(removed, "https://one.test/rss") {
 		t.Fatal("removal did not isolate selected feed")
 	}

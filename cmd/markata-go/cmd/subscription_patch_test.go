@@ -3,13 +3,15 @@ package cmd
 import (
 	"strings"
 	"testing"
+
+	"github.com/WaylonWalker/markata/pkg/blogroll"
 )
 
 func TestPatchSubscriptionBlockPreservesUnrelatedFields(t *testing.T) {
 	original := "[[blogroll.feeds]]\nurl = \"https://example.test/feed\"\n" +
 		"title = \"Old # title\" # keep this comment\n" +
 		"tags = [\"go\", \"rss\"]\nmax_entries = 5\n"
-	got, err := patchSubscriptionBlock(original, map[string]string{"title": `"New title"`}, []string{"title"})
+	got, err := blogroll.PatchSubscriptionBlock(original, map[string]string{"title": `"New title"`}, []string{"title"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,7 +23,7 @@ func TestPatchSubscriptionBlockPreservesUnrelatedFields(t *testing.T) {
 
 func TestPatchSubscriptionBlockRejectsUnsafeMultiline(t *testing.T) {
 	original := "[[blogroll.feeds]]\nurl = \"https://example.test/feed\"\ntags = [\n  \"one\",\n  \"two\",\n]\n"
-	if _, err := patchSubscriptionBlock(original, map[string]string{"tags": `["new"]`}, []string{"tags"}); err == nil {
+	if _, err := blogroll.PatchSubscriptionBlock(original, map[string]string{"tags": `["new"]`}, []string{"tags"}); err == nil {
 		t.Fatal("multiline field must not be partially rewritten")
 	}
 }
