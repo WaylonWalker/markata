@@ -55,8 +55,10 @@ Required trigger sources:
 A build queued because the Builder commit changed MUST use a clean Markata build so
 cached rendered pages cannot hide output changes in the new executable. Explicit
 force mode MUST also clear the generated output and Markata build cache before
-building. It MUST preserve external plugin caches; normal builds MUST retain the
-warm Markata cache.
+building. When a cache mount is configured, the clean build MUST target its
+`build` directory; otherwise it MUST target the source tree's `.markata`
+directory. It MUST preserve external plugin caches; normal builds MUST retain
+the warm Markata cache.
 
 ## Leadership And Handoff
 

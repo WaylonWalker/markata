@@ -79,10 +79,11 @@ When the replacement Builder Admin pod acquires leadership, it compares the
 running binary's embedded Git commit against the **last successful real build**.
 If the revisions differ, it immediately enqueues a clean full build with
 trigger `startup-revision` and records the comparison in build history. The
-clean build clears generated output and Markata's build cache, while keeping
-external plugin caches. This makes rendering changes in the new executable
-apply to unchanged source pages. Publication remains atomic: a failed build
-keeps the last live release.
+clean build clears generated output and Markata's managed build cache, while
+keeping external plugin caches. With a cache mount, it clears
+`<cache-mount>/build`; otherwise it clears `<source>/.markata`. This makes
+rendering changes in the new executable apply to unchanged source pages.
+Publication remains atomic: a failed build keeps the last live release.
 
 An unchanged restart does not enqueue another build. Existing pending normal
 builds suppress duplicates, and standby pods never enqueue during rolling
@@ -404,8 +405,8 @@ The default **Jobs** workspace is the primary operational view. It puts running 
 work, and completed builds, refreshes, and rollbacks in one list. Use **Build if changed** for a
 manual build. Builder Admin can record it as unchanged when a recent successful release still
 matches the verified source, configuration, and external cache inputs. Use **Force full build** to
-bypass this check and clear generated output and Markata's build cache before rendering. External
-plugin caches stay warm. An unchanged result does not prepare a workspace or create a release.
+bypass this check and clear generated output and Markata's managed build cache before rendering.
+External plugin caches stay warm. An unchanged result does not prepare a workspace or create a release.
 
 The unchanged check applies to manual UI and API requests and builds automatically queued after the
 successful `reader-update` refresh task. Other refresh tasks use a full build. A reader update that
